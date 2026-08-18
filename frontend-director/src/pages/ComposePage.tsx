@@ -142,7 +142,7 @@ export default function ComposePage() {
         <Col span={14}>
           <Card
             title={`素材库（已选 ${selectedIds.length} 个）`}
-            bordered
+            variant="outlined"
             extra={
               <Space>
                 <Radio.Group
@@ -200,7 +200,7 @@ export default function ComposePage() {
 
         {/* 右侧：合成配置 */}
         <Col span={10}>
-          <Card title="合成参数" bordered>
+          <Card title="合成参数" variant="outlined">
             <Form
               form={form}
               layout="vertical"
@@ -288,7 +288,7 @@ export default function ComposePage() {
             </Form>
           </Card>
 
-          <Card title="任务状态" bordered style={{ marginTop: 16 }}>
+          <Card title="任务状态" variant="outlined" style={{ marginTop: 16 }}>
             {taskId ? (
               <div>
                 <Tag color={taskStatus?.status === 'completed' ? 'success' :

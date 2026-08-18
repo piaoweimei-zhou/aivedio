@@ -145,7 +145,7 @@ export default function GraphicPage() {
       <Row gutter={16}>
         {/* 左侧：表单 */}
         <Col span={12}>
-          <Card title="图文配置" bordered>
+          <Card title="图文配置" variant="outlined">
             <Form
               form={form}
               layout="vertical"
@@ -256,7 +256,7 @@ export default function GraphicPage() {
 
         {/* 右侧：任务状态 + 历史 */}
         <Col span={12}>
-          <Card title="任务状态" bordered style={{ marginBottom: 16 }}>
+          <Card title="任务状态" variant="outlined" style={{ marginBottom: 16 }}>
             {taskId ? (
               <div>
                 <Tag color={taskStatus?.status === 'completed' ? 'success' :
@@ -285,7 +285,7 @@ export default function GraphicPage() {
 
           <Card
             title={`历史图文 (${graphics.length})`}
-            bordered
+            variant="outlined"
             extra={<Button size="small" icon={<ReloadOutlined />} onClick={loadGraphics}>刷新</Button>}
           >
             {graphics.length === 0 ? (

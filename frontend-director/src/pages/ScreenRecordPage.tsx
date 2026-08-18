@@ -132,7 +132,7 @@ export default function ScreenRecordPage() {
       <Row gutter={16}>
         {/* 左侧：表单 */}
         <Col span={14}>
-          <Card title="录屏配置" bordered>
+          <Card title="录屏配置" variant="outlined">
             <Form
               form={form}
               layout="vertical"
@@ -261,7 +261,7 @@ export default function ScreenRecordPage() {
 
         {/* 右侧：状态 */}
         <Col span={10}>
-          <Card title="任务状态" bordered>
+          <Card title="任务状态" variant="outlined">
             {taskId ? (
               <div>
                 <Tag color={taskStatus?.status === 'completed' ? 'success' :
@@ -295,7 +295,7 @@ export default function ScreenRecordPage() {
             )}
           </Card>
 
-          <Card title="已加载窗口列表" bordered style={{ marginTop: 16 }}>
+          <Card title="已加载窗口列表" variant="outlined" style={{ marginTop: 16 }}>
             {windows.length === 0 ? (
               <Empty description="点击左侧 刷新窗口列表" />
             ) : (
