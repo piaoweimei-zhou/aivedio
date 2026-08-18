@@ -8,8 +8,9 @@
 
 ```bash
 cd backend
+# 运行时依赖（生产/CI 可复现安装用 requirements.lock；开发含测试依赖用 requirements-dev.txt）
 pip install -r requirements.txt
-# 推荐：用固化脚本启动（自动设置 ComfyUI 环境变量）
+# 推荐：用固化脚本启动（自动设置 ComfyUI 环境变量，要求 Python 3.13）
 start_backend.bat
 # 或手动启动
 python main.py
@@ -66,7 +67,9 @@ CI 配置见 `.github/workflows/ci.yml`（后端 pytest → 前端构建 → 镜
 ```
 backend/
 ├── main.py                    # 后端入口（路由注册、CORS、静态文件、图片代理）
-├── requirements.txt           # 依赖（含测试依赖）
+├── requirements.txt           # 运行时依赖（语义下限，生产镜像用）
+├── requirements-dev.txt       # 开发/测试依赖（含 requirements.txt + pytest）
+├── requirements.lock          # 全量锁定版本（CI/本地可复现安装）
 ├── .env                       # 环境变量 / Provider 密钥（由配置向导写入）
 ├── start_backend.bat          # 后端启动脚本（固化 ComfyUI 环境变量）
 ├── start_comfyui.bat          # ComfyUI 启动脚本

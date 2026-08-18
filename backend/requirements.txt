@@ -1,5 +1,6 @@
-# 导演工作台 — Python 依赖
-# 注：pydantic-core 2.14.1 无 Python 3.13 wheel（需 Rust 编译），用 >=2.40 版
+# 导演工作台 — 运行时依赖（语义化下限，供开发/新环境安装）
+# 环境要求：Python 3.13（本地 / CI / Docker 统一，见 CI 与 start_backend.bat）
+# 版本锁定/一致性：CI 与生产使用 requirements.lock 做可复现安装；测试依赖见 requirements-dev.txt
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
@@ -18,7 +19,3 @@ PyYAML>=6.0
 # 文本生成 / TTS（延迟导入，运行时需要）
 openai>=1.0.0
 edge-tts>=6.1.0
-
-# 开发/测试依赖
-pytest>=8.0
-pytest-asyncio>=0.23

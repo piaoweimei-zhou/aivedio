@@ -10,6 +10,13 @@ import os
 import platform
 import sys
 
+# 环境一致性守卫：声明支持的 Python 版本，避免旧版本环境静默运行导致行为漂移
+if sys.version_info < (3, 13):
+    raise RuntimeError(
+        f"导演工作台要求 Python >= 3.13（当前 {platform.python_version()}）。"
+        "请使用 backend/.venv-test 或安装 Python 3.13 后重建虚拟环境。"
+    )
+
 # Windows 中文编码修复
 if platform.system() == 'Windows':
     if hasattr(sys.stdout, 'reconfigure'):
