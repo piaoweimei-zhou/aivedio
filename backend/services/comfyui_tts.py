@@ -129,6 +129,9 @@ class ComfyUITTSMixin:
             audio_filename = output_filenames[0]
 
         audio_url = f"{self.config.base_url}/view?filename={audio_filename}&type=output"
+        subfolder = self._output_subfolders.get(audio_filename, "")
+        if subfolder:
+            audio_url += f"&subfolder={subfolder}"
         elapsed_ms = int((time.time() - start) * 1000)
 
         logger.info(

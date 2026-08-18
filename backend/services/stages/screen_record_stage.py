@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
+from services.stages.ffmpeg_utils import _ffmpeg_bin
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +144,7 @@ class ScreenRecordStage(StagePlugin):
         """
         from services.providers.provider_utils import output_path_for, output_url_for
 
-        ffmpeg = os.getenv("FFMPEG_PATH", "ffmpeg")
+        ffmpeg = _ffmpeg_bin()
         await self._check_ffmpeg(ffmpeg)
 
         system = platform.system()

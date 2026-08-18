@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
+from services.stages.ffmpeg_utils import _ffmpeg_bin, _ffprobe_bin
 
 logger = logging.getLogger(__name__)
 
@@ -198,8 +199,8 @@ class ExportStage(StagePlugin):
         """使用 ffmpeg 导出视频（支持字幕烧录/水印/裁剪）"""
         import uuid
 
-        ffmpeg = os.getenv("FFMPEG_PATH", "ffmpeg")
-        ffprobe = os.getenv("FFPROBE_PATH", "ffprobe")
+        ffmpeg = _ffmpeg_bin()
+        ffprobe = _ffprobe_bin()
         from services.providers.provider_utils import (
             output_file_from_url, output_path_for, output_url_for,
         )
@@ -348,7 +349,7 @@ class ExportStage(StagePlugin):
     async def _extract_cover(self, video_url: str, time_sec: float) -> str:
         """从视频提取封面图"""
         import uuid
-        ffmpeg = os.getenv("FFMPEG_PATH", "ffmpeg")
+        ffmpeg = _ffmpeg_bin()
         from services.providers.provider_utils import output_path_for, output_url_for
 
         await self._check_ffmpeg(ffmpeg)

@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
+from services.stages.ffmpeg_utils import _ffmpeg_bin
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class ComposeStage(StagePlugin):
                 output_path_for, output_url_for, output_file_from_url
             )
 
-            ffmpeg = os.getenv("FFMPEG_PATH", "ffmpeg")
+            ffmpeg = _ffmpeg_bin()
             await self._check_ffmpeg(ffmpeg)
 
             # ── 下载远程 URL 到本地（ffmpeg 需要本地文件） ────────

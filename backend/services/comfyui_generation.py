@@ -933,6 +933,7 @@ class ComfyUIGenerationMixin:
         raise RuntimeError(
             f"ComfyUI 提交失败（已重试3次）: {last_msg}"
         )
+    @staticmethod
     def _strip_workflow_meta(workflow: dict) -> dict:
         """深拷贝工作流并剥离可能引起自定义节点崩溃的 _meta / _comment 字段
         
@@ -1076,13 +1077,18 @@ class ComfyUIGenerationMixin:
                                 )
                             # 检测节点错误状态
                             outputs = history.get("outputs", {})
-                            # 收集所有 SaveImage 节点的输出（跳过 PreviewImage 的 temp 文件）
+                            # 收集所有 SaveImage / SaveAudio 节点的输出（跳过 PreviewImage 的 temp 文件）
                             all_filenames: List[str] = []
                             temp_filenames: List[str] = []
                             for node_id, node_output in outputs.items():
-                                images = node_output.get("images", [])
-                                for img in images:
-                                    fname = img.get("filename", "")
+                                media_items = []
+                                media_items.extend(node_output.get("images", []))
+                                media_items.extend(node_output.get("audio", []))
+                                for item in media_items:
+                                    fname = item.get("filename", "")
+                                    subfolder = item.get("subfolder", "")
+                                    if subfolder:
+                                        self._output_subfolders[fname] = subfolder
                                     if not fname.startswith("ComfyUI_temp"):
                                         all_filenames.append(fname)
                                     elif not temp_filenames:

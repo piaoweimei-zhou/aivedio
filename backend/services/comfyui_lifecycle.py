@@ -125,7 +125,8 @@ class ComfyUILifecycleMixin:
             if not actual_name:
                 continue
 
-            src = os.path.join(self.config.output_dir, actual_name)
+            subfolder = self._output_subfolders.get(actual_name, "")
+            src = os.path.join(self.config.output_dir, subfolder, actual_name) if subfolder else os.path.join(self.config.output_dir, actual_name)
             dst = os.path.join(GENERATED_DIR, actual_name)
             if os.path.isfile(src) and (not os.path.isfile(dst) or os.path.getsize(src) != os.path.getsize(dst)):
                 try:
@@ -141,6 +142,8 @@ class ComfyUILifecycleMixin:
                     from services.comfyui.config import COMFYUI_BASE_URL
                     comfyui_base = COMFYUI_BASE_URL
                     view_url = f"{comfyui_base}/view?filename={actual_name}&type=output"
+                    if subfolder:
+                        view_url += f"&subfolder={subfolder}"
                     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
                         async with session.get(view_url) as resp:
                             if resp.status == 200:

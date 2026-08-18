@@ -68,6 +68,8 @@ class ComfyUIService(
         self._estimated_restart_secs: int = 15
         # ⭐ 共享 aiohttp session（复用连接，减少内存碎片）
         self._http_session: Optional[aiohttp.ClientSession] = None
+        # 输出文件 → 子目录映射（SaveAudio 等输出到子目录的文件）
+        self._output_subfolders: Dict[str, str] = {}
 
         # ── 子模块实例（P2 拆分：委托职责到独立模块）──────────
         from services.comfyui.client import ComfyUIClient
