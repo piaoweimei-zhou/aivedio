@@ -12,10 +12,28 @@ import {
 } from '@ant-design/icons'
 import {
   batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent, providerApi, assetApi,
+  stageApi, scriptApi, styleApi,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 import { useDirectorStore } from '../stores/directorStore'
 import ProjectSelector from '../components/ProjectSelector'
+import JSZip from 'jszip'
+
+// 按给定最大宽度把文本折成多行（用于 canvas 封面标题换行）
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const out: string[] = []
+  let line = ''
+  for (const ch of text) {
+    if (ctx.measureText(line + ch).width > maxWidth && line) {
+      out.push(line)
+      line = ch
+    } else {
+      line += ch
+    }
+  }
+  if (line) out.push(line)
+  return out
+}
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = AntInput
@@ -474,6 +492,230 @@ export default function OneClickVideoPage() {
   const [storyboardAssets, setStoryboardAssets] = useState<any[]>([])
   const [jsonInputOpen, setJsonInputOpen] = useState(false)
   const [jsonText, setJsonText] = useState('')
+
+  // ===== AI 一键出片（主题 → 剧本 → 填入分故事情节/台词）=====
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiVideoType, setAiVideoType] = useState('')
+  const [videoTypes, setVideoTypes] = useState<Array<{ value: string; label: string }>>([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiScriptTitle, setAiScriptTitle] = useState('')
+  const [aiScriptAssetId, setAiScriptAssetId] = useState('')
+  // 剧本生成的封面文案（供发布素材包复用）
+  const [scriptCovers, setScriptCovers] = useState<Array<{ title: string; subtitle: string }>>([])
+  const [scriptHook, setScriptHook] = useState('')
+  // 发布素材包：可编辑的标题/标签/封面副文案（默认取自剧本）
+  const [packTitle, setPackTitle] = useState('')
+  const [packTags, setPackTags] = useState('')
+  const [packSubtitle, setPackSubtitle] = useState('')
+  const [coverDataUrl, setCoverDataUrl] = useState('')
+  const [packBundling, setPackBundling] = useState(false)
+  // 首次拿到封面文案时预填发布素材包的默认值
+  useEffect(() => {
+    if (!scriptCovers.length) return
+    const c0 = scriptCovers[0]
+    if (c0.title && !packTitle) setPackTitle(c0.title)
+    if (c0.subtitle && !packSubtitle) setPackSubtitle(c0.subtitle)
+    if (!packTags) setPackTags((scriptCovers.map(c => c.title).filter(Boolean).slice(0, 3)).join(','))
+  }, [scriptCovers])
+
+  // 加载视频类型选项
+  useEffect(() => {
+    scriptApi.listVideoTypes().then(res => {
+      setVideoTypes((res.video_types || []).map(vt => ({ value: vt.value, label: vt.label })))
+    }).catch(() => {/* 静默 */})
+  }, [])
+
+  // 主题直出：异步生成剧本，轮询完成并填回分段故事情节/台词
+  const handleAiGenerate = async () => {
+    if (!aiTopic.trim()) { message.warning('请输入主题词，才能 AI 生成剧本'); return }
+    if (!aiVideoType) { message.warning('请选择视频类型'); return }
+    setAiLoading(true)
+    message.loading({ content: 'AI 生成剧本中…', key: 'aiscr', duration: 0 })
+    const pollRef: { current: number | null } = { current: null }
+    try {
+      const res = await scriptApi.generate({
+        topic: aiTopic.trim(),
+        video_type: aiVideoType,
+        acts: 3,
+        duration_seconds: 30,
+        hook_style: 'comment_1',
+      })
+      const taskId = res.task_id
+      // 轮询直到完成
+      for (let i = 0; i < 120; i++) {
+        const t = await stageApi.getTask(taskId)
+        if (t.status === 'completed' && t.success && t.asset) {
+          const targetAssetId = t.asset.asset_id || (typeof t.asset === 'string' ? t.asset : '')
+          if (!targetAssetId) { message.success('剧本已生成（无资产）', 2); break }
+          const sd = await scriptApi.getScript(targetAssetId)
+          const script = sd.script
+          fillScriptIntoPage(script)
+          setAiScriptAssetId(targetAssetId)
+          message.success({ content: `剧本「${script.title || 'AI成片'}」已生成并填入`, key: 'aiscr' })
+          break
+        }
+        if (t.status === 'failed') { message.error({ content: `剧本生成失败: ${t.error || ''}`, key: 'aiscr' }); break }
+        await new Promise(r2 => setTimeout(r2, 2000))
+      }
+    } catch (e: any) {
+      message.error({ content: `剧本生成异常: ${e.message}`, key: 'aiscr' })
+    } finally {
+      if (pollRef.current) clearInterval(pollRef.current)
+      setAiLoading(false)
+    }
+  }
+
+  // 把剧本 JSON 映射进本页分段故事情节(segmentPrompts)+台词(segmentTexts)+封面文案
+  const fillScriptIntoPage = (script: any) => {
+    const acts: any[] = script.acts || []
+    const n = Math.max(1, acts.length)
+    // 让分段数与剧本幕数对齐：计算 segment_seconds 使 duration/seg = n
+    const cur = form.getFieldsValue() as any
+    const dur = Number(cur.duration) || 30
+    const sat = Math.max(1, n)
+    form.setFieldsValue({ segment_seconds: Math.round(dur / sat) })
+    // 故事情节 ← narration / scene；台词 ← tts_texts
+    const newSegPrompts = acts.map(a => (a as any).narration || (a as any).scene || '')
+    const newSegTexts = acts.map(a => Array.isArray((a as any).tts_texts) ? (a as any).tts_texts.join(' ') : '')
+    setSegmentPrompts(newSegPrompts.length ? newSegPrompts : DEFAULT_SEGMENT_PROMPTS)
+    setSegmentTexts(newSegTexts.length ? newSegTexts : ['', '', '', ''])
+    // 封面文案
+    setScriptCovers(Array.isArray(script.covers) ? script.covers.map((c: any) => ({ title: c.title || '', subtitle: c.subtitle || '' })) : [])
+    setScriptHook(script.hook || '')
+    setAiScriptTitle(script.title || '')
+  }
+
+  // ===== 发布素材包（封面图 + 标题/标签/文案 + 成片，浏览器打包下载）=====
+  // 构建发布文案：标题 + 分段亮点 + 结尾钩子 + 标签
+  const buildPackCopy = () => {
+    const title = packTitle.trim() || '未命名成片'
+    const subtitles = scriptCovers.map(c => c.subtitle).filter(Boolean)
+    const tags = packTags.split(/[,，\s]+/).filter(Boolean).map(t => `#${t.replace(/^#/, '')}`)
+    const lines = [
+      `【成片标题】`,
+      title,
+      '',
+      `【内容亮点】`,
+      subtitles.length ? subtitles.map((s, i) => `${i + 1}. ${s}`).join('\n') : '无',
+      '',
+      `【结尾钩子】`,
+      scriptHook || '评论区扣1领工具',
+      '',
+      `【推荐标签】`,
+      tags.join(' ') || '#短视频',
+      '',
+    ]
+    return lines.join('\n')
+  }
+
+  // 用 canvas 生成竖版封面图（1080x1920，9:16），返回 dataURL
+  const renderCover = (): Promise<string> => {
+    return new Promise((resolve) => {
+      const w = 1080, h = 1920
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(''); return }
+      // 深色渐变底 + 顶部标签 + 居中主标题 + 副标题
+      const t = ctx.createLinearGradient(0, 0, 0, h)
+      t.addColorStop(0, '#1a1a2e'); t.addColorStop(0.55, '#16213e'); t.addColorStop(1, '#0f3460')
+      ctx.fillStyle = t; ctx.fillRect(0, 0, w, h)
+      // 装饰圆环
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.arc(w / 2, h * 0.40, 260, 0, Math.PI * 2); ctx.stroke()
+      // 顶部小标签
+      const title = packTitle.trim() || 'AI 成片'
+      const subtitle = packSubtitle.trim() || ''
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = 'bold 44px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center'
+      ctx.fillText('· 短 视 频 成 片 ·', w / 2, 150)
+      // 主标题（自动换行，最多两行）
+      ctx.font = 'bold 96px "Microsoft YaHei", sans-serif'
+      ctx.fillStyle = '#ffffff'
+      const lines = wrapText(ctx, title, w * 0.82)
+      lines.slice(0, 2).forEach((line, idx) => {
+        ctx.fillText(line, w / 2, 600 + idx * 130)
+      })
+      // 副标题
+      ctx.font = '56px "Microsoft YaHei", sans-serif'
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'
+      ctx.fillText(subtitle || '私信领取完整工具教程', w / 2, 900)
+      // 底部钩子
+      ctx.font = 'bold 48px "Microsoft YaHei", sans-serif'
+      ctx.fillStyle = '#ffd166'
+      ctx.fillText(scriptHook || '评论区扣1领工具', w / 2, h - 220)
+      resolve(canvas.toDataURL('image/png'))
+    })
+  }
+
+  // 生成封面并显示预览
+  const handlePreviewCover = async () => {
+    const du = await renderCover()
+    setCoverDataUrl(du)
+    if (!du) message.warning('封面生成失败（当前浏览器不支持 canvas）')
+  }
+
+  // 通用文本下载
+  const downloadText = (name: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = name
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  }
+
+  // 下载封面 PNG
+  const handleDownloadCover = async () => {
+    const du = coverDataUrl || await renderCover()
+    if (!du) { message.warning('请先点击「生成封面图」'); return }
+    const a = document.createElement('a')
+    a.href = du; a.download = `封面_${(packTitle || '成片').replace(/[\\/:*?"<>|]/g, '_')}.png`
+    a.click()
+  }
+
+  // 下载发布文案 txt
+  const handleDownloadCopy = () => {
+    downloadText(`发布文案_${(packTitle || '成片').replace(/[\\/:*?"<>|]/g, '_')}.txt`, buildPackCopy())
+  }
+
+  // 打包下载 zip（封面图 + 发布文案 + 成片视频，视频尽力内嵌）
+  const handleDownloadZip = async () => {
+    const zip = new JSZip()
+    setPackBundling(true)
+    try {
+      // 1. 封面图
+      const du = coverDataUrl || await renderCover()
+      if (du) {
+        const base64 = du.split(',')[1]
+        zip.file('01_封面.png', base64, { base64: true })
+      }
+      // 2. 发布文案
+      zip.file('02_发布文案.txt', buildPackCopy())
+      // 3. 成片视频（尽力内嵌，CORS 失败则跳过）
+      let videoEmbedded = false
+      if (finalVideo?.url) {
+        try {
+          const resp = await fetch(finalVideo.url)
+          if (resp.ok) {
+            const buf = await resp.arrayBuffer()
+            zip.file(`03_成片_${finalVideo.name || 'video'}.mp4`, buf)
+            videoEmbedded = true
+          }
+        } catch { /* CORS 或网络不可达：跳过视频内嵌 */ }
+      }
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `发布素材包_${(packTitle || '成片').replace(/[\\/:*?"<>|]/g, '_')}.zip`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+      message.success(videoEmbedded ? '发布素材包已打包下载' : '素材包已生成（成片较大或跨域，请单独下载成片）')
+    } catch (e: any) {
+      message.error(`打包失败: ${e.message || e}`)
+    } finally {
+      setPackBundling(false)
+    }
+  }
 
   // ===== 成片后期（全链路：字幕→钩子→平台导出）=====
   const [postEnabled, setPostEnabled] = useState(true)          // 是否启用后期阶段
@@ -1149,6 +1391,53 @@ export default function OneClickVideoPage() {
         }
       />
 
+      {/* AI 一键出片：主题直出剧本并自动填回分段故事情节/台词 */}
+      <Card
+        variant="outlined"
+        style={{ marginBottom: 16 }}
+        title={<Space><ThunderboltOutlined style={{ color: '#fa8c16' }} /> AI 一键出片（主题直出）</Space>}
+        extra={aiScriptTitle && <Tag color="green">已填入：{aiScriptTitle}</Tag>}
+      >
+        <Row gutter={12} align="middle">
+          <Col xs={24} sm={7}>
+            <Input
+              addonBefore="主题"
+              placeholder="例如：批量重命名工具-古今穿越剧"
+              value={aiTopic}
+              onChange={e => setAiTopic(e.target.value)}
+              onPressEnter={handleAiGenerate}
+            />
+          </Col>
+          <Col xs={24} sm={8}>
+            <Select
+              placeholder="选择视频类型"
+              style={{ width: '100%' }}
+              value={aiVideoType}
+              onChange={setAiVideoType}
+              options={videoTypes.map(vt => ({ value: vt.value, label: vt.label }))}
+              showSearch
+              optionFilterProp="label"
+            />
+          </Col>
+          <Col xs={24} sm={9}>
+            <Space>
+              <Button
+                type="primary"
+                icon={<FileTextOutlined />}
+                loading={aiLoading}
+                onClick={handleAiGenerate}
+              >生成剧本并填入</Button>
+              {aiScriptAssetId && (
+                <Text type="secondary" style={{ fontSize: 12 }}>剧本资产 {aiScriptAssetId.slice(0, 8)}</Text>
+              )}
+            </Space>
+          </Col>
+        </Row>
+        <Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 8, fontSize: 12 }}>
+          输入主题后点击生成：自动产出 3 幕剧本，并把每幕的故事情节、TTS 台词、封面文案自动填入下方表单，随后即可一键跑完整条成片管线。
+        </Paragraph>
+      </Card>
+
       {/* 预设模板快速选择 */}
       <Card
         size="small"
@@ -1762,6 +2051,75 @@ export default function OneClickVideoPage() {
                   前往成片导出
                 </Button>
               </Space>
+            </Col>
+          </Row>
+        </Card>
+      )}
+
+      {finalVideo && (
+        <Card title="发布素材包" style={{ marginBottom: 16 }}>
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="一键打包：封面图 + 发布文案 + 成片视频（zip），或逐项单独下载。标题/标签/封面副文案已按剧本预填，可修改后重新生成。"
+          />
+          <Row gutter={16}>
+            <Col xs={24} sm={14}>
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <div>
+                  <Text strong>成片标题：</Text>
+                  <Input
+                    value={packTitle}
+                    onChange={e => setPackTitle(e.target.value)}
+                    placeholder="发布标题"
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+                <div>
+                  <Text strong>封面副文案：</Text>
+                  <Input
+                    value={packSubtitle}
+                    onChange={e => setPackSubtitle(e.target.value)}
+                    placeholder="封面副标题（吸睛短句）"
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+                <div>
+                  <Text strong>推荐标签：</Text>
+                  <Input
+                    value={packTags}
+                    onChange={e => setPackTags(e.target.value)}
+                    placeholder="逗号分隔，如：短剧,AI工具,教程"
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+                <Space>
+                  <Button icon={<PlayCircleOutlined />} loading={packBundling} type="primary" onClick={handleDownloadZip}>
+                    打包下载 (zip)
+                  </Button>
+                  <Button icon={<FileTextOutlined />} onClick={handleDownloadCopy}>下载文案</Button>
+                  <Button icon={<DownloadOutlined />} onClick={handleDownloadCover}>下载封面</Button>
+                </Space>
+              </Space>
+            </Col>
+            <Col xs={24} sm={10}>
+              <div style={{ position: 'relative' }}>
+                {coverDataUrl ? (
+                  <img
+                    src={coverDataUrl}
+                    alt="封面预览"
+                    style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 8, background: '#000' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: 180, background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                    未生成封面（点击下方按钮）
+                  </div>
+                )}
+                <Button size="small" style={{ position: 'absolute', top: 8, right: 8 }} onClick={handlePreviewCover}>
+                  生成/刷新封面
+                </Button>
+              </div>
             </Col>
           </Row>
         </Card>

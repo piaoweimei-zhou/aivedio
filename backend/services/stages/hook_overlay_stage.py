@@ -91,11 +91,16 @@ class HookOverlayStage(StagePlugin):
 
             start = max(total_duration - duration, 0)
             y_expr = self._position_y(position, height, margin)
+            # 动画：弹跳入场（可选，默认开启）——overlay_xy 内已含 enable 时间窗
+            animate = bool(params.get("animate", True))
+            overlay_xy = self._build_overlay_xy(y_expr, start, animate)
+            static_xy = f"x=(W-w)/2:y={y_expr}"
+            final_xy = overlay_xy if animate else f"{static_xy}:enable=gte(t\\,{start:.2f})"
             output_file = output_path_for(f"hook_{uuid.uuid4().hex[:8]}.mp4", "output")
             await ffmpeg_utils.run_ffmpeg([
                 "-y", "-i", local_video, "-i", overlay_file,
                 "-filter_complex",
-                f"[0:v][1:v]overlay=x=(W-w)/2:y={y_expr}:enable='gte(t,{start:.2f})'",
+                f"[0:v][1:v]overlay={final_xy}",
                 "-c:a", "copy",
                 output_file,
             ])
@@ -141,6 +146,22 @@ class HookOverlayStage(StagePlugin):
         if position == "center":
             return "(H-h)/2"
         return f"H-h-{margin}"
+
+    def _build_overlay_xy(self, base_y: str, start: float, animate: bool) -> str:
+        """构造 overlay 的 x/y 表达式
+        
+        - 静态：x 居中 + y 固定到最终位
+        - 动画（弹跳入场）：x 居中 + y 从最终位下方弹入，阻尼振荡约 1s 稳定。
+          以 (t-start) 为时钟：首拍 sin 为正 → y 增大(下移 90px) → 指数衰减振荡回最终位。
+          不叠加 if() 兜底：overlay 未到 enable 时间窗前不会 eval 坐标表达式，无提前求值风险；
+          叠 if() 反会让 filter 解析器在含逗号表达式 + enable 时误判报错。
+        """
+        x = "(W-w)/2"
+        if not animate:
+            return f"x={x}:y={base_y}"
+        bounce = f"{base_y}+" \
+                 f"(90*exp(-1.6*(t-{start}))*sin((t-{start})*13))"
+        return f"x={x}:y={bounce}:enable=gte(t\\,{start:.2f})"
 
     async def _resolve_overlay_image(self, url: str, video_width: int) -> str:
         """解析自定义钩子图片为本地路径（远程则下载）"""

@@ -65,3 +65,30 @@ def test_generate_hook_image_no_sub_text(stage):
     assert img.size[0] == 648
     img.close()
     os.remove(path)
+
+
+def test_build_overlay_xy_static(stage):
+    # 动画关闭：x 居中 + y 固定到最终位，无时钟项
+    expr = stage._build_overlay_xy("H-h-86", 26.0, False)
+    assert expr == "x=(W-w)/2:y=H-h-86"
+    assert "sin(" not in expr
+    assert "exp(" not in expr
+
+
+def test_build_overlay_xy_animate(stage):
+    # 动画开启：含 (t-{start}) 阻尼振荡时钟，指数衰减 + 正弦摆动 + enable 时间窗
+    expr = stage._build_overlay_xy("H-h-86", 26.0, True)
+    assert expr.startswith("x=(W-w)/2:y=")
+    assert "H-h-86" in expr
+    assert "exp(-1.6*" in expr
+    assert "sin((t-26.0)*13)" in expr
+    # 含 enable 时间窗（enable 前 overlay 不 eval 坐标，故无需 if() 兜底）
+    assert "enable=gte(t\\,26.00)" in expr
+    # 不叠加 if()（叠加会导致 filter 解析器含逗号表达式 + enable 时误判）
+    assert "if(" not in expr
+
+
+def test_build_overlay_xy_t_start_zero(stage):
+    # start=0 时弹跳时钟从 0 开始，衰减振荡仍正确
+    expr = stage._build_overlay_xy("H-h-86", 0.0, True)
+    assert "sin((t-0.0)*13)" in expr
