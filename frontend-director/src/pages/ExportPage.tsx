@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Typography, Card, Select, Button, Space, Input, Row, Col, message, Table, Empty, Tag, InputNumber } from 'antd'
+import { Typography, Card, Select, Button, Space, Input, Row, Col, message, Table, Empty, Tag, InputNumber, Divider } from 'antd'
 import { ExportOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useDirectorStore } from '../stores/directorStore'
 
@@ -23,6 +23,9 @@ const RESOLUTIONS = [
   { label: '1920x1080', value: '1920x1080' },
   { label: '1280x720', value: '1280x720' },
   { label: '854x480', value: '854x480' },
+  { label: '1080x1920（竖屏 9:16）', value: '1080x1920' },
+  { label: '1080x1440（竖屏 3:4）', value: '1080x1440' },
+  { label: '720x1280（竖屏 9:16）', value: '720x1280' },
 ]
 
 const BITRATES = [
@@ -31,6 +34,18 @@ const BITRATES = [
   { label: '5 Mbps', value: '5M' },
   { label: '10 Mbps', value: '10M' },
   { label: '20 Mbps', value: '20M' },
+]
+
+// 各短视频平台发布尺寸预设（竖版，H.264 + AAC）
+const PLATFORM_PRESETS = [
+  { platform: '抖音', desc: '1080x1920 9:16 全屏竖版',
+    resolution: '1080x1920', bitrate: '10M', name: '成片_抖音', tags: ['抖音', '9:16'] },
+  { platform: '快手', desc: '1080x1920 9:16 全屏竖版',
+    resolution: '1080x1920', bitrate: '10M', name: '成片_快手', tags: ['快手', '9:16'] },
+  { platform: '视频号', desc: '1080x1920 9:16 全屏竖版',
+    resolution: '1080x1920', bitrate: '8M', name: '成片_视频号', tags: ['视频号', '9:16'] },
+  { platform: '小红书', desc: '1080x1440 3:4 信息流占比更大',
+    resolution: '1080x1440', bitrate: '6M', name: '成片_小红书', tags: ['小红书', '3:4'] },
 ]
 
 export default function ExportPage() {
@@ -43,6 +58,16 @@ export default function ExportPage() {
   const [outputName, setOutputName] = useState('成片')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
+  const [activePlatform, setActivePlatform] = useState('')
+
+  // 应用平台预设：一键填好分辨率/码率/名称
+  const handleApplyPreset = useCallback((p: typeof PLATFORM_PRESETS[number]) => {
+    setResolution(p.resolution)
+    setBitrate(p.bitrate)
+    setOutputName(p.name)
+    setActivePlatform(p.platform)
+    message.success(`已应用「${p.platform}」预设：${p.desc}`)
+  }, [])
 
   const handleExport = useCallback(async () => {
     if (selectedAssetIds.length === 0) {
@@ -98,6 +123,34 @@ export default function ExportPage() {
                 <Text type="secondary">已选择 {selectedAssetIds.length} 个视频资产</Text>
               </div>
             )}
+
+            {/* 平台快捷预设 */}
+            <div style={{ marginBottom: 20 }}>
+              <Text strong style={{ fontSize: 13 }}>平台发布预设</Text>
+              <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>一键设置竖版规格，适配各平台发布</Text>
+              <Row gutter={[8, 8]} style={{ marginTop: 8 }}>
+                {PLATFORM_PRESETS.map(p => (
+                  <Col key={p.platform} xs={12} sm={12} md={6}>
+                    <Button
+                      block
+                      style={{
+                        height: 'auto',
+                        minHeight: 56,
+                        padding: '8px 10px',
+                        textAlign: 'left',
+                        whiteSpace: 'normal',
+                        ...(activePlatform === p.platform ? { borderColor: '#1677ff', color: '#1677ff', background: '#f0f7ff' } : {}),
+                      }}
+                      onClick={() => handleApplyPreset(p)}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: 13, lineHeight: '20px' }}>{p.platform}</div>
+                      <div style={{ fontSize: 11, opacity: 0.7, lineHeight: '16px', wordBreak: 'break-all' }}>{p.desc}</div>
+                    </Button>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+            <Divider style={{ margin: '0 0 16px' }} />
 
             <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <div>

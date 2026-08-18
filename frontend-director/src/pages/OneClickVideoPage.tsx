@@ -8,10 +8,10 @@ import {
   PlayCircleOutlined, ReloadOutlined, ThunderboltOutlined,
   InfoCircleOutlined, FileTextOutlined, ImportOutlined,
   PlusOutlined, DeleteOutlined, UserOutlined, AppstoreOutlined,
-  StarOutlined, SoundOutlined,
+  StarOutlined, SoundOutlined, DownloadOutlined, ExportOutlined,
 } from '@ant-design/icons'
 import {
-  batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent, providerApi,
+  batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent, providerApi, assetApi,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 import { useDirectorStore } from '../stores/directorStore'
@@ -443,6 +443,8 @@ export default function OneClickVideoPage() {
   const [submitting, setSubmitting] = useState(false)
   const [batch, setBatch] = useState<BatchTask | null>(null)
   const [wsProgress, setWsProgress] = useState<WsEvent | null>(null)
+  // 成片结果：批量完成后取最终视频资产用于预览/下载
+  const [finalVideo, setFinalVideo] = useState<{ url: string; name: string; asset_id: string } | null>(null)
   const [segmentPrompts, setSegmentPrompts] = useState<string[]>(DEFAULT_SEGMENT_PROMPTS)
   // TTS 配音配置
   const [ttsEnabled, setTtsEnabled] = useState(false)
@@ -472,6 +474,23 @@ export default function OneClickVideoPage() {
   const [storyboardAssets, setStoryboardAssets] = useState<any[]>([])
   const [jsonInputOpen, setJsonInputOpen] = useState(false)
   const [jsonText, setJsonText] = useState('')
+
+  // ===== 成片后期（全链路：字幕→钩子→平台导出）=====
+  const [postEnabled, setPostEnabled] = useState(true)          // 是否启用后期阶段
+  const [subEnabled, setSubEnabled] = useState(true)            // 字幕烧录
+  const [subKeywords, setSubKeywords] = useState('')            // 字幕高亮关键词(逗号分隔)
+  const [hookEnabled, setHookEnabled] = useState(true)          // 结尾钩子引导框
+  const [hookText, setHookText] = useState('评论区扣1领工具')     // 钩子主文案
+  const [hookSubText, setHookSubText] = useState('免费链接私发你') // 钩子副文案
+  const [exportEnabled, setExportEnabled] = useState(true)      // 平台规格导出
+  const [exportPlatform, setExportPlatform] = useState('抖音')    // 导出平台规格
+  // 平台导出规格映射
+  const PLATFORM_EXPORT_SPECS: Record<string, { resolution: string; desc: string }> = {
+    抖音: { resolution: '1080x1920', desc: '9:16 全屏' },
+    快手: { resolution: '1080x1920', desc: '9:16 全屏' },
+    视频号: { resolution: '1080x1920', desc: '9:16 全屏' },
+    小红书: { resolution: '1080x1440', desc: '3:4 信息流' },
+  }
 
   // 动态素材列表：默认2角色（三视图）+1场景（全景图）
   const [materials, setMaterials] = useState<MaterialState[]>([
@@ -631,6 +650,23 @@ export default function OneClickVideoPage() {
     }
   }, [])
 
+  // 批量全部完成后，取最终输出视频资产用于预览/下载
+  useEffect(() => {
+    if (!batch || batch.status !== 'completed' || finalVideo) return
+    const doneSteps = (batch.steps || []).filter(s => s.status === 'completed' && s.output_asset_id)
+    const lastStep = doneSteps[doneSteps.length - 1]
+    const targetId = lastStep?.output_asset_id
+    if (!targetId) return
+    ;(async () => {
+      try {
+        const resp = await assetApi.get(targetId)
+        const a = resp.asset || resp
+        const url = a.metadata?.video_url || (a.urls || [])[0]
+        if (url) setFinalVideo({ url, name: a.name || '成片', asset_id: a.asset_id || targetId })
+      } catch (e) { /* 忽略预览加载失败 */ }
+    })()
+  }, [batch, finalVideo])
+
   // 构造 TTS 参数（如果启用）
   const buildTtsParams = (segCount: number) => {
     if (!ttsEnabled) return {}
@@ -652,6 +688,69 @@ export default function OneClickVideoPage() {
       params.tts_ref_audio = ttsRefAudio
     }
     return params
+  }
+
+  // 追加成片后期阶段（可选：字幕 → 钩子 → 平台导出）
+  const buildPostStages = (steps: BatchStep[], videoStepId: string, subtitleTexts: string[]): BatchStep[] => {
+    if (!postEnabled) return steps
+    let lastId = videoStepId
+    // 字幕烧录：将 TTS 台词作为字幕时间轴
+    if (subEnabled && subtitleTexts.length > 0) {
+      steps.push({
+        step_id: 's_subtitle',
+        stage_id: 'subtitle',
+        name: '字幕烧录',
+        provider_id: 'local',
+        params: {
+          subtitle_texts: subtitleTexts.map((t, i) => ({ text: t, start: i * 5, end: (i + 1) * 5 })),
+          keywords: subKeywords.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+          margin_v: '0.13',
+        },
+        input_asset_ids: [],
+        input_from_steps: [lastId],
+      })
+      lastId = 's_subtitle'
+    }
+    // 结尾钩子引导框
+    if (hookEnabled) {
+      steps.push({
+        step_id: 's_hook',
+        stage_id: 'hook_overlay',
+        name: '结尾钩子引导框',
+        provider_id: 'local',
+        params: {
+          hook_text: hookText,
+          sub_text: hookSubText,
+          duration: 4,
+          position: 'bottom',
+          margin: null as any, // 使用默认安全边距 10%
+        },
+        input_asset_ids: [],
+        input_from_steps: [lastId],
+      })
+      lastId = 's_hook'
+    }
+    // 平台规格导出
+    if (exportEnabled) {
+      const spec = PLATFORM_EXPORT_SPECS[exportPlatform] || PLATFORM_EXPORT_SPECS.抖音
+      steps.push({
+        step_id: 's_export',
+        stage_id: 'export',
+        name: `导出成片 ${exportPlatform}规格 (${spec.resolution})`,
+        provider_id: 'local',
+        params: {
+          resolution: spec.resolution,
+          format: 'mp4',
+          codec: 'libx264',
+          bitrate: '8M',
+          name: `成片_${exportPlatform}_${spec.resolution}`,
+        },
+        input_asset_ids: [],
+        input_from_steps: [lastId],
+      })
+      lastId = 's_export'
+    }
+    return steps
   }
 
   // 构建批量任务步骤
@@ -685,7 +784,7 @@ export default function OneClickVideoPage() {
         input_asset_ids: [storyboardAssetId],
         input_from_steps: [],
       })
-      return steps
+      return buildPostStages(steps, 's_video', segmentTexts.filter(t => t && t.trim()))
     }
 
     // ===== 模式 B：正常多素材生成 =====
@@ -790,7 +889,7 @@ export default function OneClickVideoPage() {
       input_from_steps: videoDeps,
     })
 
-    return steps
+    return buildPostStages(steps, 's_video', segmentTexts.filter(t => t && t.trim()))
   }
 
   const handleSubmit = async () => {
@@ -870,6 +969,7 @@ export default function OneClickVideoPage() {
     ])
     setBatch(null)
     setWsProgress(null)
+    setFinalVideo(null)
     message.info('已重置为默认参数')
   }
 
@@ -1525,6 +1625,70 @@ export default function OneClickVideoPage() {
         )}
       </Card>
 
+      {/* 成片后期：字幕 → 钩子 → 平台导出 */}
+      <Card title="成片后期（全链路）" style={{ marginBottom: 16 }}
+        extra={
+          <Switch checked={postEnabled} onChange={setPostEnabled} checkedChildren="启用" unCheckedChildren="关闭" />
+        }
+      >
+        {!postEnabled ? (
+          <Text type="secondary">后期阶段已关闭：仅生成原始长视频，不做字幕/钩子/导出。</Text>
+        ) : (
+          <Row gutter={24}>
+            {/* 字幕 */}
+            <Col xs={24} lg={8}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Switch checked={subEnabled} onChange={setSubEnabled} checkedChildren="字幕" unCheckedChildren="字幕" />
+                <Text type="secondary" style={{ fontSize: 12 }}>烧录 TTS 台词为竖版大字幕</Text>
+                <div>
+                  <Text style={{ fontSize: 12 }}>高亮关键词(逗号分隔):</Text>
+                  <Input
+                    value={subKeywords}
+                    onChange={e => setSubKeywords(e.target.value)}
+                    placeholder="例如：AI, 3秒, 免费"
+                    style={{ marginTop: 4 }}
+                  />
+                </div>
+              </Space>
+            </Col>
+            {/* 钩子 */}
+            <Col xs={24} lg={8}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Switch checked={hookEnabled} onChange={setHookEnabled} checkedChildren="钩子" unCheckedChildren="钩子" />
+                <Text type="secondary" style={{ fontSize: 12 }}>结尾 4 秒叠加转化引导框</Text>
+                <div>
+                  <Text style={{ fontSize: 12 }}>钩子主文案:</Text>
+                  <Input value={hookText} onChange={e => setHookText(e.target.value)} style={{ marginTop: 4 }} />
+                </div>
+                <div>
+                  <Text style={{ fontSize: 12 }}>钩子副文案:</Text>
+                  <Input value={hookSubText} onChange={e => setHookSubText(e.target.value)} style={{ marginTop: 4 }} />
+                </div>
+              </Space>
+            </Col>
+            {/* 平台导出 */}
+            <Col xs={24} lg={8}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Switch checked={exportEnabled} onChange={setExportEnabled} checkedChildren="平台导出" unCheckedChildren="平台导出" />
+                <Text type="secondary" style={{ fontSize: 12 }}>导出为平台发布专用竖版规格</Text>
+                <div>
+                  <Text style={{ fontSize: 12 }}>发布平台:</Text>
+                  <Select
+                    value={exportPlatform}
+                    onChange={setExportPlatform}
+                    style={{ width: '100%', marginTop: 4 }}
+                    options={Object.keys(PLATFORM_EXPORT_SPECS).map(p => ({
+                      value: p,
+                      label: `${p} (${PLATFORM_EXPORT_SPECS[p].resolution} ${PLATFORM_EXPORT_SPECS[p].desc})`,
+                    }))}
+                  />
+                </div>
+              </Space>
+            </Col>
+          </Row>
+        )}
+      </Card>
+
       <Space style={{ marginBottom: 16 }}>
         <Button
           type="primary"
@@ -1568,6 +1732,38 @@ export default function OneClickVideoPage() {
           {wsProgress?.message && (
             <Paragraph type="secondary" style={{ marginTop: 8, fontSize: 12 }}>{wsProgress.message}</Paragraph>
           )}
+        </Card>
+      )}
+
+      {finalVideo && (
+        <Card title="成片结果" style={{ marginBottom: 16 }}>
+          <Row gutter={16} align="middle">
+            <Col xs={24} sm={10}>
+              <video
+                src={finalVideo.url}
+                controls
+                style={{ width: '100%', maxHeight: 320, background: '#000', borderRadius: 8 }}
+              />
+            </Col>
+            <Col xs={24} sm={14}>
+              <Paragraph style={{ marginBottom: 8 }}>
+                <Text strong>名称：</Text><Text>{finalVideo.name}</Text>
+              </Paragraph>
+              <Paragraph style={{ marginBottom: 16 }}>
+                <Text strong>资产ID：</Text>
+                <Text copyable style={{ fontSize: 12 }}>{finalVideo.asset_id}</Text>
+              </Paragraph>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 12, fontSize: 12 }}>
+                当前为 {exportPlatform} 规格成片（{PLATFORM_EXPORT_SPECS[exportPlatform]?.desc}）。如需多平台尺寸，请到「成片导出」页一键生成。
+              </Text>
+              <Space>
+                <Button type="primary" icon={<DownloadOutlined />} href={finalVideo.url} target="_blank">下载成片</Button>
+                <Button icon={<ExportOutlined />} onClick={() => message.info('已完成平台规格导出（本页）或前往「成片导出」页')}>
+                  前往成片导出
+                </Button>
+              </Space>
+            </Col>
+          </Row>
         </Card>
       )}
 
