@@ -10,11 +10,46 @@ const EDIT_MODES = [
   { label: '拼接 (Concat)', value: 'concat' },
   { label: '裁剪 (Trim)', value: 'trim' },
   { label: '时间线编排 (Timeline)', value: 'timeline' },
+  { label: '卡点剪辑 (Beat)', value: 'beat' },
+]
+
+const BEAT_TEMPLATES = [
+  {
+    id: 'energetic',
+    name: '燃点快切',
+    desc: '120 BPM 快速卡点 · 滑动转场 · 呼啸音效',
+    bpm: 120,
+    beats_per_cut: 2,
+    transition: 'slideleft',
+    sfx: 'whoosh',
+    target_duration: 30,
+  },
+  {
+    id: 'rhythm',
+    name: '节奏卡点',
+    desc: '80 BPM 中速卡点 · 淡入淡出转场 · 重击音效',
+    bpm: 80,
+    beats_per_cut: 2,
+    transition: 'fade',
+    sfx: 'hit',
+    target_duration: 30,
+  },
+  {
+    id: 'emotional',
+    name: '情绪慢卡',
+    desc: '40 BPM 慢速卡点 · 黑场转场 · 柔和音效',
+    bpm: 40,
+    beats_per_cut: 1,
+    transition: 'fadeblack',
+    sfx: 'soft',
+    target_duration: 30,
+  },
 ]
 
 export default function EditPage() {
   const { assets, loadAssets, selectedAssetIds, executeStage } = useDirectorStore()
   const [mode, setMode] = useState('concat')
+  const [beatTemplate, setBeatTemplate] = useState(BEAT_TEMPLATES[0])
   const [start, setStart] = useState(0)
   const [end, setEnd] = useState(0)
   const [outputName, setOutputName] = useState('剪辑视频')
@@ -56,11 +91,24 @@ export default function EditPage() {
     }
     setLoading(true)
     try {
+      const params: any = { mode, name: outputName }
+      if (mode === 'trim') {
+        params.start = start
+        params.end = end
+      } else if (mode === 'beat') {
+        Object.assign(params, {
+          bpm: beatTemplate.bpm,
+          beats_per_cut: beatTemplate.beats_per_cut,
+          transition: beatTemplate.transition,
+          sfx: beatTemplate.sfx,
+          target_duration: beatTemplate.target_duration,
+        })
+      }
       const result = await executeStage({
         stage_id: 'edit',
         input_asset_ids: selectedAssetIds,
         provider_id: 'local',
-        params: { mode, start, end, name: outputName },
+        params,
       })
       if (result?.success) {
         message.success('剪辑完成')
@@ -74,7 +122,7 @@ export default function EditPage() {
     } finally {
       setLoading(false)
     }
-  }, [selectedAssetIds, mode, start, end, outputName, executeStage, loadAssets])
+  }, [selectedAssetIds, mode, start, end, outputName, beatTemplate, executeStage, loadAssets])
 
   const columns = [
     { title: '资产ID', dataIndex: ['asset', 'asset_id'], key: 'id', width: 120, render: (v: string) => <Text copyable style={{ fontSize: 11 }}>{v?.slice(0, 12)}</Text> },
@@ -127,6 +175,30 @@ export default function EditPage() {
                 </Row>
               )}
 
+              {mode === 'beat' && (
+                <div>
+                  <Text>卡点模板:</Text>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                    {BEAT_TEMPLATES.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => setBeatTemplate(t)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          border: `1px solid ${beatTemplate.id === t.id ? '#1677ff' : '#d9d9d9'}`,
+                          background: beatTemplate.id === t.id ? '#e6f4ff' : '#fff',
+                        }}
+                      >
+                        <Text strong>{t.name}</Text>
+                        <div><Text type="secondary" style={{ fontSize: 12 }}>{t.desc}</Text></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Text>输出名称:</Text>
                 <Input value={outputName} onChange={e => setOutputName(e.target.value)} style={{ marginTop: 4 }} />
@@ -134,13 +206,13 @@ export default function EditPage() {
 
               <Button
                 type="primary"
-                icon={mode === 'concat' ? <MergeCellsOutlined /> : <ScissorOutlined />}
+                icon={mode === 'concat' ? <MergeCellsOutlined /> : mode === 'beat' ? <PlayCircleOutlined /> : <ScissorOutlined />}
                 onClick={handleEdit}
                 loading={loading}
                 disabled={selectedAssetIds.length === 0}
                 block
               >
-                {mode === 'concat' ? '拼接视频' : mode === 'trim' ? '裁剪视频' : '执行时间线编排'}
+                {mode === 'concat' ? '拼接视频' : mode === 'trim' ? '裁剪视频' : mode === 'beat' ? `卡点剪辑 · ${beatTemplate.name}` : '执行时间线编排'}
               </Button>
             </Space>
           </Card>
