@@ -134,6 +134,35 @@ async def get_config_meta():
     return {"providers": PROVIDER_CONFIG_META}
 
 
+# 前端「环境变量配置」卡片可管理的键
+CONFIG_KEYS = [
+    "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_TEXT_MODEL",
+    "GEMINI_API_KEY", "GEMINI_BASE_URL",
+    "ARK_API_KEY", "VOLCENGINE_BASE_URL",
+    "RUNNINGHUB_API_KEY", "RUNNINGHUB_WALLET_API_KEY",
+    "MODELSCOPE_API_KEY", "MODELSCOPE_BASE_URL",
+    "JIMENG_CLI_PATH", "JIMENG_POLL_SECONDS",
+    "COMFYUI_BASE_URL", "COMFYUI_API_KEY",
+    "FFMPEG_PATH",
+]
+
+
+@router.get("/config")
+async def get_provider_config():
+    """读取当前 Provider 配置（服务端 .env / 环境变量）
+
+    密钥不再存前端 localStorage，统一由后端管理。
+    """
+    import os
+
+    values = {}
+    for k in CONFIG_KEYS:
+        v = os.environ.get(k, "").strip()
+        if v:
+            values[k] = v
+    return {"config": values}
+
+
 @router.post("/config/save")
 async def save_provider_config(configs: Dict[str, str]):
     """保存 Provider 配置到 .env 文件

@@ -17,7 +17,7 @@ const ENV_KEYS: EnvKey[] = [
   { key: 'OPENAI_BASE_URL', label: 'OpenAI Base URL', description: 'DeepSeek 填 https://api.deepseek.com', value: '' },
   { key: 'OPENAI_TEXT_MODEL', label: 'OpenAI 文本模型', description: 'AI 剧本用，DeepSeek 默认 deepseek-chat', value: '' },
   { key: 'GEMINI_API_KEY', label: 'Gemini API Key', description: 'Gemini 图片生成', value: '' },
-  { key: 'VOLCENGINE_API_KEY', label: '火山引擎 API Key', description: '火山引擎 图片+视频', value: '' },
+  { key: 'ARK_API_KEY', label: '火山引擎 API Key', description: '火山引擎 图片+视频（ARK_API_KEY）', value: '' },
   { key: 'RUNNINGHUB_API_KEY', label: 'RunningHub API Key', description: 'RunningHub 图片+视频', value: '' },
   { key: 'MODELSCOPE_API_KEY', label: 'ModelScope API Key', description: 'ModelScope 三视图', value: '' },
   { key: 'JIMENG_CLI_PATH', label: '即梦 CLI 路径', description: '即梦视频生成', value: '' },
@@ -31,14 +31,13 @@ export default function SettingsPage() {
   const [testLoading, setTestLoading] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Record<string, boolean>>({})
 
-  // 从 localStorage 加载已保存的 API Key
+  // 从后端加载已保存的 API Key（密钥由服务端 .env 管理，不落浏览器）
   useEffect(() => {
-    const saved = localStorage.getItem('director_env_keys')
-    if (saved) {
-      try {
-        setEnvValues(JSON.parse(saved))
-      } catch { /* ignore */ }
-    }
+    providerApi.getConfig()
+      .then(res => {
+        if (res?.config) setEnvValues(res.config)
+      })
+      .catch(() => { /* 后端不可用时保持空配置 */ })
   }, [])
 
   const loadProviders = async () => {
@@ -63,13 +62,16 @@ export default function SettingsPage() {
 
   useEffect(() => { loadProviders() }, [])
 
-  // 保存 API Key 到 localStorage
-  const handleSave = useCallback((envKey: string) => {
-    const current = { ...envValues }
-    localStorage.setItem('director_env_keys', JSON.stringify(current))
-    message.success(`${envKey} 已保存到本地配置`)
-    // 刷新供应商状态
-    loadProviders()
+  // 保存 API Key 到后端 .env（服务端统一管理）
+  const handleSave = useCallback(async (envKey: string) => {
+    try {
+      await providerApi.saveConfig({ [envKey]: envValues[envKey] || '' })
+      message.success(`${envKey} 已保存到服务端配置`)
+      // 刷新供应商状态
+      loadProviders()
+    } catch {
+      message.error(`${envKey} 保存失败`)
+    }
   }, [envValues])
 
   // 测试连通性
@@ -221,7 +223,7 @@ export default function SettingsPage() {
       <Card title="环境变量配置" style={{ marginBottom: 24 }}>
         <Alert
           message="API Key 配置说明"
-          description="配置后自动保存到浏览器本地。仅当前浏览器有效。如需全局生效，请在后端 .env 文件中配置。"
+          description="配置后保存到后端 .env 文件，由服务端统一管理，不存储在浏览器本地。保存后立即生效，可刷新供应商列表查看状态。"
           type="info"
           showIcon
           style={{ marginBottom: 16 }}

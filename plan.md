@@ -1,3 +1,5 @@
+> ⚠️ **规划文档**：本文为历史规划，其中大量引用的 `pipeline_executor.py` 已被 `workflow_builder / dag_executor / gen_task_manager` 重构替代，磁盘上已不存在。仅供参考，勿作为现状依据。
+
 ## 问题
 
 当前 `asset_type` 是一个扁平字段，同时承担了两个不同维度的分类职责：

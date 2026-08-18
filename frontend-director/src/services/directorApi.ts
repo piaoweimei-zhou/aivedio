@@ -68,6 +68,10 @@ export const providerApi = {
   getConfigMeta: () =>
     api.get('/providers/config/meta').then(r => r.data),
 
+  // 读取当前服务端配置（密钥由后端管理）
+  getConfig: () =>
+    api.get('/providers/config').then(r => r.data),
+
   saveConfig: (configs: Record<string, string>) =>
     api.post('/providers/config/save', configs).then(r => r.data),
 

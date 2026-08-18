@@ -11,7 +11,7 @@ import {
   StarOutlined, SoundOutlined,
 } from '@ant-design/icons'
 import {
-  batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent,
+  batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent, providerApi,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 import { useDirectorStore } from '../stores/directorStore'
@@ -307,8 +307,6 @@ const PROMPT_LIBRARY: Record<string, PromptLibCategory[]> = {
 
 // ============ AI 生成提示词配置 ============
 // 用户可配置任意 OpenAI 兼容的 LLM 接口来生成提示词
-const LLM_CONFIG_KEY = 'oneClickVideo.llmConfig'
-
 interface LlmConfig {
   base_url: string    // 例如 https://api.openai.com/v1 或 https://dashscope.aliyuncs.com/compatible-mode/v1
   api_key: string
@@ -321,16 +319,28 @@ const DEFAULT_LLM_CONFIG: LlmConfig = {
   model: '',
 }
 
-function loadLlmConfig(): LlmConfig {
+// 从后端读取 LLM 配置（密钥由服务端 .env 管理，不落浏览器）
+async function loadLlmConfig(): Promise<LlmConfig> {
   try {
-    const raw = localStorage.getItem(LLM_CONFIG_KEY)
-    if (raw) return { ...DEFAULT_LLM_CONFIG, ...JSON.parse(raw) }
-  } catch {}
-  return { ...DEFAULT_LLM_CONFIG }
+    const res = await providerApi.getConfig()
+    const c = res?.config || {}
+    return {
+      base_url: c.OPENAI_BASE_URL || '',
+      api_key: c.OPENAI_API_KEY || '',
+      model: c.OPENAI_TEXT_MODEL || '',
+    }
+  } catch {
+    return { ...DEFAULT_LLM_CONFIG }
+  }
 }
 
-function saveLlmConfig(cfg: LlmConfig) {
-  localStorage.setItem(LLM_CONFIG_KEY, JSON.stringify(cfg))
+// 保存 LLM 配置到后端 .env
+async function saveLlmConfig(cfg: LlmConfig) {
+  await providerApi.saveConfig({
+    OPENAI_BASE_URL: cfg.base_url,
+    OPENAI_API_KEY: cfg.api_key,
+    OPENAI_TEXT_MODEL: cfg.model,
+  })
 }
 
 // 调用 LLM 生成提示词（OpenAI 兼容协议）
@@ -450,8 +460,8 @@ export default function OneClickVideoPage() {
   const [tplPickerIdx, setTplPickerIdx] = useState<number>(-1)  // 当前选择模板的素材索引
   // AI 生成提示词
   const [llmCfgOpen, setLlmCfgOpen] = useState(false)
-  const [llmCfg, setLlmCfg] = useState<LlmConfig>(loadLlmConfig())
-  const [llmCfgDraft, setLlmCfgDraft] = useState<LlmConfig>(loadLlmConfig())
+  const [llmCfg, setLlmCfg] = useState<LlmConfig>({ ...DEFAULT_LLM_CONFIG })
+  const [llmCfgDraft, setLlmCfgDraft] = useState<LlmConfig>({ ...DEFAULT_LLM_CONFIG })
   const [aiGenLoadingIdx, setAiGenLoadingIdx] = useState<number>(-1)
   const [aiDescOpen, setAiDescOpen] = useState(false)
   const [aiDescIdx, setAiDescIdx] = useState<number>(-1)
@@ -476,6 +486,14 @@ export default function OneClickVideoPage() {
   useEffect(() => {
     if (currentProjectId) loadAssets({ project_id: currentProjectId })
   }, [currentProjectId, loadAssets])
+
+  // 从后端加载 LLM 配置（密钥由服务端管理）
+  useEffect(() => {
+    loadLlmConfig().then(cfg => {
+      setLlmCfg(cfg)
+      setLlmCfgDraft(cfg)
+    })
+  }, [])
 
   // 加载分镜图资产（asset_type=storyboard 或 multi_view）
   useEffect(() => {
@@ -914,11 +932,15 @@ export default function OneClickVideoPage() {
     }
   }
   // 保存 LLM 配置
-  const saveLlmCfg = () => {
-    saveLlmConfig(llmCfgDraft)
-    setLlmCfg({ ...llmCfgDraft })
-    setLlmCfgOpen(false)
-    message.success('LLM 配置已保存')
+  const saveLlmCfg = async () => {
+    try {
+      await saveLlmConfig(llmCfgDraft)
+      setLlmCfg({ ...llmCfgDraft })
+      setLlmCfgOpen(false)
+      message.success('LLM 配置已保存到服务端')
+    } catch {
+      message.error('LLM 配置保存失败')
+    }
   }
 
   // 导入提示词 JSON
@@ -1657,7 +1679,7 @@ export default function OneClickVideoPage() {
       >
         <Paragraph type="secondary" style={{ fontSize: 12 }}>
           支持任意 OpenAI 兼容协议（OpenAI / 通义千问 / DeepSeek / Moonshot / 本地 vLLM 等）。
-          配置仅保存在浏览器 localStorage，不会上传服务器。
+          配置保存到后端 .env 文件，由服务端统一管理，不存储在浏览器本地。
         </Paragraph>
         <Form layout="vertical">
           <Form.Item label="Base URL" tooltip="如 https://api.openai.com/v1 或 https://dashscope.aliyuncs.com/compatible-mode/v1">
