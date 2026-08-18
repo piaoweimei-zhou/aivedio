@@ -20,7 +20,6 @@ from pydantic import BaseModel
 
 from services.stage_service import get_stage_service
 from services.gen_task_manager import get_gen_task_manager
-from services.asset_service import AssetProduceResult, AssetRef
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/director/stages", tags=["导演工作台-阶段"])
@@ -92,19 +91,19 @@ async def execute_stage(request: ExecuteStageRequest):
                     f"[StageAPI] 阶段执行失败 | stage={request.stage_id} | "
                     f"error={result.error} | elapsed_ms={result.elapsed_ms}"
                 )
+                # 阶段执行失败 → 任务标记为 failed（而非 completed），
+                # 让前端能正确展示错误信息
+                raise RuntimeError(result.error or "阶段执行失败")
             logger.info(
                 f"[StageAPI] 闭包完成 | stage={request.stage_id} | "
                 f"success={result.success} | error={result.error[:200] if result.error else ''} | "
                 f"elapsed_ms={result.elapsed_ms}"
             )
+            return result
         except Exception as e:
             logger.error(f"[StageAPI] 闭包异常 | stage={request.stage_id} | error={e}")
-            result = AssetProduceResult(
-                asset=AssetRef(asset_id="", asset_type="", name=""),
-                success=False,
-                error=str(e),
-            )
-        return result
+            # 重新抛出，让任务管理器将任务标记为 failed（而非 completed）
+            raise
 
     task = await task_mgr.create_task(
         stage_id=request.stage_id,

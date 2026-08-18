@@ -53,7 +53,11 @@ def test_capabilities_include_text(provider):
     assert "text" in provider.capabilities
 
 
-def test_default_models(provider):
+def test_default_models(provider, monkeypatch):
+    # 清除环境变量，确保测试默认模型名（本地 .env 可能配置了 endpoint ID）
+    monkeypatch.delenv("VOLCENGINE_IMAGE_MODEL", raising=False)
+    monkeypatch.delenv("VOLCENGINE_VIDEO_MODEL", raising=False)
+    monkeypatch.delenv("VOLCENGINE_TEXT_MODEL", raising=False)
     assert provider._get_image_model() == "doubao-seedream-4-5"
     assert provider._get_video_model() == "doubao-seedance-1-0-pro-fast"
     assert provider._get_text_model() == "doubao-seed-2-0-pro"
