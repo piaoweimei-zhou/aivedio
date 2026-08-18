@@ -59,6 +59,22 @@ def test_default_models(provider):
     assert provider._get_text_model() == "doubao-seed-2-0-pro"
 
 
+@pytest.mark.parametrize("input_size,expected", [
+    ("1024x1024", "2048x2048"),   # 1:1
+    ("768x1024", "1728x2304"),    # 3:4
+    ("1280x720", "2848x1600"),    # 16:9
+    ("720x1280", "1600x2848"),    # 9:16
+    ("1024x768", "2304x1728"),    # 4:3
+    ("", "2048x2048"),            # 非法回退
+])
+def test_normalize_size_meets_seedream_minimum(provider, input_size, expected):
+    """Seedream 4.x 要求总像素 ≥ 3686400，所有映射尺寸必须满足"""
+    result = provider._normalize_size(input_size)
+    assert result == expected
+    w, h = map(int, result.split("x"))
+    assert w * h >= 3686400
+
+
 def test_generate_text_uses_chat_completions(provider):
     client = FakeClient([
         {"choices": [{"message": {"content": "剧本内容"}}], "id": "chat-1"},

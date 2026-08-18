@@ -60,19 +60,23 @@ class VolcEngineProvider(ProviderPlugin):
         return os.getenv("VOLCENGINE_TEXT_MODEL", "doubao-seed-2-0-pro").strip()
 
     def _normalize_size(self, size: str, model: str = "") -> str:
-        """规范化尺寸为火山引擎支持的格式"""
+        """规范化尺寸为火山引擎支持的格式（Seedream 4.x 需总像素 ≥ 3686400）"""
         w, h = parse_size(size)
         if not w or not h:
-            return "1024x1024"
-        # 火山引擎支持特定尺寸
+            return "2048x2048"
+        ratio = w / h
+        # Seedream 4.x 2K 推荐尺寸（官方文档，均满足最小像素要求）
         supported = [
-            (512, 512), (768, 768), (1024, 1024),
-            (768, 1024), (1024, 768),
-            (768, 1365), (1365, 768),
-            (720, 1280), (1280, 720),
+            (2048, 2048, 1.0),        # 1:1
+            (2304, 1728, 4 / 3),      # 4:3
+            (1728, 2304, 3 / 4),      # 3:4
+            (2848, 1600, 16 / 9),     # 16:9
+            (1600, 2848, 9 / 16),     # 9:16
+            (2496, 1664, 3 / 2),      # 3:2
+            (1664, 2496, 2 / 3),      # 2:3
+            (3136, 1344, 21 / 9),     # 21:9
         ]
-        # 找最接近的
-        best = min(supported, key=lambda s: abs(s[0] - w) + abs(s[1] - h))
+        best = min(supported, key=lambda s: abs(s[2] - ratio))
         return f"{best[0]}x{best[1]}"
 
     async def generate_image(
