@@ -35,6 +35,59 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return out
 }
 
+// ===== 发布模板库：封面视觉风格 + 文案结构 + 标签建议 =====
+interface PublishTemplate {
+  id: string
+  name: string
+  desc: string
+  bg: [string, string, string]       // 竖排渐变三色（深→浅）
+  accent: string                      // 钩子/强调色
+  label: string                       // 封面顶部小标签
+  decoration: 'ring' | 'bars' | 'circle' | 'diagonal'
+  lead: string                        // 标题前的吸睛引导（可空）
+  highlightPrefix: string             // 内容亮点条目前缀
+  tagSug: string[]                    // 建议标签
+}
+
+const PUBLISH_TEMPLATES: PublishTemplate[] = [
+  {
+    id: 'minimal', name: '极简深色', desc: '商务/工具类百搭',
+    bg: ['#1a1a2e', '#16213e', '#0f3460'], accent: '#ffd166',
+    label: '· 短 视 频 成 片 ·', decoration: 'ring', lead: '',
+    highlightPrefix: '①', tagSug: ['短视频', 'AI成片', '干货'],
+  },
+  {
+    id: 'energy', name: '活力橙', desc: '激励/知识类强引导',
+    bg: ['#ff512f', '#f09819', '#f5af19'], accent: '#ffffff',
+    label: '· 爆 款 短 视 频 ·', decoration: 'bars', lead: '这个办法很多人还不知道，',
+    highlightPrefix: '◆', tagSug: ['干货', '涨知识', '实用技巧'],
+  },
+  {
+    id: 'guofeng', name: '国风梨红', desc: '文化/国潮/家居',
+    bg: ['#3a1c2d', '#6b2d48', '#9c4a5c'], accent: '#f7df9e',
+    label: '· 东 方 美 学 ·', decoration: 'circle', lead: '中式生活美学，',
+    highlightPrefix: '·', tagSug: ['国风', '传统文化', '美学'],
+  },
+  {
+    id: 'morandi', name: '莫兰迪灰', desc: '质感/生活方式',
+    bg: ['#6d6a75', '#8d8894', '#b0a8b8'], accent: '#f2ead8',
+    label: '· 质 感 生 活 ·', decoration: 'diagonal', lead: '把日子过成想要的样子，',
+    highlightPrefix: '—', tagSug: ['生活方式', '质感', '日常'],
+  },
+  {
+    id: 'cyber', name: '赛博紫', desc: '科技/数码/未来感',
+    bg: ['#0f0c29', '#302b63', '#24243e'], accent: '#00f5ff',
+    label: '· 未 来 视 界 ·', decoration: 'bars', lead: '黑科技实测，',
+    highlightPrefix: '▶', tagSug: ['科技', '数码', '黑科技'],
+  },
+  {
+    id: 'warm', name: '暖棕治愈', desc: '情感/美食/情感共鸣',
+    bg: ['#2d2019', '#5a3d2a', '#8a5a33'], accent: '#ffe0a3',
+    label: '· 温 暖 治 愈 ·', decoration: 'circle', lead: '温暖你的每一天，',
+    highlightPrefix: '✦', tagSug: ['治愈', '温暖', '情感'],
+  },
+]
+
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = AntInput
 
@@ -509,6 +562,15 @@ export default function OneClickVideoPage() {
   const [packSubtitle, setPackSubtitle] = useState('')
   const [coverDataUrl, setCoverDataUrl] = useState('')
   const [packBundling, setPackBundling] = useState(false)
+  const [packTemplateId, setPackTemplateId] = useState<string>('minimal')
+  const activeTemplate = PUBLISH_TEMPLATES.find(t => t.id === packTemplateId) || PUBLISH_TEMPLATES[0]
+  // 切换发布模板：套用其建议标签
+  const handleTemplateChange = (id: string) => {
+    setPackTemplateId(id)
+    const tpl = PUBLISH_TEMPLATES.find(t => t.id === id)
+    if (tpl && tpl.tagSug.length) setPackTags(tpl.tagSug.join(','))
+    setCoverDataUrl('')
+  }
   // 首次拿到封面文案时预填发布素材包的默认值
   useEffect(() => {
     if (!scriptCovers.length) return
@@ -586,23 +648,31 @@ export default function OneClickVideoPage() {
   }
 
   // ===== 发布素材包（封面图 + 标题/标签/文案 + 成片，浏览器打包下载）=====
-  // 构建发布文案：标题 + 分段亮点 + 结尾钩子 + 标签
+  // 构建发布文案：模板吸睛引导 + 标题 + 分段亮点 + 结尾钩子 + 标签
   const buildPackCopy = () => {
+    const tpl = activeTemplate
     const title = packTitle.trim() || '未命名成片'
+    const fullTitle = tpl.lead ? `${tpl.lead}${title}` : title
     const subtitles = scriptCovers.map(c => c.subtitle).filter(Boolean)
-    const tags = packTags.split(/[,，\s]+/).filter(Boolean).map(t => `#${t.replace(/^#/, '')}`)
+    const userTags = packTags.split(/[,，\s]+/).filter(Boolean).map(t => `#${t.replace(/^#/, '')}`)
+    const tags = Array.from(new Set([...tpl.tagSug, ...userTags])).map(t => `#${t.replace(/^#/, '')}`)
     const lines = [
+      `【发布模板】${tpl.name}（${tpl.desc}）`,
+      '',
       `【成片标题】`,
-      title,
+      fullTitle,
       '',
       `【内容亮点】`,
-      subtitles.length ? subtitles.map((s, i) => `${i + 1}. ${s}`).join('\n') : '无',
+      subtitles.length ? subtitles.map((s, i) => `${tpl.highlightPrefix} ${i + 1}. ${s}`).join('\n') : '无',
       '',
       `【结尾钩子】`,
       scriptHook || '评论区扣1领工具',
       '',
       `【推荐标签】`,
       tags.join(' ') || '#短视频',
+      '',
+      `【发布要点】`,
+      `封面突出标题核心卖点；文案首屏用悬念钩子吸引停留；话题标签以${tpl.tagSug.join('/')}为主。`,
       '',
     ]
     return lines.join('\n')
@@ -612,36 +682,58 @@ export default function OneClickVideoPage() {
   const renderCover = (): Promise<string> => {
     return new Promise((resolve) => {
       const w = 1080, h = 1920
+      const tpl = activeTemplate
       const canvas = document.createElement('canvas')
       canvas.width = w; canvas.height = h
       const ctx = canvas.getContext('2d')
       if (!ctx) { resolve(''); return }
-      // 深色渐变底 + 顶部标签 + 居中主标题 + 副标题
+      // 模板渐变色底
       const t = ctx.createLinearGradient(0, 0, 0, h)
-      t.addColorStop(0, '#1a1a2e'); t.addColorStop(0.55, '#16213e'); t.addColorStop(1, '#0f3460')
+      t.addColorStop(0, tpl.bg[0]); t.addColorStop(0.55, tpl.bg[1]); t.addColorStop(1, tpl.bg[2])
       ctx.fillStyle = t; ctx.fillRect(0, 0, w, h)
-      // 装饰圆环
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2
-      ctx.beginPath(); ctx.arc(w / 2, h * 0.40, 260, 0, Math.PI * 2); ctx.stroke()
-      // 顶部小标签
+      // 按模板绘制装饰元素
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'
+      ctx.lineWidth = 2
+      switch (tpl.decoration) {
+        case 'ring':
+          ctx.beginPath(); ctx.arc(w / 2, h * 0.40, 260, 0, Math.PI * 2); ctx.stroke()
+          ctx.beginPath(); ctx.arc(w / 2, h * 0.40, 200, 0, Math.PI * 2); ctx.stroke()
+          break
+        case 'circle':
+          ctx.beginPath(); ctx.arc(w * 0.5, h * 0.34, 330, 0, Math.PI * 2); ctx.fill()
+          break
+        case 'bars':
+          ctx.fillRect(0, h * 0.16, w, 26)
+          ctx.fillRect(0, h * 0.62, w, 16)
+          break
+        case 'diagonal': {
+          ctx.save(); ctx.translate(w / 2, h * 0.42); ctx.rotate(-0.35)
+          ctx.fillRect(-w, -200, w * 2, 360)
+          ctx.restore()
+          break
+        }
+      }
+      // 顶部小标签（模板文案）
       const title = packTitle.trim() || 'AI 成片'
-      const subtitle = packSubtitle.trim() || ''
-      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = 'bold 44px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center'
-      ctx.fillText('· 短 视 频 成 片 ·', w / 2, 150)
+      const subtitle = packSubtitle.trim() || (tpl.lead ? tpl.lead.replace(/，$/, '') : '私信领取完整工具教程')
+      ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = 'bold 44px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center'
+      ctx.fillText(tpl.label, w / 2, 150)
       // 主标题（自动换行，最多两行）
       ctx.font = 'bold 96px "Microsoft YaHei", sans-serif'
       ctx.fillStyle = '#ffffff'
-      const lines = wrapText(ctx, title, w * 0.82)
+      const full = tpl.lead ? `${tpl.lead}${title}` : title
+      const lines = wrapText(ctx, full, w * 0.82)
       lines.slice(0, 2).forEach((line, idx) => {
         ctx.fillText(line, w / 2, 600 + idx * 130)
       })
       // 副标题
       ctx.font = '56px "Microsoft YaHei", sans-serif'
       ctx.fillStyle = 'rgba(255,255,255,0.85)'
-      ctx.fillText(subtitle || '私信领取完整工具教程', w / 2, 900)
-      // 底部钩子
+      ctx.fillText(subtitle, w / 2, 900)
+      // 底部钩子（模板强调色）
       ctx.font = 'bold 48px "Microsoft YaHei", sans-serif'
-      ctx.fillStyle = '#ffd166'
+      ctx.fillStyle = tpl.accent
       ctx.fillText(scriptHook || '评论区扣1领工具', w / 2, h - 220)
       resolve(canvas.toDataURL('image/png'))
     })
@@ -2067,6 +2159,15 @@ export default function OneClickVideoPage() {
           <Row gutter={16}>
             <Col xs={24} sm={14}>
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <div>
+                  <Text strong>发布模板：<Text type="secondary" style={{ fontSize: 12 }}>选风格自动套配色 / 文案结构 / 标签</Text></Text>
+                  <Select
+                    value={packTemplateId}
+                    onChange={handleTemplateChange}
+                    style={{ width: '100%', marginTop: 4 }}
+                    options={PUBLISH_TEMPLATES.map(t => ({ value: t.id, label: `${t.name} · ${t.desc}` }))}
+                  />
+                </div>
                 <div>
                   <Text strong>成片标题：</Text>
                   <Input
