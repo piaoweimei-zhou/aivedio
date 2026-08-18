@@ -31,6 +31,10 @@ _FONT_CANDIDATES = [
     "C:/Windows/Fonts/msyh.ttc",     # 微软雅黑
     "C:/Windows/Fonts/simhei.ttf",   # 黑体
     "C:/Windows/Fonts/simsun.ttc",   # 宋体
+    # Linux/CI 常见字体
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
 ]
 
 
@@ -159,8 +163,13 @@ class HookOverlayStage(StagePlugin):
         )
 
         font_path = self._find_font()
-        main_font = ImageFont.truetype(font_path, int(height * 0.40))
-        sub_font = ImageFont.truetype(font_path, int(height * 0.22)) if sub_text else None
+        if font_path:
+            main_font = ImageFont.truetype(font_path, int(height * 0.40))
+            sub_font = ImageFont.truetype(font_path, int(height * 0.22)) if sub_text else None
+        else:
+            # 无可用字体（如精简 CI 环境）时回退默认字体
+            main_font = ImageFont.load_default()
+            sub_font = ImageFont.load_default() if sub_text else None
 
         main_color = (255, 205, 40, 255)
         bbox = draw.textbbox((0, 0), hook_text, font=main_font)
