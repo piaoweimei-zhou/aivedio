@@ -73,13 +73,16 @@ class HookOverlayStage(StagePlugin):
         hook_image = params.get("hook_image", "")
         duration = float(params.get("duration", 3))
         position = params.get("position", "bottom")
-        margin = int(params.get("margin", 0))
 
         try:
             await ffmpeg_utils.check_ffmpeg()
             local_video = await ffmpeg_utils.resolve_local_video(video.urls[0])
             width, height = await ffmpeg_utils.get_video_size(local_video)
             total_duration = await ffmpeg_utils.get_video_duration(local_video)
+
+            # 底部安全边距：默认按视频高度 10% 留白，避免贴底被平台底部 UI（点赞/评论/操作栏）遮挡；
+            # 用户显式传入 margin 时优先使用用户值
+            margin = self._resolve_margin(params, height)
 
             if hook_image:
                 overlay_file = await self._resolve_overlay_image(hook_image, width)
@@ -109,6 +112,7 @@ class HookOverlayStage(StagePlugin):
                     "hook_text": hook_text,
                     "overlay_start": round(start, 2),
                     "overlay_duration": duration,
+                    "margin": margin,
                     "video_url": out_url,
                 },
             )
@@ -119,6 +123,16 @@ class HookOverlayStage(StagePlugin):
             return self._error_result(str(e))
 
     # ---- 纯逻辑（可单测）----
+
+    def _resolve_margin(self, params: Dict[str, Any], height: int) -> int:
+        """计算 overlay 的底部安全边距
+        
+        默认按视频高度 10% 留白，确保引导框不贴底、避开平台底部 UI 遮挡区；
+        用户显式传入 margin 时优先使用用户值。
+        """
+        if params.get("margin") is None:
+            return max(int(height * 0.10), 1)
+        return int(params.get("margin"))
 
     def _position_y(self, position: str, height: int, margin: int) -> str:
         """计算 overlay 的 y 表达式"""

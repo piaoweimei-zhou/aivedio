@@ -26,6 +26,23 @@ def test_position_y_center(stage):
     assert stage._position_y("center", 1920, 0) == "(H-h)/2"
 
 
+def test_resolve_margin_default_10pct(stage):
+    # 未显式传 margin 时，默认按高度 10% 留白，避免贴底
+    assert stage._resolve_margin({}, 1920) == 192
+    assert stage._resolve_margin({}, 864) == 86
+
+
+def test_resolve_margin_explicit_wins(stage):
+    # 用户显式传 margin 时优先使用用户值
+    assert stage._resolve_margin({"margin": 0}, 1920) == 0
+    assert stage._resolve_margin({"margin": 50}, 1080) == 50
+
+
+def test_resolve_margin_minimum_one(stage):
+    # 极端小高度也至少保留 1px，避免归零贴底
+    assert stage._resolve_margin({}, 5) == 1
+
+
 def test_generate_hook_image_creates_png(stage):
     from PIL import Image
 
