@@ -76,7 +76,7 @@ class ScriptStage(StagePlugin):
         input_types=[],  # 纯文本输入，不需要资产
         output_type="script",
         default_provider="openai_compat",
-        supported_providers=["openai_compat"],
+        supported_providers=["openai_compat", "volcengine"],
         description="通过 LLM 生成结构化短剧剧本（6种视频类型可选）",
     )
 
@@ -111,7 +111,7 @@ class ScriptStage(StagePlugin):
         tone_extra = params.get("tone_extra", "").strip()
         target_audience = params.get("target_audience", "").strip()
         hook_style = params.get("hook_style", "comment_1")  # comment_1 / main_page / dm
-        model = params.get("model", _DEFAULT_LLM_MODEL)
+        model = params.get("model", "")
         temperature = float(params.get("temperature", 0.85))
         max_tokens = int(params.get("max_tokens", 6000))
 
@@ -138,6 +138,13 @@ class ScriptStage(StagePlugin):
         )
 
         provider_id = self._resolve_provider(provider_id)
+        if not model:
+            # 火山引擎走 VOLCENGINE_TEXT_MODEL（Endpoint ID），其余走 OPENAI_TEXT_MODEL
+            model = (
+                os.getenv("VOLCENGINE_TEXT_MODEL", "doubao-seed-2-0-pro")
+                if provider_id == "volcengine"
+                else _DEFAULT_LLM_MODEL
+            )
         logger.info(
             f"[ScriptStage] 生成剧本 | provider={provider_id} | model={model} "
             f"| video_type={video_type} | topic={topic[:50]} | acts={acts}"

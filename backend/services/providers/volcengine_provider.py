@@ -36,7 +36,7 @@ class VolcEngineProvider(ProviderPlugin):
 
     provider_id = "volcengine"
     provider_name = "火山引擎 (方舟)"
-    capabilities = ["image", "video"]
+    capabilities = ["image", "video", "text"]
 
     def is_available(self) -> bool:
         return bool(os.getenv("ARK_API_KEY"))
@@ -46,6 +46,18 @@ class VolcEngineProvider(ProviderPlugin):
 
     def _get_base_url(self) -> str:
         return os.getenv("VOLCENGINE_BASE_URL", "https://ark.cn-beijing.volces.com").rstrip("/")
+
+    def _get_image_model(self) -> str:
+        # 免费额度模型：doubao-seedream-4-5 / doubao-seedream-4-0 / doubao-seedream-5-0
+        return os.getenv("VOLCENGINE_IMAGE_MODEL", "doubao-seedream-4-5").strip()
+
+    def _get_video_model(self) -> str:
+        # 免费额度模型：doubao-seedance-1-5-pro / doubao-seedance-1-0-pro / doubao-seedance-1-0-lite-i2v
+        return os.getenv("VOLCENGINE_VIDEO_MODEL", "doubao-seedance-1-5-pro").strip()
+
+    def _get_text_model(self) -> str:
+        # 免费额度模型：doubao-seed-2-0-pro / doubao-seed-1-6 / doubao-1-5-pro-32k
+        return os.getenv("VOLCENGINE_TEXT_MODEL", "doubao-seed-2-0-pro").strip()
 
     def _normalize_size(self, size: str, model: str = "") -> str:
         """规范化尺寸为火山引擎支持的格式"""
@@ -86,7 +98,7 @@ class VolcEngineProvider(ProviderPlugin):
 
         normalized_size = self._normalize_size(size, model)
         body = {
-            "model": model or "doubao-seedream-3-0-t2i-250415",
+            "model": model or self._get_image_model(),
             "prompt": prompt,
             "size": normalized_size,
             "response_format": "url",
@@ -142,7 +154,7 @@ class VolcEngineProvider(ProviderPlugin):
             raise ValueError("未配置 ARK_API_KEY")
 
         base_url = self._get_base_url()
-        endpoint = f"{base_url}/api/v3/contents/generations"
+        endpoint = f"{base_url}/api/v3/contents/generations/tasks"
         headers = {
             "Accept": "application/json",
             "Authorization": bearer_auth(api_key),
@@ -150,14 +162,24 @@ class VolcEngineProvider(ProviderPlugin):
         }
 
         body = {
-            "model": model or "doubao-seaweed",
+            "model": model or self._get_video_model(),
             "content": [{"type": "text", "text": prompt}],
         }
+        if duration:
+            body["duration"] = int(duration)
+        if aspect_ratio:
+            body["ratio"] = aspect_ratio
+        if resolution:
+            body["resolution"] = resolution
+        if seed is not None:
+            body["seed"] = int(seed)
 
-        # 参考图
+        # 参考图（图生视频-首帧）：本地路径转 base64，远程 URL 原样
         if images:
             for url in images[:1]:
-                body["content"].append({"type": "image_url", "image_url": {"url": url}})
+                data_url = reference_to_data_url({"url": url}, max_size=1536)
+                if data_url:
+                    body["content"].append({"type": "image_url", "image_url": {"url": data_url}})
 
         async with httpx.AsyncClient(timeout=VIDEO_POLL_TIMEOUT) as client:
             response = await client.post(endpoint, headers=headers, json=body)
@@ -186,8 +208,8 @@ class VolcEngineProvider(ProviderPlugin):
                     )
                 raise ValueError(f"火山引擎视频未返回任务 ID: {raw}")
 
-            # 轮询
-            query_url = f"{base_url}/api/v3/contents/generations/{task_id}"
+            # 轮询（Seedance 查询端点：/contents/generations/tasks/{id}）
+            query_url = f"{base_url}/api/v3/contents/generations/tasks/{task_id}"
             deadline = time.monotonic() + 600
             while time.monotonic() < deadline:
                 await asyncio.sleep(5)
@@ -196,14 +218,17 @@ class VolcEngineProvider(ProviderPlugin):
                 result = query_res.json()
                 status = str(result.get("status") or "").lower()
                 if status in {"succeeded", "complete", "completed"}:
-                    video_urls = []
-                    for item in result.get("data", []):
-                        if isinstance(item, dict):
-                            url = item.get("url", "")
-                            if url:
-                                video_urls.append(url)
-                    if video_urls:
-                        local_url = await save_video_to_output(video_urls[0], prefix="volc_vid_")
+                    video_url = ""
+                    content = result.get("content") or {}
+                    if isinstance(content, dict):
+                        video_url = content.get("video_url", "")
+                    if not video_url:
+                        for item in result.get("data", []):
+                            if isinstance(item, dict) and item.get("url"):
+                                video_url = item["url"]
+                                break
+                    if video_url:
+                        local_url = await save_video_to_output(video_url, prefix="volc_vid_")
                         elapsed = int((time.time() - start) * 1000)
                         return ProviderResult(
                             video_url=local_url,
@@ -214,7 +239,80 @@ class VolcEngineProvider(ProviderPlugin):
                             status="succeeded",
                         )
                     raise ValueError(f"火山引擎视频成功但无输出: {result}")
-                if status in {"failed", "error"}:
+                if status in {"failed", "error", "expired"}:
                     raise ValueError(f"火山引擎视频任务失败: {result}")
 
             raise TimeoutError("火山引擎视频任务超时")
+
+    async def generate_text(
+        self,
+        prompt: str,
+        system: str = "",
+        model: str = "",
+        temperature: float = 0.8,
+        max_tokens: int = 4096,
+        response_format: Optional[Dict[str, Any]] = None,
+        history: Optional[List[Dict[str, str]]] = None,
+        **kwargs
+    ) -> ProviderResult:
+        """文本生成 — 方舟 OpenAI 兼容 /chat/completions（豆包系列）"""
+        start = time.time()
+        api_key = self._get_api_key()
+        if not api_key:
+            raise ValueError("未配置 ARK_API_KEY")
+
+        base_url = self._get_base_url()
+        used_model = model or self._get_text_model()
+        headers = {
+            "Accept": "application/json",
+            "Authorization": bearer_auth(api_key),
+            "Content-Type": "application/json",
+        }
+
+        messages: List[Dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": prompt})
+
+        body: Dict[str, Any] = {
+            "model": used_model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        if response_format:
+            body["response_format"] = response_format
+
+        chat_url = f"{base_url}/api/v3/chat/completions"
+        logger.info(
+            f"[VolcEngine] 文本生成 | model={used_model} | messages={len(messages)} "
+            f"| temp={temperature} | json_mode={'是' if response_format else '否'}"
+        )
+
+        async with httpx.AsyncClient(timeout=AI_REQUEST_TIMEOUT) as client:
+            response = await client.post(chat_url, headers=headers, json=body)
+            response.raise_for_status()
+            raw = response.json()
+
+        elapsed = int((time.time() - start) * 1000)
+        text = ""
+        try:
+            text = raw["choices"][0]["message"]["content"] or ""
+        except (KeyError, IndexError, TypeError):
+            logger.warning(f"[VolcEngine] 解析文本响应失败 | raw={str(raw)[:300]}")
+
+        return ProviderResult(
+            image_url="",
+            images=[],
+            filenames=[],
+            elapsed_ms=elapsed,
+            prompt=prompt,
+            provider_id="volcengine",
+            model=used_model,
+            raw=raw,
+            task_id=raw.get("id", ""),
+            metadata={"text": text, "usage": raw.get("usage", {})},
+        )
