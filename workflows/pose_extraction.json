@@ -1,0 +1,34 @@
+{
+  "10": {
+    "inputs": {
+      "image": ""
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "输入图片加载"
+    }
+  },
+  "13": {
+    "inputs": {
+      "resolution": 512,
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "image": ["10", 0]
+    },
+    "class_type": "OpenPosePreprocessor",
+    "_meta": {
+      "title": "OpenPose 姿态提取"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "pose_output",
+      "images": ["13", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存姿态图"
+    }
+  }
+}

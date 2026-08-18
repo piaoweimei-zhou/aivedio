@@ -1,0 +1,149 @@
+{
+  "12": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "13": {
+    "inputs": {
+      "text": "https://webstatic.aiproxy.vip/output/20260622/127513/c8c5cdfa-8451-4e1c-aa89-aeada828884f.png",
+      "anything": [
+        "56",
+        1
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "展示任何"
+    }
+  },
+  "14": {
+    "inputs": {
+      "text": "**Comfly gpt-image-2 (official)** async: POST /v1/images/edits?async=true, GET /v1/images/tasks/{task_id}\nModel: gpt-image-2\nPrompt: 宫崎骏动漫风格。\n帮我生成3x4拼图式分镜，16：9画面。，使用多样的摄像机角度：特写、广角、低角度、俯拍、侧面轮廓、后方、3/4 视角等，故事发生在一个现代城市的爱情故事，2个女人爱上一个男人。\nAspect Ratio: 16:9\nResolution: 2k\nActual Size: 2560x1440\nQuality: auto\nInput Images: 2\nOutput: png\nTask ID: 45dbe5bebcb34e078bad48e88d16ee67\nImage URL: https://webstatic.aiproxy.vip/output/20260622/127513/c8c5cdfa-8451-4e1c-aa89-aeada828884f.png\nTotal Tokens: 8182\n",
+      "anything": [
+        "56",
+        2
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "展示任何"
+    }
+  },
+  "22": {
+    "inputs": {
+      "value": "使用上传的 Logo，为集成品牌形象系统创建一张高质量的专业海报。🧱 结构：4:5 比例的竖向海报，采用清晰且多层次的网格系统；设计应内容丰富但简洁有序。🔝 顶部区域：以清晰简洁的字体展示品牌名称，一句表达品牌的简短口号（最多 6 个词），以及三个词的形象描述（例如：现代 / 大胆 / 简约）。🎨 色彩系统（专业）：展示主色（3–5 种）、副色（3–5 种）和强调色。为每种颜色提供清晰的色块、HEX 代码和用途（背景 / 主色 / 强调色）。添加颜色渐变和色彩混合示例。🔤 排版：指定标题字体、副标题字体和正文字体。展示真实的文本示例以及清晰的字号层级。🖼️ 视觉形象：指定图像风格（电影感 / 极简主义 / 编辑风格……）、光照方向以及材质和纹理类型。展示 3 到 5 个视觉示例（图像风格）。📦 品牌应用（非常重要）：展示逼真的样机，如产品包装、网站界面（首屏）、移动端 App 界面、3 条社交媒体帖子、名片以及广告或户外广告牌。⚠️ 所有内容必须共享相同的品牌精神。🧩 设计系统：展示 UI 组件、卡片和间距系统。示例：按钮、布局和区块。🔘 图标：6 到 10 个风格统一（线条或填充）且与品牌形象一致的图标。🎭 图案与元素：受 Logo 启发的背景图案、装饰形状和元素。✨ 精细细节：阴影、纹理、反射和图层深度。🎯 整体风格：编辑设计与科技风格的结合；非常简洁但细节丰富，具有强大且清晰的层级结构。📊 密度：30 到 50 个视觉元素；在大元素和小元素的混合中实现一种智能的拥挤感与有序感。🚫 重要规则：没有无缘无故的留白，没有填充元素，一切皆有目的，所有元素在视觉上相互关联。💎 最终结果：它看起来必须像 Behance 上的一个强势项目或设计机构的形象指南。让客户忍不住问：“多少钱？” 😏 而不是：简单、传统或现成的模板。"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "PROMPT"
+    }
+  },
+  "41": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00005_gdjal_1776530699.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "43": {
+    "inputs": {
+      "value": "创作一部电影级动画短片，采用手绘、吉卜力风格的美学，呈现柔和的灯光、动人的叙事以及自然的动态环境。整体基调充满魔力、怀旧感且氛围感十足。\n故事发生在一个宁静的乡村，一位年轻的发明家制造了一台飞行器，改变了村民们仰望天空的方式。\n🌿 场景流程（顺序视频结构）\n1. 建立乡村（缓慢的电影级平移）日出时分，郁郁葱葱的乡村全景航拍。连绵的丘陵、随风摇曳的稻田、木屋上升起的炊烟。柔和的金色光芒，宁静的环境氛围，鸟儿掠过天空。镜头缓慢推入。\n2. 隐藏的工作室（室内展示）切换至温馨的木质发明家工作室，屋内堆满了草图、机械零件，温暖的阳光透过布满灰尘的窗户洒下。镜头缓慢掠过飞行器的蓝图。细微的浮尘颗粒，氛围亲切。\n3. 发明家的瞬间（角色特写）年轻发明家专注绘图的特写镜头。神情动人，柔和的灯光照在脸上，双手在纸上快速移动。镜头围绕角色缓慢旋转，展现出决心与孤独感。\n4. 机器展示（核心物体镜头）手工制作的飞行器亮相——木材、黄铜、织物机翼。低角度环绕镜头，缓慢而戏剧性地展示。光线在金属零件上闪烁。微风吹拂，机翼轻微晃动。\n5. 首次飞行（动作序列）机器从村庄上方的草坡上起飞。强风吹动，草地弯曲，村民们跑入画面下方。镜头跟随机器加速冲向天空。动态运动模糊。\n6. 空中失稳（紧张时刻）飞行器在湍急的风中倾斜。镜头轻微晃动，戏剧性的云层翻涌。旋转机翼挣扎的特写。风声加剧。情绪张力不断攀升。\n7. 村民反应（情感切镜）村民们在下方仰望——孩子们指着天空，长者们露出惊叹的神情。温暖的夕阳余晖。慢动作捕捉情感表达。镜头扫过人群的面孔。\n8. 云端之上（平静的转变）机器在发光的云海之上趋于平稳。宁静取代了紧张。柔和的金橙色天空与深蓝色交融。镜头围绕着漂浮的机器缓慢漂移。\n9. 奇幻邂逅 + 结尾（高潮情感收尾）一个发光的、空灵的精灵般光体出现在机器附近的天空中，轻柔地照亮了一切。发明家惊叹地抬头仰望。镜头缓慢拉远，展现出广阔的天空和无尽的云层。画面渐隐至日落。\n\n输出:完整3x3拼图式分镜，16：9画面。"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "PROMPT"
+    }
+  },
+  "56": {
+    "inputs": {
+      "prompt": [
+        "61",
+        0
+      ],
+      "aspect_ratio": "16:9",
+      "resolution": "2k",
+      "api_key": [
+        "66",
+        0
+      ],
+      "model": "gpt-image-2",
+      "n": 1,
+      "quality": "auto",
+      "background": "auto",
+      "output_format": "png",
+      "output_compression": 100,
+      "moderation": "auto",
+      "response_format": "url",
+      "async_mode": true,
+      "webhook": "",
+      "max_poll_attempts": 300,
+      "poll_interval": 5,
+      "max_retries": 5,
+      "initial_timeout": 900,
+      "seed": 734933119546206,
+      "skip_error": false,
+      "image1": [
+        "57",
+        0
+      ],
+      "image2": [
+        "41",
+        0
+      ]
+    },
+    "class_type": "Comfly_gpt_image_2_official_ratio",
+    "_meta": {
+      "title": "zhenzhen-gpt-image-2-official_ratio"
+    }
+  },
+  "57": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00003_npmgl_1776530407.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "61": {
+    "inputs": {
+      "value": "宫崎骏动漫风格。\n帮我生成3x4拼图式分镜，16：9画面。，使用多样的摄像机角度：特写、广角、低角度、俯拍、侧面轮廓、后方、3/4 视角等，故事发生在一个现代城市的爱情故事，2个女人爱上一个男人。"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "PROMPT"
+    }
+  },
+  "63": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00004_xqqhq_1776530531.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "66": {
+    "inputs": {
+      "api_base": "zhenzhen",
+      "apikey": "sk-UOuWmC9APz147bESD1fsTk9QbraBphYNdATXMwH1Vk8x4zKj",
+      "custom_ip": "",
+      "skip_error": false
+    },
+    "class_type": "Comfly_api_set",
+    "_meta": {
+      "title": "Zhenzhen API Settings"
+    }
+  }
+}

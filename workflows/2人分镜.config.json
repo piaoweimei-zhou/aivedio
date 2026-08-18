@@ -1,0 +1,60 @@
+{
+  "title": "2人分镜",
+  "description": "双人角色分镜生成：输入两个人物参考图和场景图，生成双人互动分镜",
+  "fields": [
+    {
+      "id": "image_1",
+      "node": "1",
+      "input": "image",
+      "type": "image",
+      "name": "人物A",
+      "description": "人物A的四视图或正面照，用于保持人物A一致性",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_2",
+      "node": "2",
+      "input": "image",
+      "type": "image",
+      "name": "人物B",
+      "description": "人物B的四视图或正面照，用于保持人物B一致性",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_89",
+      "node": "89",
+      "input": "image",
+      "type": "image",
+      "name": "场景参考",
+      "description": "场景/背景参考图，用于裁切构图区域",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "prompt_40",
+      "node": "40",
+      "input": "value",
+      "type": "textarea",
+      "name": "正向提示词",
+      "description": "描述双人分镜画面：人物位置、动作、场景、构图",
+      "group": "prompts",
+      "default": "masterpiece, best quality, ultra realistic photo, warm home living room, on the left side is the adult woman, on the right side is the 7-year-old boy, sitting side by side on soft sofa, mother and child reading story book together..."
+    },
+    {
+      "id": "prompt_84",
+      "node": "84",
+      "input": "value",
+      "type": "textarea",
+      "name": "负向提示词",
+      "description": "描述不希望出现的元素（模糊、变形等）",
+      "group": "prompts",
+      "default": "blurry, low resolution, deformed face, distorted limbs, extra fingers, messy facial features, ugly, noisy, overexposed, fuzzy edges, mismatched skin texture, disfigured, cartoon, painting, 3d render"
+    }
+  ],
+  "groups": [
+    {"id": "images", "name": "参考图片", "collapsed": false, "layout": "grid"},
+    {"id": "prompts", "name": "分镜提示词", "collapsed": false, "layout": "list"}
+  ]
+}

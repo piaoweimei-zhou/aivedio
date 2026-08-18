@@ -1,0 +1,760 @@
+{
+  "260": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "image1": [
+        "444",
+        0
+      ],
+      "image2": [
+        "444",
+        0
+      ]
+    },
+    "class_type": "ImageConcanate",
+    "_meta": {
+      "title": "Image Concatenate"
+    }
+  },
+  "261": {
+    "inputs": {
+      "mask": [
+        "262",
+        0
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "遮罩转换为图像"
+    }
+  },
+  "262": {
+    "inputs": {
+      "expand": 0,
+      "incremental_expandrate": 0,
+      "tapered_corners": true,
+      "flip_input": false,
+      "blur_radius": [
+        "462",
+        0
+      ],
+      "lerp_alpha": 1,
+      "decay_factor": 1,
+      "fill_holes": false,
+      "mask": [
+        "453",
+        0
+      ]
+    },
+    "class_type": "GrowMaskWithBlur",
+    "_meta": {
+      "title": "Grow Mask With Blur"
+    }
+  },
+  "263": {
+    "inputs": {
+      "seed": 1034973049061657,
+      "steps": [
+        "475",
+        0
+      ],
+      "cfg": [
+        "476",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "533",
+        0
+      ],
+      "positive": [
+        "455",
+        0
+      ],
+      "negative": [
+        "455",
+        1
+      ],
+      "latent_image": [
+        "455",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "285": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "image1": [
+        "456",
+        0
+      ],
+      "image2": [
+        "456",
+        0
+      ]
+    },
+    "class_type": "ImageConcanate",
+    "_meta": {
+      "title": "Image Concatenate"
+    }
+  },
+  "299": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "456",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "385": {
+    "inputs": {
+      "images": [
+        "456",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "386": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "456",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "387": {
+    "inputs": {
+      "images": [
+        "285",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "417": {
+    "inputs": {
+      "value": 1920
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "WIDTH"
+    }
+  },
+  "418": {
+    "inputs": {
+      "value": 1080
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "HEIGHT"
+    }
+  },
+  "420": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "421",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "421": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "527",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "431": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "cpu"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "432": {
+    "inputs": {
+      "value": 400
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Padding"
+    }
+  },
+  "433": {
+    "inputs": {
+      "width": 1024,
+      "height": 512,
+      "upscale_method": "lanczos",
+      "keep_proportion": "pad",
+      "pad_color": "127, 127, 127",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "434",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "434": {
+    "inputs": {
+      "left": [
+        "432",
+        0
+      ],
+      "top": [
+        "432",
+        0
+      ],
+      "right": [
+        "432",
+        0
+      ],
+      "bottom": [
+        "432",
+        0
+      ],
+      "feathering": 40,
+      "image": [
+        "435",
+        0
+      ]
+    },
+    "class_type": "ImagePadForOutpaint",
+    "_meta": {
+      "title": "外补画板"
+    }
+  },
+  "435": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "482",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "436": {
+    "inputs": {
+      "width": 2048,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "437": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "444",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "438": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "444",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "439": {
+    "inputs": {
+      "blend_factor": 1,
+      "blend_mode": "screen",
+      "image1": [
+        "443",
+        0
+      ],
+      "image2": [
+        "261",
+        0
+      ]
+    },
+    "class_type": "ImageBlend",
+    "_meta": {
+      "title": "混合图像"
+    }
+  },
+  "440": {
+    "inputs": {
+      "images": [
+        "439",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "442": {
+    "inputs": {
+      "images": [
+        "443",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "443": {
+    "inputs": {
+      "width": 2048,
+      "height": 1024,
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "260",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "444": {
+    "inputs": {
+      "samples": [
+        "446",
+        0
+      ],
+      "vae": [
+        "528",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "445": {
+    "inputs": {
+      "images": [
+        "433",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "446": {
+    "inputs": {
+      "seed": 1034973049061657,
+      "steps": [
+        "475",
+        0
+      ],
+      "cfg": [
+        "476",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "534",
+        0
+      ],
+      "positive": [
+        "484",
+        0
+      ],
+      "negative": [
+        "484",
+        0
+      ],
+      "latent_image": [
+        "436",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "452": {
+    "inputs": {
+      "value": 200
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Mask Size"
+    }
+  },
+  "453": {
+    "inputs": {
+      "shape": "square",
+      "frames": 1,
+      "location_x": 1024,
+      "location_y": 512,
+      "grow": 0,
+      "frame_width": [
+        "443",
+        1
+      ],
+      "frame_height": [
+        "443",
+        2
+      ],
+      "shape_width": [
+        "452",
+        0
+      ],
+      "shape_height": 1024
+    },
+    "class_type": "CreateShapeMask",
+    "_meta": {
+      "title": "Create Shape Mask"
+    }
+  },
+  "454": {
+    "inputs": {
+      "prompt": "Remove the visible seam in the middle of the image. Remove the white bar. Keep the rest of the image exactly the same.",
+      "clip": [
+        "431",
+        0
+      ],
+      "vae": [
+        "528",
+        0
+      ],
+      "image1": [
+        "439",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "455": {
+    "inputs": {
+      "noise_mask": true,
+      "positive": [
+        "454",
+        0
+      ],
+      "negative": [
+        "454",
+        0
+      ],
+      "vae": [
+        "528",
+        0
+      ],
+      "pixels": [
+        "443",
+        0
+      ],
+      "mask": [
+        "453",
+        0
+      ]
+    },
+    "class_type": "InpaintModelConditioning",
+    "_meta": {
+      "title": "内补模型条件"
+    }
+  },
+  "456": {
+    "inputs": {
+      "samples": [
+        "263",
+        0
+      ],
+      "vae": [
+        "528",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "462": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Mask Blur"
+    }
+  },
+  "475": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "STEPS"
+    }
+  },
+  "476": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "481": {
+    "inputs": {
+      "value": "SceneName"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "SCENE-NAME"
+    }
+  },
+  "482": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "538",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "484": {
+    "inputs": {
+      "prompt": [
+        "540",
+        0
+      ],
+      "clip": [
+        "431",
+        0
+      ],
+      "vae": [
+        "528",
+        0
+      ],
+      "image1": [
+        "433",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "527": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "528": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "529": {
+    "inputs": {
+      "lora_name": "next-scene_lora-v2-3000.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "533",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "530": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "420",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "531": {
+    "inputs": {
+      "lora_name": "InSubject-0.5.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "530",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "532": {
+    "inputs": {
+      "lora_name": "qwen-boreal-general-discrete-low-rank.safetensors",
+      "strength_model": 0.85,
+      "model": [
+        "530",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "533": {
+    "inputs": {
+      "lora_name": "qwen-studio-realism.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "532",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "534": {
+    "inputs": {
+      "lora_name": "251018_MICKMUMPITZ_QWEN-EDIT_360_03.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "530",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "538": {
+    "inputs": {
+      "image": "prop_1512148307_00001_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 3"
+    }
+  },
+  "540": {
+    "inputs": {
+      "value": "360 degree panoramic shot, full wide-angle living room interior, real estate listing photo, ultra realistic, natural daylight from large bay window at back, bright clean white latex walls, warm light wood laminate flooring, minimalist ceiling with square LED flat panel ceiling light, simple layered gypsum ceiling molding,\nLeft side: dark solid wood TV cabinet with large black flat-screen smart TV, tall vertical white standing air conditioner beside bay window, beige long fabric curtains on both sides of window,\nCenter area: dark brown solid wood coffee table, grey fabric three-seater sofa with light floral sofa cover, small chaise lounge beside window,\nRight side: dark solid wood rectangular dining table with matching wooden dining chairs, tall full-length wooden frame dressing mirror on wall, wooden door frame leading to bedroom,\nSoft natural sunlight flooding room, soft shadow, neutral warm tone, clean empty rental house, no clutter, residential apartment interior, eye-level perspective, sharp details, 8K, DSLR real photo, natural camera lens distortion for 360 panoramic effect, spacious layout, plain simple decoration, mid-range home decoration style"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "字符串（多行）"
+    }
+  },
+  "541": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "285",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  }
+}

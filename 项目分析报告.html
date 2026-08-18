@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>导演工作台 · 项目分析报告</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1d212c; --border:#2a2f3d;
+    --text:#e6e9ef; --muted:#9aa3b2; --accent:#6c8cff; --accent2:#7ee2a8;
+    --warn:#f5c26b; --danger:#ff7b8a; --ok:#7ee2a8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;line-height:1.65;padding:40px 20px}
+  .wrap{max-width:1080px;margin:0 auto}
+  header.hero{background:linear-gradient(135deg,#1a2036,#0f1117);border:1px solid var(--border);border-radius:18px;padding:38px 40px;margin-bottom:34px}
+  header.hero .tag{display:inline-block;background:rgba(108,140,255,.15);color:var(--accent);border:1px solid rgba(108,140,255,.35);border-radius:20px;padding:3px 14px;font-size:13px;margin-bottom:16px}
+  header.hero h1{font-size:30px;font-weight:700;margin-bottom:8px}
+  header.hero p.sub{color:var(--muted);font-size:15px}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:10px}
+  .meta span{font-size:13px;color:var(--muted);border:1px solid var(--border);background:var(--panel2);padding:3px 12px;border-radius:8px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:28px 30px;margin-bottom:26px}
+  h2{font-size:20px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  h2 .n{color:var(--accent);font-family:ui-monospace,monospace}
+  h2 + .lead{color:var(--muted);font-size:14px;margin-bottom:18px}
+  h3{font-size:16px;margin:22px 0 10px;color:var(--accent2)}
+  p{color:var(--text);font-size:14.5px;margin-bottom:12px}
+  p.muted{color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:ui-monospace,"Cascadia Code",monospace;font-size:12.5px;color:#cdd6f4}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .card .num{font-size:26px;font-weight:700;color:var(--accent)}
+  .card .lbl{font-size:13px;color:var(--muted);margin-top:2px}
+  .bar-bg{background:var(--panel2);border-radius:6px;height:12px;overflow:hidden;margin-top:6px}
+  .bar{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .pill{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}
+  .pill.hi{background:rgba(255,123,138,.15);color:var(--danger);border:1px solid rgba(255,123,138,.4)}
+  .pill.mid{background:rgba(245,194,107,.15);color:var(--warn);border:1px solid rgba(245,194,107,.4)}
+  .pill.lo{background:rgba(126,226,168,.12);color:var(--ok);border:1px solid rgba(126,226,168,.4)}
+  ul.tight{margin:8px 0 8px 4px;list-style:none}
+  ul.tight li{padding:5px 0 5px 22px;position:relative;font-size:14px;color:var(--text)}
+  ul.tight li::before{content:"▸";position:absolute;left:2px;color:var(--accent)}
+  .codeblock{background:#0b0d13;border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:ui-monospace,"Cascadia Code",monospace;font-size:12.5px;overflow-x:auto;color:#a8c0ff;margin:10px 0;line-height:1.6}
+  .codeblock .cm{color:#6b7488}
+  .alert{border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14px;border:1px solid}
+  .alert.err{background:rgba(255,123,138,.08);border-color:rgba(255,123,138,.35);color:#ffd3d8}
+  .alert.ok{background:rgba(126,226,168,.07);border-color:rgba(126,226,168,.3);color:#d3f5e2}
+  .alert.warn{background:rgba(245,194,107,.07);border-color:rgba(245,194,107,.3);color:#ffe9c4}
+  .steps{counter-reset:st}
+  .steps .step{position:relative;padding:0 0 20px 44px;border-left:2px solid var(--border)}
+  .steps .step::before{counter-increment:st;content:counter(st);position:absolute;left:-15px;top:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0b0d13;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .steps .step h4{font-size:15px;margin-bottom:4px}
+  .steps .step p{font-size:13.5px;margin:0}
+  .diff-hide details{border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0;background:var(--panel2)}
+  .diff-hide summary{cursor:pointer;font-size:14px;color:var(--accent2);font-weight:600}
+  footer{color:var(--muted);font-size:12.5px;text-align:center;padding:20px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <span class="tag">代码分析 · 2026-08-18</span>
+  <h1>导演工作台（Director's Workbench）项目分析报告</h1>
+  <p class="sub">AI 短剧 / 视频创作者的端到端全栈生产工具：概念图 → 三视图 → 分镜 → 视频 → 剪辑 → 成片</p>
+  <div class="meta">
+    <span>后端：Python 3.12 + FastAPI</span>
+    <span>前端：React 18 + TS + AntD 5</span>
+    <span>AI：ComfyUI + 6 云端供应商</span>
+    <span>约 45 个后端模块 / 21 个阶段插件 / 7 个供应商插件 / 17 个前端页面</span>
+  </div>
+</header>
+
+<!-- 概览 -->
+<section>
+  <h2><span class="n">01</span> 项目是什么</h2>
+  <div class="lead">一套面向"短剧/视频创作者"的 AI 辅助生产工具，试图覆盖从创意到成片的全流程。</div>
+  <p>核心生产链路为：<b>文本描述 → 概念图 → 精修/超分 → 三视图 / 360 全景 → 分镜 → 图生视频 → 视频剪辑 → 成片导出</b>。围绕这条链路，集成了资产库管理、异步任务队列、无限画布（ComfyUI 节点编辑器）、多人分镜（MSR / 三元约束）、批量生成、模板系统等能力。</p>
+  <h3>技术栈</h3>
+  <table>
+    <tr><th>层</th><th>技术</th><th>用量</th></tr>
+    <tr><td>后端</td><td>FastAPI + aiohttp + httpx · 单例服务模式 · 结构化日志</td><td>~25 个核心服务模块</td></tr>
+    <tr><td>阶段插件</td><td>StagePlugin ABC + StageDef dataclass 注册表</td><td>21 个 stage 插件</td></tr>
+    <tr><td>供应商插件</td><td>ProviderPlugin ABC 统一抽象</td><td>7 个（ComfyUI/即梦/RunningHub/火山/OpenAI/Gemini/ModelScope）</td></tr>
+    <tr><td>前端</td><td>React 18 + Vite + Zustand + @xyflow/react + Ant Design 5</td><td>17 个页面 / ~9 组件</td></tr>
+    <tr><td>工作流</td><td>本地 ComfyUI JSON 模板</td><td>~40 个</td></tr>
+  </table>
+</section>
+
+<!-- 架构 -->
+<section>
+  <h2><span class="n">02</span> 架构设计</h2>
+  <div class="lead">设计上遵循明确的三层解耦，目标是对抗"线性管线"，走向"资产网络"。</div>
+  <div class="codeblock">
+  Layer3  StageRegistry（阶段路由层）— 21 个 Stage 插件，声明输入/输出/供应商<br>
+  Layer2  ProviderService（供应商抽象层）— 7 个供应商统一 generate 接口<br>
+  Layer1  AssetService（资产注册表）— 类型系统 / 版本化 / 血缘追踪 / content_type<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+  &nbsp;&nbsp;GenTaskManager 异步任务队列（并发控制 + 状态磁盘持久化 + WebSocket 进度）<br>
+  &nbsp;&nbsp;workflow_builder 工作流构建器（按内容类型自动选模板/尺寸/LoRA/触发词）
+  </div>
+  <h3>设计亮点</h3>
+  <ul class="tight">
+    <li><b>资产网络而非线性管线</b>：任意资产可进入"精修/三视图/分镜/提取"，非破坏性迭代，符合真实创作网状结构。</li>
+    <li><b>插件化扩展</b>：新增能力 = 注册一个新 Stage + 配一个新 Provider，无需改核心架构（已落到代码层面，非仅文档）。</li>
+    <li><b>两级资产分类已落地</b>：`asset_type`（生产阶段）+ `content_type`（角色/场景/道具）双维度，`stage_service` 已实现 `input_content_types` 校验，前端资产库也有二级筛选。</li>
+    <li><b>内容类型驱动</b>：角色/场景/道具自动切换不同工作流模板、宽高、LoRA 强度与触发词，属行业内较实用的自动参数策略。</li>
+    <li><b>开源闭源结合</b>：本地 ComfyUI 兜底 + 多个云端供应商，成本与质量的权衡空间灵活。</li>
+  </ul>
+</section>
+
+<!-- 规模 -->
+<section>
+  <h2><span class="n">03</span> 代码规模</h2>
+  <div class="lead">体量已达"中型工具"规模，但分布极不均匀——存在多个巨型单文件。</div>
+  <div class="grid g2">
+    <div class="card"><div class="num">21</div><div class="lbl">后端阶段插件（stages/）</div></div>
+    <div class="card"><div class="num">7</div><div class="lbl">供应商插件（providers/）</div></div>
+    <div class="card"><div class="num">17</div><div class="lbl">前端页面（App.tsx 路由）</div></div>
+    <div class="card"><div class="num">≈260</div><div class="lbl">后端输出产物文件（output/）</div></div>
+  </div>
+  <h3>最大的几个文件（复杂度集中点）</h3>
+  <table>
+    <tr><th>文件</th><th>大小</th><th>宽</th><th>评估</th></tr>
+    <tr><td><code>services/comfyui_service.py</code></td><td>249 KB</td><td><div class="bar-bg"><div class="bar" style="width:100%"></div></div></td><td class="pill hi">上帝类</td></tr>
+    <tr><td><code>services/workflow_builder.py</code></td><td>117 KB</td><td><div class="bar-bg"><div class="bar" style="width:47%"></div></div></td><td class="pill hi">上帝类</td></tr>
+    <tr><td><code>api/infinite_canvas_api.py</code></td><td>97 KB</td><td><div class="bar-bg"><div class="bar" style="width:39%"></div></div></td><td class="pill hi">桥接层过大</td></tr>
+    <tr><td><code>pages/AssetsPage.tsx</code>（前端）</td><td>110 KB</td><td><div class="bar-bg"><div class="bar" style="width:44%"></div></div></td><td class="pill hi">页面上帝组件</td></tr>
+    <tr><td><code>pages/OneClickVideoPage.tsx</code></td><td>72 KB</td><td><div class="bar-bg"><div class="bar" style="width:29%"></div></div></td><td class="pill mid">偏大</td></tr>
+    <tr><td><code>services/qwen_workflow.py</code></td><td>31 KB</td><td><div class="bar-bg"><div class="bar" style="width:12%"></div></div></td><td class="pill mid">正常偏大</td></tr>
+  </table>
+  <div class="alert warn">⚑ 最核心的抽象是"三层解耦 / 插件化"，但实际复杂度没有下沉到插件里，而是堆积在 <code>comfyui_service</code> 与 <code>workflow_builder</code> 两个巨型单文件内。插件的"薄"与这两个模块的"臃肿"形成反差，重构成本集中于此。</div>
+</section>
+
+<!-- 健康度 -->
+<section>
+  <h2><span class="n">04</span> 健康度实测结果</h2>
+  <div class="lead">基于对本地源码的实际执行验证（非仅阅读）。</div>
+  <div class="alert ok">✔ 后端全部 Python 源码通过 <code>py_compile</code> 编译检查，无语法错误。</div>
+  <div class="alert err">✘ <code>import core</code> 直接崩溃：<code>core/__init__.py</code> 导入了 <code>exceptions / rate_limiter / retry_config / circuit_breaker / auth</code>，但这些模块在磁盘上不存在。</div>
+  <div class="alert warn">⚠ <code>canvas_service._broadcast()</code> 通过 <code>from core.ws_manager import get_ws_manager</code> 做实时广播，会被上述崩溃 <code>try/except</code> 捕获并<b>静默降级</b>——画布变更的 WebSocket 实时推送实际上已失效，但没有任何报错提示。</div>
+  <div class="alert warn">⚠ 项目<b>不是 git 仓库</b>，无任何版本历史。所有演进只沉淀在文档和目录结构中，无法回滚、无法溯源、无法协作。</div>
+</section>
+
+<!-- 文档与代码差异 -->
+<section class="diff-hide">
+  <h2><span class="n">05</span> 文档与代码的"版本代沟"</h2>
+  <div class="lead">这是本仓库最突出的工程债：同一份代码存在多套彼此矛盾的描述，且引用了不存在的文件。</div>
+  <details>
+    <summary>README.md（定义的是最早的六页面 MVP 蓝图）</summary>
+    <p class="muted">描述 6 个前端页面、11 个阶段、4 个 API；实际前端已有 17 页、阶段 21 个、API 10+ 个。README 中列出的 <code>pipeline_executor.py</code>、<code>video_service.py</code> 在源码中<b>不存在</b>。</p>
+  </details>
+  <details>
+    <summary>plan.md（asset_type / content_type 两级分类改造方案）</summary>
+    <p class="muted">风险评估中多处引用 <code>pipeline_executor.py</code>（36 处引用）——该文件已被 <code>workflow_builder / dag_executor / gen_task_manager</code> 重构替代，方案基于的载体已不存在。好消息：方案要落地的 <code>content_type</code> 两级分类<b>已在后端实现</b>。</p>
+  </details>
+  <details>
+    <summary>系统功能.md（较新的实际能力描述）</summary>
+    <p class="muted">功能描述与现状较吻合，但同样引用了磁盘上不存在的 <code>video_api.py / video_service.py</code>（仅剩 __pycache__ 残留）。声称"17 个阶段"，磁盘实际 21 个。</p>
+  </details>
+  <details>
+    <summary>顶层大量 .md 与 industrial 规划（ai_video.md / 优化集成.md / 工业化/ 等）</summary>
+    <p class="muted">含 227KB 的《小工具方案.md》、商业差距/第三方建议/方案评估等，反映项目的商业化/工业化探索方向，但多数未能在代码中定位到对应实现，属于"规划层"。文档整体明显多于实现。</p>
+  </details>
+  <div class="alert warn">⚑ 治理建议：明确定位<span class="pill mid">现状文档</span>（系统功能.md）与<span class="pill mid">目标规划</span>（各 .md / 工业化），删除过时的 <code>pipeline_executor</code> 引用，避免新人以错误蓝图为准。</div>
+</section>
+
+<!-- 风险 -->
+<section>
+  <h2><span class="n">06</span> 问题与风险清单</h2>
+  <table>
+    <tr><th>风险</th><th>等级</th><th>说明</th></tr>
+    <tr><td>core/ 包破损（核心基础设施不可用）</td><td><span class="pill hi">高</span></td><td>5 个被 @import 的模块不存在；画布 WS 实时广播静默失效。</td></tr>
+    <tr><td>无版本控制</td><td><span class="pill hi">高</span></td><td>无 git，无回滚、无分支、无差异追踪；大改动不可逆。</td></tr>
+    <tr><td>巨型单文件（上帝类）</td><td><span class="pill hi">高</span></td><td>comfyui_service 249KB、workflow_builder 117KB、infinite_canvas_api 97KB、AssetsPage 110KB，违背"插件化"初衷，调试/并发/协作困难。</td></tr>
+    <tr><td>文档与实现脱节</td><td><span class="pill mid">中</span></td><td>多套文档互相矛盾，引用不存在的文件，误导方向。</td></tr>
+    <tr><td>依赖锁定陈旧且不完整</td><td><span class="pill mid">中</span></td><td>requirements.txt 仅 9 行，指向 2023 年的 fastapi 0.104.1 / pydantic 2.5.0；实际使用面远大于此，难以复现环境。</td></tr>
+    <tr><td>Python 环境不一致</td><td><span class="pill mid">中</span></td><td>__pycache__ 同时存在 3.12 / 3.13 两套字节码；文档对版本说法不一（README 说 3.10+，系统功能说 3.12）。</td></tr>
+    <tr><td>API 密钥存前端 localStorage</td><td><span class="pill mid">中</span></td><td>SettingsPage 将 7 个供应商 Key 保存在浏览器 localStorage，容易泄露；应为后端 .env 管理并下发。</td></tr>
+    <tr><td>未走 gitignore 的数据混入工作区</td><td><span class="pill mid">低</span></td><td>data/、output/ 按 .gitignore 应被忽略，但当前无 git 托管，真实密钥/产物存在丢失与泄露隐患。</td></tr>
+  </table>
+</section>
+
+<!-- 建议 -->
+<section>
+  <h2><span class="n">07</span> 行动建议（按优先级）</h2>
+  <div class="steps">
+    <div class="step"><h4>修复 core/ 包，恢复画布实时广播</h4><p>删除 <code>core/__init__.py</code> 中对不存在模块的 import，或将其指向真实存在的 <code>services/ws_service.py</code>；让 <code>canvas_service._broadcast</code> 重新工作并暴露真实错误。</p></div>
+    <div class="step"><h4>建立 git 版本控制</h4><p>初始化仓库，写入 .gitignore（已具备），提交现状作为基线快照，之后任何大改动都可回滚。</p></div>
+    <div class="step"><h4>重建可复现的环境</h4><p>在唯一 Python 版本下沉，用 <code>pip freeze</code> 生成精确 <code>requirements.txt</code>（或 requirements.lock），删除跨版本 __pycache__ 混乱。</p></div>
+    <div class="step"><h4>拆分巨型单文件</h4><p>优先拆 <code>comfyui_service.py</code>（执行/工作流/文件/进程管理已与 comfyui/ 目录重复）与 <code>workflow_builder.py</code>；前端拆 <code>AssetsPage.tsx</code> 为独立组件。</p></div>
+    <div class="step"><h4>文档治理</h4><p>将文档分级为"现状"与"规划"，清理对 <code>pipeline_executor / video_service</code> 的过时引用，让 README 反映真实结构。</p></div>
+    <div class="step"><h4>密钥后移</h4><p>废弃前端 localStorage 存 Key，改为后端 .env + 服务端鉴权下发。</p></div>
+  </div>
+</section>
+
+<!-- 方向洞察 -->
+<section>
+  <h2><span class="n">08</span> 方向洞察</h2>
+  <div class="lead">从 <code>工业化/</code> 目录与顶层规划看，项目正从"个人可用的工具"向"可批量产出的工业化管线"演进。</div>
+  <ul class="tight">
+    <li><b>已投入的工业化能力</b>：CSV 批量分镜、多层/多人渲染、模板批量提取、模板清场+蒙版（SAM2）、三元约束与姿态优化——这些正是"从单张出图到按镜头/模板批量生产"的体现。</li>
+    <li><b>尚未落地的商业化考量</b>：商业差距 / 第三方建议 / 方案评估等文档说明团队在反复评估"生产流程 vs 商业价值"，但大多未形成代码实现。</li>
+    <li><b>核心护城河判断</b>：在 AI 出图/出视频在同质化的当下，真正的壁垒是<b>把"内容类型→工作流/参数"的领域知识固化成系统自动化</b>，而不是某个单独的生成步骤。</li>
+  </ul>
+</section>
+
+<footer>本报告基于对 <code>d:\1\2\director</code> 的本地源码直接验证（结构 / 编译 / 导入 / 数据量），未使用网络来源。</footer>
+</div>
+</body>
+</html>

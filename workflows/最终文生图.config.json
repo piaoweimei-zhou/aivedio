@@ -1,0 +1,115 @@
+{
+  "title": "最终文生图",
+  "description": "高质量文生图工作流（25步/cfg=2/AuraFlow），支持尺寸/步数/CFG/种子全覆盖写",
+  "fields": [
+    {
+      "id": "prompt_41",
+      "node": "41",
+      "input": "text",
+      "type": "textarea",
+      "name": "正向提示词",
+      "description": "描述要生成的画面内容",
+      "group": "prompts",
+      "default": "一位身份尊贵的东方古典宫廷女性，匹配的极简柔光浅灰背景，双脚自然打开与肩同宽，双臂自然贴于身体两侧，自然站立，双掌向大腿内侧自然扣合，正对镜头，全景深平视，正面完整全身摄影，头顶与脚踝无任何截断，完整呈现从头顶至鞋底的全身轮廓，85mm定焦镜头，f/8光圈，全景深，电影级影棚布光，光影均匀无死黑，无过度曝光，五官精致柔和，脸型圆润，肤色白皙透亮"
+    },
+    {
+      "id": "negative_32",
+      "node": "32",
+      "input": "text",
+      "type": "textarea",
+      "name": "负向提示词",
+      "description": "描述不希望出现的元素（可选）",
+      "group": "prompts",
+      "optional": true,
+      "default": "泛黄，发绿，模糊，低分辨率，低质量图像，扭曲的肢体，诡异的外观，丑陋，AI感，AI痕迹，噪点，网格感，JPEG压缩条纹，异常的肢体，水印，乱码，意义不明的字符，泛蓝，手指畸形，手指残缺，坏的手指，多出来的手指，手指多余，脖子僵硬，脖子过长，脖子过短，歪脖子，肩颈分离，锁骨畸形，头部畸形，五官扭曲，眼睛大小不一，手部畸形，手指缺失，脚部畸形，鞋子变形，肢体截断，身体比例失调，驼背，耸肩，姿态僵硬，塑料质感，蜡像感，皮肤过白，磨皮过度，卡通感，二次元，油画质感，背景杂乱，阴影过重，过曝，死黑，失焦，文字，logo"
+    },
+    {
+      "id": "width_34",
+      "node": "34",
+      "input": "width",
+      "type": "int",
+      "name": "图像宽度",
+      "description": "生成图像的宽度（像素）",
+      "group": "size",
+      "default": 1080,
+      "min": 512,
+      "max": 4096
+    },
+    {
+      "id": "height_34",
+      "node": "34",
+      "input": "height",
+      "type": "int",
+      "name": "图像高度",
+      "description": "生成图像的高度（像素）",
+      "group": "size",
+      "default": 1920,
+      "min": 512,
+      "max": 4096
+    },
+    {
+      "id": "steps_28",
+      "node": "28",
+      "input": "steps",
+      "type": "int",
+      "name": "采样步数",
+      "description": "步数越多细节越丰富，但耗时更长（推荐 20-30）",
+      "group": "quality",
+      "default": 25,
+      "min": 1,
+      "max": 100
+    },
+    {
+      "id": "cfg_28",
+      "node": "28",
+      "input": "cfg",
+      "type": "float",
+      "name": "CFG 强度",
+      "description": "提示词引导强度，越高越贴合提示词但可能过饱和（推荐 1.5-3.5）",
+      "group": "quality",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 10.0
+    },
+    {
+      "id": "seed_28",
+      "node": "28",
+      "input": "seed",
+      "type": "int",
+      "name": "随机种子",
+      "description": "固定种子可复现结果，-1 表示随机",
+      "group": "quality",
+      "default": -1,
+      "min": -1,
+      "max": 9007199254740991
+    },
+    {
+      "id": "sampler_28",
+      "node": "28",
+      "input": "sampler_name",
+      "type": "select",
+      "name": "采样器",
+      "description": "采样算法（res_multistep 推荐）",
+      "group": "quality",
+      "default": "res_multistep",
+      "options": ["res_multistep", "euler", "euler_ancestral", "dpmpp_2m", "dpmpp_sde"]
+    },
+    {
+      "id": "denoise_28",
+      "node": "28",
+      "input": "denoise",
+      "type": "float",
+      "name": "去噪强度",
+      "description": "1.0=完全生成，<1.0=图生图保留原图特征",
+      "group": "quality",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0
+    }
+  ],
+  "groups": [
+    {"id": "prompts", "name": "提示词", "collapsed": false, "layout": "list"},
+    {"id": "size", "name": "图像尺寸", "collapsed": false, "layout": "grid"},
+    {"id": "quality", "name": "生成质量", "collapsed": true, "layout": "list"}
+  ]
+}

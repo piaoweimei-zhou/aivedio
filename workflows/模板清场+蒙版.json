@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "title": "模板清场+蒙版生成（简化版，后端做CV清场）",
+    "description": "SAM2自动识别人物 → 保存原始蒙版，后端PIL做收缩+羽化 + OpenCV深度清场"
+  },
+  "1": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载参考图"
+    }
+  },
+  "2": {
+    "inputs": {
+      "model_name": "sam2_hiera_large.pt"
+    },
+    "class_type": "SAM2ModelLoader (segment anything2)",
+    "_meta": {
+      "title": "SAM2模型加载"
+    }
+  },
+  "3": {
+    "inputs": {
+      "model_name": "GroundingDINO_SwinT_OGC (694MB)"
+    },
+    "class_type": "GroundingDinoModelLoader (segment anything2)",
+    "_meta": {
+      "title": "GroundingDINO模型加载"
+    }
+  },
+  "4": {
+    "inputs": {
+      "sam_model": ["2", 0],
+      "grounding_dino_model": ["3", 0],
+      "image": ["1", 0],
+      "prompt": "person . people . human",
+      "threshold": 0.3,
+      "keep_model_loaded": true
+    },
+    "class_type": "GroundingDinoSAM2Segment (segment anything2)",
+    "_meta": {
+      "title": "GroundingDINO+SAM2人物检测分割"
+    }
+  },
+  "5": {
+    "inputs": {
+      "mask": ["4", 1]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "SAM2原始蒙版转图像"
+    }
+  },
+  "6": {
+    "inputs": {
+      "filename_prefix": "mask_raw",
+      "images": ["5", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存原始蒙版（后端做收缩+羽化+深度清场）"
+    }
+  }
+}

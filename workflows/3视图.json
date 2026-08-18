@@ -1,0 +1,917 @@
+{
+  "1": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "44",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "2": {
+    "inputs": {
+      "to_ref": true,
+      "ref_main_image": true,
+      "ref_longest_edge": [
+        "35",
+        0
+      ],
+      "ref_crop": "pad",
+      "ref_upscale": "lanczos",
+      "to_vl": true,
+      "vl_resize": true,
+      "vl_target_size": 512,
+      "vl_crop": "center",
+      "vl_upscale": "lanczos",
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "QwenConfigPreparer_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Config Preparer lrzjason"
+    }
+  },
+  "3": {
+    "inputs": {
+      "instruction": ""
+    },
+    "class_type": "QwenModelConfig_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Model Config lrzjason"
+    }
+  },
+  "4": {
+    "inputs": {
+      "samples": [
+        "6",
+        0
+      ],
+      "vae": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "5": {
+    "inputs": {
+      "conditioning": [
+        "23",
+        0
+      ],
+      "latent": [
+        "9",
+        1
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "6": {
+    "inputs": {
+      "seed": 21,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "31",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "9",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "7": {
+    "inputs": {
+      "custom_output": [
+        "9",
+        2
+      ]
+    },
+    "class_type": "QwenEditOutputExtractor_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Edit Output Extractor lrzjason"
+    }
+  },
+  "8": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "9": {
+    "inputs": {
+      "prompt": [
+        "41",
+        0
+      ],
+      "clip": [
+        "29",
+        0
+      ],
+      "vae": [
+        "8",
+        0
+      ],
+      "model_config": [
+        "3",
+        0
+      ],
+      "configs": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "EditTextEncode_EditUtils",
+    "_meta": {
+      "title": "EditUtils: EditTextEncode lrzjason"
+    }
+  },
+  "10": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "45",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "11": {
+    "inputs": {
+      "to_ref": true,
+      "ref_main_image": true,
+      "ref_longest_edge": [
+        "27",
+        0
+      ],
+      "ref_crop": "pad",
+      "ref_upscale": "lanczos",
+      "to_vl": true,
+      "vl_resize": true,
+      "vl_target_size": 512,
+      "vl_crop": "center",
+      "vl_upscale": "lanczos",
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "QwenConfigPreparer_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Config Preparer lrzjason"
+    }
+  },
+  "12": {
+    "inputs": {
+      "instruction": ""
+    },
+    "class_type": "QwenModelConfig_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Model Config lrzjason"
+    }
+  },
+  "13": {
+    "inputs": {
+      "samples": [
+        "26",
+        0
+      ],
+      "vae": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "14": {
+    "inputs": {
+      "conditioning": [
+        "15",
+        0
+      ],
+      "latent": [
+        "19",
+        1
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "15": {
+    "inputs": {
+      "text": "手指畸形，手指残缺，坏的手指，多出来的手指，网格感，JPEG压缩条纹，异常的肢体，水印，正面，侧脸，四分之三脸，特写，仰视，俯视，头部截断，身体截断脖子僵硬，肩颈分离，头部畸形，五官扭曲，手部畸形，手指缺失，肢体截断，身体比例失调，驼背，耸肩，姿态僵硬，塑料质感，蜡像感，卡通感，背景杂乱，阴影过重，过曝，死黑，模糊，失焦",
+      "clip": [
+        "34",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode ( Negative Prompt)"
+    }
+  },
+  "16": {
+    "inputs": {
+      "custom_output": [
+        "19",
+        2
+      ]
+    },
+    "class_type": "QwenEditOutputExtractor_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Edit Output Extractor lrzjason"
+    }
+  },
+  "18": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "19": {
+    "inputs": {
+      "prompt": [
+        "42",
+        0
+      ],
+      "clip": [
+        "34",
+        0
+      ],
+      "vae": [
+        "18",
+        0
+      ],
+      "model_config": [
+        "12",
+        0
+      ],
+      "configs": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "EditTextEncode_EditUtils",
+    "_meta": {
+      "title": "EditUtils: EditTextEncode lrzjason"
+    }
+  },
+  "20": {
+    "inputs": {
+      "pad_info": [
+        "16",
+        0
+      ],
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "CropWithPadInfo_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Crop With Pad Info lrzjason"
+    }
+  },
+  "23": {
+    "inputs": {
+      "text": "手指畸形，手指残缺，坏的手指，多出来的手指，网格感，JPEG压缩条纹，异常的肢体，水印，脖子僵硬，肩颈分离，头部畸形，五官扭曲，手部畸形，手指缺失，肢体截断，身体比例失调，驼背，耸肩，姿态僵硬，塑料质感，蜡像感，卡通感，背景杂乱，阴影过重，过曝，死黑，模糊，失焦",
+      "clip": [
+        "29",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode ( Negative Prompt)"
+    }
+  },
+  "25": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "26": {
+    "inputs": {
+      "seed": 21,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "33",
+        0
+      ],
+      "positive": [
+        "19",
+        0
+      ],
+      "negative": [
+        "14",
+        0
+      ],
+      "latent_image": [
+        "19",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "27": {
+    "inputs": {
+      "min_size": 1024,
+      "max_size": 1024,
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "AdaptiveLongestEdge_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Adaptive Longest Edge lrzjason"
+    }
+  },
+  "28": {
+    "inputs": {
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1,
+      "model": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "29": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "30": {
+    "inputs": {
+      "lora_name": "qe2511_consis_alpha_patched.safetensors",
+      "strength_model": 0.75,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "31": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": true,
+      "model": [
+        "28",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "SAGE注意力补丁KJ"
+    }
+  },
+  "32": {
+    "inputs": {
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1,
+      "model": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "33": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": true,
+      "model": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "SAGE注意力补丁KJ"
+    }
+  },
+  "34": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "35": {
+    "inputs": {
+      "min_size": 1024,
+      "max_size": 1024,
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "AdaptiveLongestEdge_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Adaptive Longest Edge lrzjason"
+    }
+  },
+  "37": {
+    "inputs": {
+      "pad_info": [
+        "7",
+        0
+      ],
+      "image": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "CropWithPadInfo_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Crop With Pad Info lrzjason"
+    }
+  },
+  "38": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "41": {
+    "inputs": {
+      "value": "<sks> front view eye-level shot close-up\n上半身到头顶的特写"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "字符串（多行）"
+    }
+  },
+  "42": {
+    "inputs": {
+      "value": "<sks> back view eye-level shot full shot 背面平视全身（头顶到鞋底完整无截断）"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "字符串（多行）"
+    }
+  },
+  "44": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "45": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "46": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "67",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "47": {
+    "inputs": {
+      "to_ref": true,
+      "ref_main_image": true,
+      "ref_longest_edge": [
+        "61",
+        0
+      ],
+      "ref_crop": "pad",
+      "ref_upscale": "lanczos",
+      "to_vl": true,
+      "vl_resize": true,
+      "vl_target_size": 512,
+      "vl_crop": "center",
+      "vl_upscale": "lanczos",
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "QwenConfigPreparer_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Config Preparer lrzjason"
+    }
+  },
+  "48": {
+    "inputs": {
+      "instruction": ""
+    },
+    "class_type": "QwenModelConfig_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Model Config lrzjason"
+    }
+  },
+  "49": {
+    "inputs": {
+      "samples": [
+        "60",
+        0
+      ],
+      "vae": [
+        "54",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "50": {
+    "inputs": {
+      "conditioning": [
+        "51",
+        0
+      ],
+      "latent": [
+        "55",
+        1
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "51": {
+    "inputs": {
+      "text": "手指畸形，手指残缺，坏的手指，多出来的手指，网格感，JPEG压缩条纹，异常的肢体，水印，脖子僵硬，肩颈分离，头部畸形，五官扭曲，手部畸形，手指缺失，肢体截断，身体比例失调，驼背，耸肩，姿态僵硬，塑料质感，蜡像感，卡通感，背景杂乱，阴影过重，过曝，死黑，模糊，失焦",
+      "clip": [
+        "64",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode ( Negative Prompt)"
+    }
+  },
+  "52": {
+    "inputs": {
+      "custom_output": [
+        "55",
+        2
+      ]
+    },
+    "class_type": "QwenEditOutputExtractor_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Qwen Edit Output Extractor lrzjason"
+    }
+  },
+  "54": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "55": {
+    "inputs": {
+      "prompt": [
+        "66",
+        0
+      ],
+      "clip": [
+        "64",
+        0
+      ],
+      "vae": [
+        "54",
+        0
+      ],
+      "model_config": [
+        "48",
+        0
+      ],
+      "configs": [
+        "47",
+        0
+      ]
+    },
+    "class_type": "EditTextEncode_EditUtils",
+    "_meta": {
+      "title": "EditUtils: EditTextEncode lrzjason"
+    }
+  },
+  "56": {
+    "inputs": {
+      "pad_info": [
+        "52",
+        0
+      ],
+      "image": [
+        "49",
+        0
+      ]
+    },
+    "class_type": "CropWithPadInfo_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Crop With Pad Info lrzjason"
+    }
+  },
+  "59": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "60": {
+    "inputs": {
+      "seed": 21,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "63",
+        0
+      ],
+      "positive": [
+        "55",
+        0
+      ],
+      "negative": [
+        "50",
+        0
+      ],
+      "latent_image": [
+        "55",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "61": {
+    "inputs": {
+      "min_size": 1024,
+      "max_size": 1024,
+      "image": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "AdaptiveLongestEdge_EditUtils",
+    "_meta": {
+      "title": "EditUtils: Adaptive Longest Edge lrzjason"
+    }
+  },
+  "62": {
+    "inputs": {
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1,
+      "model": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "63": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": true,
+      "model": [
+        "62",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "SAGE注意力补丁KJ"
+    }
+  },
+  "64": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "66": {
+    "inputs": {
+      "value": "<sks> strict profile view eye-level shot full shot 严格正侧面平视全身（头顶到鞋底完整无截断）"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "字符串（多行）"
+    }
+  },
+  "67": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "68": {
+    "inputs": {
+      "image": "ComfyUI_00071_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "70": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "right",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "71",
+        0
+      ],
+      "image_2": [
+        "20",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "图像合并（多个）"
+    }
+  },
+  "71": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "right",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "37",
+        0
+      ],
+      "image_2": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "图像合并（多个）"
+    }
+  },
+  "73": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "77",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "77": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "right",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "70",
+        0
+      ],
+      "image_2": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "图像合并（多个）"
+    }
+  }
+}

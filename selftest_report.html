@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导演工作台 · 全量功能测试报告</title>
+<style>
+  :root{--bg:#0f1420;--card:#171e2e;--line:#26314a;--fg:#e6ecff;--muted:#93a0bf;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--info:#60a5fa;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.7 "Segoe UI",system-ui,"Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1040px;margin:0 auto;padding:36px 28px 80px;}
+  h1{font-size:26px;margin:0 0 6px;}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  h3{font-size:15px;margin:20px 0 8px;color:#cdd8f5;}
+  .sub{color:var(--muted);margin-bottom:20px;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .card .n{font-size:30px;font-weight:700;line-height:1.1;}
+  .card .l{color:var(--muted);font-size:12px;margin-top:2px;}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .info{color:var(--info)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{color:var(--muted);font-weight:600;background:#1b2438;}
+  code{background:#0d1420;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12.5px;color:#bfd0ff;}
+  .pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;}
+  .pill.p{background:rgba(52,211,153,.15);color:var(--ok)}
+  .pill.e{background:rgba(251,191,36,.15);color:var(--warn)}
+  .pill.x{background:rgba(248,113,113,.15);color:var(--bad)}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;}
+  .box.x{border-color:#7f1d1d;background:#2a1518}
+  .box.o{border-color:#1d4ed8;background:#121a33}
+  li{margin:4px 0}
+  .tag{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>导演工作台 · 全量功能测试报告</h1>
+<div class="sub">测试日期：2026-08-18　·　范围：后端 API 全量 + 核心业务链路 + 前端构建 + 前端浏览器冒烟</div>
+
+<h2>一、测试方式与边界</h2>
+<div class="box">
+  <b>环境</b>：本机可用 Python 仅 3.13（旧版 3.10/3.11/3.12 解释器路径均损坏），项目锁定的 <code>fastapi==0.104.1 / pydantic==2.5.0</code> 与 3.13 不兼容。故在隔离 <code>backend/.venv-test</code> 内用 <b>3.13 + 最新版依赖</b> 自测（不影响项目锁定文件与全局环境），并补齐了项目 <code>requirements.txt</code> 漏声明的 <code>opencv-python / numpy / PyYAML</code>。
+  <br><br>
+  <b>外部能力探测</b>：ffmpeg 6.1 ✅；ComfyUI(8188) 离线 ❌；llama 视觉(18080) 离线 ❌；groomed 无任何 API Key（DeepSeek/RunningHub/Volcengine/Gemini/ModelScope/即梦均不可用）❌。
+  <br><br>
+  <b>因此可测边界</b>：本地 JSON 数据层的全部 CRUD、批量编排、WS、静态/代理、本地 ffmpeg 链路可<b>完整测</b>；所有"生成类"（文生图/分镜/精修/视频/TTS/剧本/云端供应商）只能验证<b>提交与优雅失败路径</b>，无法验证真实产出。
+</div>
+
+<h2>二、后端自测结果总览</h2>
+<div class="cards">
+  <div class="card"><div class="n ok">48</div><div class="l">主脚本用例数</div></div>
+  <div class="card"><div class="n ok">44</div><div class="l">PASS</div></div>
+  <div class="card"><div class="n warn">4</div><div class="l">预期失败(无外部服务)</div></div>
+  <div class="card"><div class="n ok">0</div><div class="l">未预期崩溃</div></div>
+</div>
+<div class="cards">
+  <div class="card"><div class="n ok">9</div><div class="l">画布专项（CRUD/节点/乐观锁409）</div></div>
+  <div class="card"><div class="n ok">30</div><div class="l">只读端点冒烟</div></div>
+  <div class="card"><div class="n ok">1</div><div class="l">关键阻断 bug → 已现场修复</div></div>
+  <div class="card"><div class="n warn">3</div><div class="l">待修复发现项</div></div>
+</div>
+
+<h2>三、后端分层结果明细</h2>
+
+<h3>3.1 只读端点冒烟（30 项，全 PASS）</h3>
+<table>
+<tr><th>分组</th><th>端点（节选）</th><th>结果</th></tr>
+<tr><td>系统</td><td><code>/health</code>、<code>/api/config</code>、<code>/api/workflows</code>、SPA 根</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>项目</td><td><code>/api/director/projects</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>资产</td><td><code>/assets?limit</code>、<code>/assets/types</code>、<code>/stage-types</code>、<code>/content-types</code>、<code>/stats/overview</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>阶段</td><td><code>/stages</code>、<code>/script/video-types</code>、<code>/graphic/types</code>、<code>/tts/voices</code>、<code>/screen/windows</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>供应商</td><td><code>/providers</code>、<code>/providers/config/meta</code>、<code>/providers/health/all</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>管理类</td><td><code>/batches</code>、<code>/workflow-templates</code>、<code>/presets</code>、<code>/prompts(列表/分类/标签/统计)</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>画布</td><td><code>/api/canvas/</code>、<code>/api/canvases</code>、<code>/api/local-assets</code>、<code>/api/canvas-assets</code>、<code>/api/asset-library</code>、<code>/api/prompt-libraries</code></td><td><span class="pill p">PASS</span></td></tr>
+</table>
+
+<h3>3.2 CRUD 链路（项目/资产/预设/提示词/工作流模板/画布/批量）</h3>
+<table>
+<tr><th>功能</th><th>验证点</th><th>结果</th></tr>
+<tr><td>项目</td><td>创建 · 资产挂载 · 项目统计</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>资产</td><td>创建 · <code>lineage</code> 血缘 · <code>children</code> 衍生 · 删除</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>提示词</td><td>创建 · <code>resolve</code> 变量替换（name/place）命中</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>预设</td><td>创建 · <code>set-default</code> · <code>apply</code></td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>工作流模板</td><td>创建 · <code>create-batch</code> 一键建批</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>批量任务</td><td>创建 · <code>dag</code> 依赖图 · <code>dry-run</code> 预检通过</td><td><span class="pill p">PASS</span></td></tr>
+<tr><td>画布专项</td><td>创建 · 布局更新 · 节点增/改/删 · 删除 · <b>乐观锁</b></td><td><span class="pill p">PASS</span></td></tr>
+</table>
+<div class="box o"><b>乐观锁验证</b>：画布更新支持 <code>base_updated_at</code> 版本，1 秒容差内允行；传超容差的过期版本 → <b>HTTP 409</b>（可读提示"画布已被其他客户端修改，请刷新后重试"）。并发保护真实生效。</div>
+
+<h3>3.3 生成类「错误路径」验证（本机无外部服务）</h3>
+<table>
+<tr><th>端点</th><th>修复前</th><th>修复后</th></tr>
+<tr><td><code>/api/director/stages/execute</code>（concept/video/script）</td><td><span class="pill x">500 裸崩</span></td><td><span class="pill p">202 提交 → 任务优雅流转</span></td></tr>
+<tr><td><code>/api/canvas/msr-video</code></td><td colspan="1"><span class="pill e">503「ComfyUI 未连接」</span></td><td><span class="pill p">优雅失败</span></td></tr>
+<tr><td><code>/api/generate</code>（无限画布）</td><td colspan="1"><span class="pill e">200+可读 error</span></td><td><span class="pill p">优雅失败</span></td></tr>
+</table>
+
+<h2>四、发现的问题</h2>
+
+<h3>✅ 已修复（阻断性 · 已现场修复并复测通过）</h3>
+<div class="box o">
+  <p><b>B1 · <code>/api/director/stages/execute</code> 对任意阶段返回 500</b></p>
+  <p>根因：<code>api/director_stage_api.py:128</code> 中 <code>task = task_mgr.create_task(...)</code> 未 <code>await</code>——<code>create_task</code> 是协程方法，返回的是 coroutine 而非任务对象，下一行 <code>task.task_id</code> 抛 <code>AttributeError</code>。由于是共享提交路径，<b>该 bug 会让前端所有 AI 生成（文生图/分镜/精修/视频/剪辑/导出等）全部 500</b>。</p>
+  <p>修复：补上 <code>await task_mgr.create_task(...)</code>。<b>复测：3 个阶段提交均 202 + 任务正常流转，0 崩溃。</b></p>
+</div>
+
+<h3>⚠️ 待修复（本轮发现的其它真实问题）</h3>
+<div class="box x">
+  <p><b>B2 · 后端死路由 <code>GET /api/director/stages/tasks</code></b></p>
+  <p>端点确实注册了，但运行时永远 404「阶段不存在」。根因：<code>/{stage_id}</code>（<code>director_stage_api.py:49</code>）注册在 <code>/tasks</code>（<code>:201</code>）<b>之前</b>，同为单段路径，后者被通配抢先匹配。修复：把 <code>/tasks</code> 的定义移动到 <code>/{stage_id}</code> 之前（或改路径）。</p>
+</div>
+<div class="box x">
+  <p><b>B3 · 前端 <code>/script</code> 白屏（React runtime error #310）</b></p>
+  <p>导航至 AI 剧本页主内容完全空白，控制台报 React 错误 #310（渲染期 hooks 数量不一致 / child missing）——条件分支中调用 hooks 导致。<b>建议定位 <code>ScriptPage.tsx</code> 中按条件提前 return 后又使用 hooks 的代码路径。</b></p>
+</div>
+<div class="box x">
+  <p><b>B4 · 前端 <code>/video</code> 组件重复渲染</b></p>
+  <p>视频生成页存在两处 Tab 结构重复定义，且同样出现 React #310。布局异常但表单字段仍可识别。建议检查 <code>VideoPage.tsx</code> 的 Tab/Tabs 配置与 hooks 顺序。</p>
+</div>
+
+<h2>五、前端验证</h2>
+<div class="cards">
+  <div class="card"><div class="n ok">PASS</div><div class="l">tsc 类型检查</div></div>
+  <div class="card"><div class="n ok">PASS</div><div class="l">vite build（1.75MB，12.3s）</div></div>
+  <div class="card"><div class="n ok">6/8</div><div class="l">浏览器冒烟通过</div></div>
+  <div class="card"><div class="n warn">2</div><div class="l">页面崩溃(B3/B4)</div></div>
+</div>
+<table>
+<tr><th>页面</th><th>结果</th><th>备注</th></tr>
+<tr><td>/projects 项目管理</td><td><span class="pill p">PASS</span></td><td>含新建/删除项目交互</td></tr>
+<tr><td>/assets 资产库</td><td><span class="pill p">PASS</span></td><td>仅 ComfyUI 8188 资源失败（预期）</td></tr>
+<tr><td>/storyboard 分镜画布</td><td><span class="pill p">PASS</span></td><td>画布 WS <code>[CanvasWS] 连接成功</code>，实时推送链路通</td></tr>
+<tr><td>/batches 批量任务</td><td><span class="pill p">PASS</span></td><td>列表/状态/进度渲染正常</td></tr>
+<tr><td>/prompts 提示词</td><td><span class="pill p">PASS</span></td><td>统计/筛选/列表正常</td></tr>
+<tr><td>/settings 供应商设置</td><td><span class="pill p">PASS</span></td><td>列表/环境变量区域正常</td></tr>
+<tr><td>/script AI剧本</td><td><span class="pill x">FAIL</span></td><td>白屏（B3）</td></tr>
+<tr><td>/video 视频生成</td><td><span class="pill x">FAIL</span></td><td>组件重复（B4）</td></tr>
+</table>
+
+<h2>六、无法在本机验证的功能（受外部服务限制）</h2>
+<p>以下功能仅验证了「提交 + 优雅失败」，<b>未验证真实产出</b>——需要在配置对应服务后重测：</p>
+<ul>
+<li><b>本地 ComfyUI</b>（需 8188 在线）：概念图/分镜/精修/超分/三视图/全景/姿态·线稿·深度提取/多人分镜/分层渲染/模板三件套/清场/Pose优化/视频/TTS 配音</li>
+<li><b>AI 剧本、图文卡片</b>（需 DeepSeek/OpenAI Key）</li>
+<li><b>云端供应商</b>（RunningHub/火山/即刻·Gemini/ModelScope/即梦）：云端图/视频生成</li>
+<li><b>参考图视觉分析</b>（llama.cpp 18080）——失败可降级，不阻塞主流程</li>
+<li><b>屏幕录制</b>：本机无可录制窗口的场景下仅验证端点可达</li>
+</ul>
+<p class="tag">备注：测试后端运行在隔离端口，前端构建产物中 WS 地址按默认 8000 打包，与生产默认一致，故前端冒烟在 8000 下进行。</p>
+
+<h2>七、结论与建议</h2>
+<div class="box">
+  <p>后端整体健壮：<b>126 个注册路由 + 数据层 CRUD + 批量编排 + 画布乐观锁 + 双 WebSocket 全部落地且 0 崩溃</b>；生成链路因缺外部服务已验证为"优雅失败"而非崩溃。前端可正常构建，8 个主要页面 6 个通过。</p>
+  <p><b>建议按优先级处理</b>：</p>
+  <ol>
+    <li><b>B3 / B4</b>（前端 /script、/video 崩溃）——影响最大的可见问题，建议优先修复。</li>
+    <li><b>B2</b>（/stages/tasks 死路由）——一行级改动。</li>
+    <li>配置 ComfyUI / DeepSeek Key 后，对第六节功能做一轮「真实产出」回归。</li>
+    <li>把 <code>python-multipart / opencv-python / numpy / PyYAML</code> 补充进 <code>requirements.txt</code>（已确认必需）。</li>
+  </ol>
+</div>
+
+<p class="tag">产物与证据：<code>backend/_selftest_runner.py</code>（可复用回归脚本）、<code>backend/data/selftest_result.json</code>（原始结果）。临时测试环境 <code>backend/.venv-test</code> 可按需保留/删除。</p>
+
+</div></body>
+</html>

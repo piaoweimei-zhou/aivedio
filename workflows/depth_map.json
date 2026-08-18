@@ -1,0 +1,31 @@
+{
+  "10": {
+    "inputs": {
+      "image": ""
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "输入图片加载"
+    }
+  },
+  "13": {
+    "inputs": {
+      "ckpt_name": "depth_anything_v2_vitl_fp32.onnx",
+      "image": ["10", 0]
+    },
+    "class_type": "DepthAnythingPreprocessor",
+    "_meta": {
+      "title": "Depth Anything 深度估计"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "depth_output",
+      "images": ["13", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存深度图"
+    }
+  }
+}

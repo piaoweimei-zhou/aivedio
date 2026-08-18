@@ -1,0 +1,6 @@
+镜头号,模板编号,人物A,人物B,人物C,人物D,区域A提示词,区域B提示词,全局提示词
+1,T01_双人正面对话,男主A001,女主B002,,,man looking at woman,woman talking to man,modern living room, soft warm light
+2,T02_男主过肩镜头,男主A001,女主B002,,,man back to camera only shoulder visible,woman crossing arms looking at man,modern living room, soft warm light
+3,T04_并肩行走,男主A001,女主B002,,,man walking beside woman,woman walking beside man,city street, golden hour
+4,T05_对坐交谈,男主A001,女主B002,,,man sitting talking,woman sitting listening,cafe interior, warm lighting
+5,T09_四人围坐,男主A001,女主B002,配角C003,配角D004,two people on left side of table,two people on right side of table,round table meeting room

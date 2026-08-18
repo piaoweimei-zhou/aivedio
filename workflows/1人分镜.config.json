@@ -1,0 +1,156 @@
+{
+  "title": "1人分镜",
+  "description": "单人角色连续分镜：上传一个角色参考图，可选配服装/场景/姿态参考，为每个分镜编写不同的画面描述",
+  "fields": [
+    {
+      "id": "image_213",
+      "node": "213",
+      "input": "image",
+      "type": "image",
+      "name": "角色参考",
+      "description": "角色正面照或三视图，贯穿所有分镜保持人物一致",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_1284",
+      "node": "1284",
+      "input": "image",
+      "type": "image",
+      "name": "服装参考",
+      "description": "角色穿着的服装（可选，不填则保持角色原着装）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "image_1285",
+      "node": "1285",
+      "input": "image",
+      "type": "image",
+      "name": "场景参考",
+      "description": "首镜头的场景/背景（可选）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "image_1611",
+      "node": "1611",
+      "input": "image",
+      "type": "image",
+      "name": "后续场景",
+      "description": "后续分镜的场景参考（默认同场景参考，可单独指定）",
+      "group": "images",
+      "compact": true,
+      "optional": true,
+      "sameAs": "image_1285"
+    },
+    {
+      "id": "image_1292",
+      "node": "1292",
+      "input": "image",
+      "type": "image",
+      "name": "姿态参考",
+      "description": "控制人物动作的pose图（可选，仅姿态镜头需要）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "image_2179",
+      "node": "2179",
+      "input": "image",
+      "type": "image",
+      "name": "姿态参考2",
+      "description": "第二个姿态参考图（可选，用于自拍等特殊镜头）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "prompt_1199",
+      "node": "1199",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜1",
+      "description": "首镜头：角色+场景，描述角色在场景中的动作和构图",
+      "group": "prompts",
+      "default": "图1的女人坐在梳妆台前，手持口红，准备将其涂抹。这位佳人肤色白皙细腻，其随性却充满自信的神情，清晰地映照在镜面之上。"
+    },
+    {
+      "id": "prompt_1625",
+      "node": "1625",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜2",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图01的女人穿着图02的内衣坐在床边。"
+    },
+    {
+      "id": "prompt_2023",
+      "node": "2023",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜3",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，女人站在镜子前，抬起两只手整理头发，人物与镜中倒影形成双重构图。"
+    },
+    {
+      "id": "prompt_2048",
+      "node": "2048",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜4",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：近景镜头，图01的女人穿着图02的内衣在图3里，背对观众，面向镜子，抬起一只手放在锁骨上，只能看到女人胸部以上的部分。"
+    },
+    {
+      "id": "prompt_2072",
+      "node": "2072",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜5",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，女人躺在床上，倚靠着枕头，两手抬到头顶整理头发，一条腿伸直，另一条腿弯曲。"
+    },
+    {
+      "id": "prompt_2094",
+      "node": "2094",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜6",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，手里端着一个红酒杯，站在落地窗前，望向窗外的城市夜景。"
+    },
+    {
+      "id": "prompt_2172",
+      "node": "2172",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜7 · 姿态",
+      "description": "角色+姿态参考，基于pose图控制人物动作",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图1的女人参照图2的姿势拿着手机躺在床上自拍"
+    },
+    {
+      "id": "prompt_2210",
+      "node": "2210",
+      "input": "prompt",
+      "type": "textarea",
+      "name": "分镜8",
+      "description": "角色+服装+场景，描述下一个镜头",
+      "group": "prompts",
+      "default": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，手里端着一个红酒杯坐在床边。"
+    }
+  ],
+  "groups": [
+    {"id": "images", "name": "参考图片", "collapsed": false, "layout": "grid"},
+    {"id": "prompts", "name": "分镜提示词（每个分镜描述不同画面）", "collapsed": false, "layout": "list"}
+  ]
+}

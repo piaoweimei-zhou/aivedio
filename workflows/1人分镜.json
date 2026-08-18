@@ -1,0 +1,2500 @@
+{
+  "200": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "208": {
+    "inputs": {
+      "filename_prefix": [
+        "1818",
+        0
+      ],
+      "images": [
+        "1605",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "213": {
+    "inputs": {
+      "image": "角色三视图.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 1"
+    }
+  },
+  "360": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "362": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "cpu"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "547": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "1114",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "844": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "STEPS"
+    }
+  },
+  "850": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "1114": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "1115",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "1115": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "2097",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "1199": {
+    "inputs": {
+      "prompt": "图1的女人坐在梳妆台前，手持口红，准备将其涂抹。这位佳人肤色白皙细腻，其随性却充满自信的神情，清晰地映照在镜面之上。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image3": [
+        "1610",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "1284": {
+    "inputs": {
+      "image": "内衣.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 2"
+    }
+  },
+  "1285": {
+    "inputs": {
+      "image": "卧室.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 3"
+    }
+  },
+  "1286": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "213",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1287": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1284",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1288": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1605",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1289": {
+    "inputs": {
+      "lora_name": "qwen-boreal-general-discrete-low-rank.safetensors",
+      "strength_model": 0.85,
+      "model": [
+        "547",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "1290": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1285",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1292": {
+    "inputs": {
+      "image": "ComfyUI_01246_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 4 POSE"
+    }
+  },
+  "1293": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1294",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1294": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": 1024,
+      "bbox_detector": "yolox_l.onnx",
+      "pose_estimator": "dw-ll_ucoco_384_bs5.torchscript.pt",
+      "scale_stick_for_xinsr_cn": "disable",
+      "image": [
+        "1292",
+        0
+      ]
+    },
+    "class_type": "DWPreprocessor",
+    "_meta": {
+      "title": "DWPose Estimator"
+    }
+  },
+  "1295": {
+    "inputs": {
+      "images": [
+        "1293",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "POSE PREVIEW"
+    }
+  },
+  "1297": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "upscale_method": "nearest-exact",
+      "keep_proportion": "resize",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "1294",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "1298": {
+    "inputs": {
+      "value": 1920
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "WIDTH"
+    }
+  },
+  "1299": {
+    "inputs": {
+      "value": 1080
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "HEIGHT"
+    }
+  },
+  "1342": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "right",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "1286",
+        0
+      ],
+      "image_2": [
+        "1287",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "Image Concatenate Multi"
+    }
+  },
+  "1343": {
+    "inputs": {
+      "images": [
+        "1515",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1482": {
+    "inputs": {
+      "lora_name": "qwen-studio-realism.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "1289",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "1483": {
+    "inputs": {
+      "lora_name": "InSubject-0.5.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "547",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "1515": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "down",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "1548",
+        0
+      ],
+      "image_2": [
+        "1342",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "Image Concatenate Multi"
+    }
+  },
+  "1522": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1527",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1524": {
+    "inputs": {
+      "width": 2048,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "1525": {
+    "inputs": {
+      "seed": 1034973049061657,
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1554",
+        0
+      ],
+      "positive": [
+        "1546",
+        0
+      ],
+      "negative": [
+        "1546",
+        0
+      ],
+      "latent_image": [
+        "1524",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "1526": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1527",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1527": {
+    "inputs": {
+      "samples": [
+        "1525",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "1530": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1548",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1532": {
+    "inputs": {
+      "prompt": "Remove the visible seam in the middle of the image. Remove the white bar. Keep the rest of the image exactly the same.",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1541",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "1534": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "image1": [
+        "1527",
+        0
+      ],
+      "image2": [
+        "1527",
+        0
+      ]
+    },
+    "class_type": "ImageConcanate",
+    "_meta": {
+      "title": "Image Concatenate"
+    }
+  },
+  "1535": {
+    "inputs": {
+      "shape": "square",
+      "frames": 1,
+      "location_x": 1024,
+      "location_y": 512,
+      "grow": 0,
+      "frame_width": [
+        "1538",
+        1
+      ],
+      "frame_height": [
+        "1538",
+        2
+      ],
+      "shape_width": [
+        "1540",
+        0
+      ],
+      "shape_height": 1024
+    },
+    "class_type": "CreateShapeMask",
+    "_meta": {
+      "title": "Create Shape Mask"
+    }
+  },
+  "1536": {
+    "inputs": {
+      "mask": [
+        "1537",
+        0
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "遮罩转换为图像"
+    }
+  },
+  "1537": {
+    "inputs": {
+      "expand": 0,
+      "incremental_expandrate": 0,
+      "tapered_corners": true,
+      "flip_input": false,
+      "blur_radius": [
+        "1539",
+        0
+      ],
+      "lerp_alpha": 1,
+      "decay_factor": 1,
+      "fill_holes": false,
+      "mask": [
+        "1535",
+        0
+      ]
+    },
+    "class_type": "GrowMaskWithBlur",
+    "_meta": {
+      "title": "Grow Mask With Blur"
+    }
+  },
+  "1538": {
+    "inputs": {
+      "width": 2048,
+      "height": 1024,
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "1534",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "1539": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Mask Blur"
+    }
+  },
+  "1540": {
+    "inputs": {
+      "value": 200
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Mask Size"
+    }
+  },
+  "1541": {
+    "inputs": {
+      "blend_factor": 1,
+      "blend_mode": "screen",
+      "image1": [
+        "1538",
+        0
+      ],
+      "image2": [
+        "1536",
+        0
+      ]
+    },
+    "class_type": "ImageBlend",
+    "_meta": {
+      "title": "混合图像"
+    }
+  },
+  "1542": {
+    "inputs": {
+      "seed": 1034973049061657,
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1482",
+        0
+      ],
+      "positive": [
+        "1543",
+        0
+      ],
+      "negative": [
+        "1543",
+        1
+      ],
+      "latent_image": [
+        "1543",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "1543": {
+    "inputs": {
+      "noise_mask": true,
+      "positive": [
+        "1532",
+        0
+      ],
+      "negative": [
+        "1532",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "pixels": [
+        "1538",
+        0
+      ],
+      "mask": [
+        "1535",
+        0
+      ]
+    },
+    "class_type": "InpaintModelConditioning",
+    "_meta": {
+      "title": "内补模型条件"
+    }
+  },
+  "1546": {
+    "inputs": {
+      "prompt": "Create a modern, luxurious bedroom featuring a 360-degree panoramic view, immersed in the ambiance of a summer night. The scene should include furnishings such as a vanity, a lavish bed, floor-to-ceiling windows, a wardrobe, and a full-length mirror. The ultra-wide HDRI image used for the background was captured with a 360-degree panoramic camera and utilizes a \"Freeze Projection\" technique similar to that of Insta360. Please ensure strict consistency in the overall aesthetic style.",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1559",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "1547": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1548",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1548": {
+    "inputs": {
+      "samples": [
+        "1542",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "1549": {
+    "inputs": {
+      "images": [
+        "1541",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1550": {
+    "inputs": {
+      "images": [
+        "1538",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1554": {
+    "inputs": {
+      "lora_name": "251018_MICKMUMPITZ_QWEN-EDIT_360_03.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "547",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "1556": {
+    "inputs": {
+      "left": [
+        "1557",
+        0
+      ],
+      "top": [
+        "1557",
+        0
+      ],
+      "right": [
+        "1557",
+        0
+      ],
+      "bottom": [
+        "1557",
+        0
+      ],
+      "feathering": 40,
+      "image": [
+        "1560",
+        0
+      ]
+    },
+    "class_type": "ImagePadForOutpaint",
+    "_meta": {
+      "title": "外补画板"
+    }
+  },
+  "1557": {
+    "inputs": {
+      "value": 400
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Padding"
+    }
+  },
+  "1558": {
+    "inputs": {
+      "images": [
+        "1559",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1559": {
+    "inputs": {
+      "width": 1024,
+      "height": 512,
+      "upscale_method": "lanczos",
+      "keep_proportion": "pad",
+      "pad_color": "127, 127, 127",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "1556",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "1560": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1610",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1562": {
+    "inputs": {
+      "direction": "right",
+      "match_image_size": true,
+      "image1": [
+        "1548",
+        0
+      ],
+      "image2": [
+        "1548",
+        0
+      ]
+    },
+    "class_type": "ImageConcanate",
+    "_meta": {
+      "title": "Image Concatenate"
+    }
+  },
+  "1591": {
+    "inputs": {
+      "value": 1034973049061650
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "1604": {
+    "inputs": {
+      "seed": [
+        "1591",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1482",
+        0
+      ],
+      "positive": [
+        "1199",
+        0
+      ],
+      "negative": [
+        "1199",
+        0
+      ],
+      "latent_image": [
+        "200",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "1605": {
+    "inputs": {
+      "samples": [
+        "1604",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "1607": {
+    "inputs": {
+      "lora_name": "next-scene_lora-v2-3000.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "1482",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "1610": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": [
+        "1611",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "1611": {
+    "inputs": {
+      "image": "卧室.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "IMAGE 3"
+    }
+  },
+  "1613": {
+    "inputs": {
+      "filename_prefix": [
+        "1819",
+        0
+      ],
+      "images": [
+        "1627",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1619": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "1624": {
+    "inputs": {
+      "value": 1034973049061648
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "1625": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图01的女人穿着图02的内衣坐在床边。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2002",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "1627": {
+    "inputs": {
+      "samples": [
+        "1629",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "1628": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "1627",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "1629": {
+    "inputs": {
+      "seed": [
+        "1624",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "1625",
+        0
+      ],
+      "negative": [
+        "1625",
+        0
+      ],
+      "latent_image": [
+        "1619",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "1704": {
+    "inputs": {
+      "images": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1705": {
+    "inputs": {
+      "images": [
+        "1548",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "1815": {
+    "inputs": {
+      "value": "SceneName"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "SCENE-NAME"
+    }
+  },
+  "1818": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "1819": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "1989": {
+    "inputs": {
+      "drawing_version": 1782110753341,
+      "crop_left": 1044,
+      "crop_right": 2259,
+      "crop_top": 399,
+      "crop_bottom": 179,
+      "crop_width": 794,
+      "crop_height": 446,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2000": {
+    "inputs": {
+      "images": [
+        "1989",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2002": {
+    "inputs": {
+      "drawing_version": 1782110753346,
+      "crop_left": 1481,
+      "crop_right": 1889,
+      "crop_top": 407,
+      "crop_bottom": 209,
+      "crop_width": 726,
+      "crop_height": 408,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2003": {
+    "inputs": {
+      "images": [
+        "2002",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2009": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2012": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2018",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2013": {
+    "inputs": {
+      "seed": [
+        "2016",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2023",
+        0
+      ],
+      "negative": [
+        "2023",
+        0
+      ],
+      "latent_image": [
+        "2009",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2015": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2016": {
+    "inputs": {
+      "value": 1034973049061651
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2018": {
+    "inputs": {
+      "samples": [
+        "2013",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2023": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，女人站在镜子前，抬起两只手整理头发，人物与镜中倒影形成双重构图，。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2025",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "2024": {
+    "inputs": {
+      "images": [
+        "2025",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2025": {
+    "inputs": {
+      "drawing_version": 1782110753341,
+      "crop_left": 2509,
+      "crop_right": 1061,
+      "crop_top": 427,
+      "crop_bottom": 301,
+      "crop_width": 526,
+      "crop_height": 296,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2026": {
+    "inputs": {
+      "filename_prefix": [
+        "2015",
+        0
+      ],
+      "images": [
+        "2018",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2032": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2035": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2041",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2036": {
+    "inputs": {
+      "seed": [
+        "2039",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2048",
+        0
+      ],
+      "negative": [
+        "2048",
+        0
+      ],
+      "latent_image": [
+        "2032",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2038": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2039": {
+    "inputs": {
+      "value": 1034973049061650
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2041": {
+    "inputs": {
+      "samples": [
+        "2036",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2045": {
+    "inputs": {
+      "images": [
+        "2046",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2046": {
+    "inputs": {
+      "drawing_version": 1782110753341,
+      "crop_left": 2702,
+      "crop_right": 1093,
+      "crop_top": 441,
+      "crop_bottom": 414,
+      "crop_width": 300,
+      "crop_height": 169,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2048": {
+    "inputs": {
+      "prompt": "下一个场景：近景镜头，图01的女人穿着图02的内衣在图3里，背对观众，面向镜子，抬起一只手放在锁骨上，只能看到女人胸部以上的部分。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2046",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "2049": {
+    "inputs": {
+      "filename_prefix": [
+        "2038",
+        0
+      ],
+      "images": [
+        "2041",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2050": {
+    "inputs": {
+      "filename_prefix": [
+        "2062",
+        0
+      ],
+      "images": [
+        "2065",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2056": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2059": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2065",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2060": {
+    "inputs": {
+      "seed": [
+        "2063",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2072",
+        0
+      ],
+      "negative": [
+        "2072",
+        0
+      ],
+      "latent_image": [
+        "2056",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2062": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2063": {
+    "inputs": {
+      "value": 1034973049061649
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2065": {
+    "inputs": {
+      "samples": [
+        "2060",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2069": {
+    "inputs": {
+      "images": [
+        "2070",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2070": {
+    "inputs": {
+      "drawing_version": 1782110753343,
+      "crop_left": 1894,
+      "crop_right": 1656,
+      "crop_top": 458,
+      "crop_bottom": 258,
+      "crop_width": 546,
+      "crop_height": 307,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2072": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，女人躺在床上，倚靠着枕头，两手抬到头顶整理头发，一条腿伸直，另一条腿弯曲。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2070",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "2078": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2081": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2086",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2082": {
+    "inputs": {
+      "seed": [
+        "2085",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2094",
+        0
+      ],
+      "negative": [
+        "2094",
+        0
+      ],
+      "latent_image": [
+        "2078",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2084": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2085": {
+    "inputs": {
+      "value": 1034973049061648
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2086": {
+    "inputs": {
+      "samples": [
+        "2082",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2092": {
+    "inputs": {
+      "images": [
+        "2093",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2093": {
+    "inputs": {
+      "drawing_version": 1782110753341,
+      "crop_left": 1530,
+      "crop_right": 2134,
+      "crop_top": 432,
+      "crop_bottom": 349,
+      "crop_width": 433,
+      "crop_height": 243,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2094": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，手里端着一个红酒杯，站在落地窗前，望向窗外的城市夜景。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2093",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "2095": {
+    "inputs": {
+      "filename_prefix": [
+        "2084",
+        0
+      ],
+      "images": [
+        "2086",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2097": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "2160": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2163": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2166",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2165": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2166": {
+    "inputs": {
+      "samples": [
+        "2176",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2170": {
+    "inputs": {
+      "filename_prefix": [
+        "2165",
+        0
+      ],
+      "images": [
+        "2166",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2172": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图1的女人参照图2的姿势拿着手机躺在床上自拍",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "2065",
+        0
+      ],
+      "image2": [
+        "1293",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  },
+  "2176": {
+    "inputs": {
+      "seed": [
+        "2177",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2172",
+        0
+      ],
+      "negative": [
+        "2172",
+        0
+      ],
+      "latent_image": [
+        "2160",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2177": {
+    "inputs": {
+      "value": 1034973049061650
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2179": {
+    "inputs": {
+      "image": "ComfyUI_00814_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "2194": {
+    "inputs": {
+      "width": [
+        "1298",
+        0
+      ],
+      "height": [
+        "1299",
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空Latent图像（SD3）"
+    }
+  },
+  "2197": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "2202",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2198": {
+    "inputs": {
+      "seed": [
+        "2201",
+        0
+      ],
+      "steps": [
+        "844",
+        0
+      ],
+      "cfg": [
+        "850",
+        0
+      ],
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "1607",
+        0
+      ],
+      "positive": [
+        "2210",
+        0
+      ],
+      "negative": [
+        "2210",
+        0
+      ],
+      "latent_image": [
+        "2194",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "2200": {
+    "inputs": {
+      "inputcount": 2,
+      "delimiter": "/",
+      "return_list": false,
+      "Update inputs": null,
+      "string_1": [
+        "1815",
+        0
+      ],
+      "string_2": [
+        "1815",
+        0
+      ]
+    },
+    "class_type": "JoinStringMulti",
+    "_meta": {
+      "title": "Join String Multi"
+    }
+  },
+  "2201": {
+    "inputs": {
+      "value": 1034973049061648
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "2202": {
+    "inputs": {
+      "samples": [
+        "2198",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "2205": {
+    "inputs": {
+      "images": [
+        "2209",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "2206": {
+    "inputs": {
+      "filename_prefix": [
+        "2200",
+        0
+      ],
+      "images": [
+        "2202",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "2209": {
+    "inputs": {
+      "drawing_version": 1782110753347,
+      "crop_left": 2151,
+      "crop_right": 1443,
+      "crop_top": 469,
+      "crop_bottom": 273,
+      "crop_width": 502,
+      "crop_height": 282,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "16:9",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "1562",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "2210": {
+    "inputs": {
+      "prompt": "下一个场景：中景镜头，图01的女人穿着图02的内衣在图3里，手里端着一个红酒杯坐在床边。",
+      "clip": [
+        "362",
+        0
+      ],
+      "vae": [
+        "360",
+        0
+      ],
+      "image1": [
+        "1286",
+        0
+      ],
+      "image2": [
+        "1287",
+        0
+      ],
+      "image3": [
+        "2209",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "文本编码（QwenImageEditPlus）"
+    }
+  }
+}

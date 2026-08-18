@@ -1,0 +1,239 @@
+{
+  "166": {
+    "inputs": {
+      "samples": [
+        "174",
+        0
+      ],
+      "vae": [
+        "385",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "169": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "177",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "170": {
+    "inputs": {
+      "conditioning": [
+        "180",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "174": {
+    "inputs": {
+      "seed": [
+        "275",
+        0
+      ],
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "lcm",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": [
+        "383",
+        0
+      ],
+      "positive": [
+        "193",
+        0
+      ],
+      "negative": [
+        "170",
+        0
+      ],
+      "latent_image": [
+        "180",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "177": {
+    "inputs": {
+      "image": "Batch_00017_.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "180": {
+    "inputs": {
+      "prompt": "将人物姿势改为，一字马，一只腿抬高，抬过头顶。海报偏上的位置有一段文字标题：\"Qwen Image Edit REMIX v2.0\"。\n标题分两行，整体为高清透明水晶体+液态水质感，立体通透，与水面浪花高度融合：\n第一行 “Qwen Image Edit”：透明纯水立体字体，笔画内部有流动水波纹与气泡折射效果，边缘带水光折射高光，字形随水流轻微柔化变形，晶莹通透\n第二行 “REMIX v2.0”：厚重液态水立体字，透明水材质填充，带有水花翻涌的立体隆起与水滴垂坠效果，表面有波光反光与折射光影，立体感强烈\n",
+      "target_size": 1344,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "pad",
+      "instruction": "Describe the key features of the input image (color, shape, size, texture, objects, background), then explain how the user's text instruction should alter or modify the image. Generate a new image that meets the user's requirements while maintaining consistency with the original input where appropriate.",
+      "clip": [
+        "384",
+        0
+      ],
+      "vae": [
+        "385",
+        0
+      ],
+      "vl_resize_image1": [
+        "169",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlusAdvance lrzjason"
+    }
+  },
+  "189": {
+    "inputs": {
+      "filename_prefix": "2026-06-16/20260616_080208_QwenEdit",
+      "images": [
+        "166",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "193": {
+    "inputs": {
+      "conditioning": [
+        "180",
+        0
+      ],
+      "latent": [
+        "180",
+        1
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考Latent"
+    }
+  },
+  "275": {
+    "inputs": {
+      "seed": 284764884417716
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "380": {
+    "inputs": {
+      "unet_name": "Qwen-Rapid-AIO-NSFW-v19_Q4_K.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "381": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-F2P一致性.safetensors",
+      "strength_model": 1,
+      "model": [
+        "380",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "382": {
+    "inputs": {
+      "shift": 2.18,
+      "model": [
+        "381",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "383": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "382",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "384": {
+    "inputs": {
+      "clip_name": "Qwen2.5-VL-7B-Instruct-Q3_K_S.gguf",
+      "type": "qwen_image"
+    },
+    "class_type": "CLIPLoaderGGUF",
+    "_meta": {
+      "title": "CLIPLoader (GGUF)"
+    }
+  },
+  "385": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "388": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "166",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM V2",
+    "_meta": {
+      "title": "图层工具：清除VRAM V2"
+    }
+  }
+}

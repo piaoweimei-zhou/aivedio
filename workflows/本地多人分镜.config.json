@@ -1,0 +1,81 @@
+{
+  "title": "本地多人分镜",
+  "description": "多人分镜生成：输入多个人物参考图，通过GPT自动生成分镜提示词，再生成连续分镜",
+  "fields": [
+    {
+      "id": "image_66",
+      "node": "66",
+      "input": "image",
+      "type": "image",
+      "name": "人物图1",
+      "description": "第一个角色的参考图",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_67",
+      "node": "67",
+      "input": "image",
+      "type": "image",
+      "name": "人物图2",
+      "description": "第二个角色的参考图",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_68",
+      "node": "68",
+      "input": "image",
+      "type": "image",
+      "name": "人物图3",
+      "description": "第三个角色的参考图（可选）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "image_11",
+      "node": "11",
+      "input": "image",
+      "type": "image",
+      "name": "场景参考",
+      "description": "场景/背景参考图",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "prompt_36",
+      "node": "36",
+      "input": "text",
+      "type": "textarea",
+      "name": "GPT系统提示词",
+      "description": "指导GPT如何生成分镜描述的指令（角色唯一性、服装逻辑、空间位移等规则）",
+      "group": "prompts",
+      "default": "【核心指令】\n作为资深影视导演，请严格基于【参考图】的视觉基因，生成逻辑连续的分镜剧本。你必须在三维空间逻辑下管理画面中的所有角色，严禁出现任何形式的人物克隆或外观雷同的冗余角色。"
+    },
+    {
+      "id": "prompt_62",
+      "node": "62",
+      "input": "text",
+      "type": "textarea",
+      "name": "故事描述",
+      "description": "故事背景和分镜需求描述，告诉GPT你要什么样的故事和镜头",
+      "group": "prompts",
+      "default": "这是一部的4宫格电影级动画短片剧照，宫崎骏动漫风格。帮我生成4张男人和女人相识的过程的单张图片，要有相互的过肩镜头，不同运镜和角度，不同的视角和景别。"
+    },
+    {
+      "id": "prompt_142",
+      "node": "142",
+      "input": "text",
+      "type": "textarea",
+      "name": "延展规则",
+      "description": "分镜延展规则：人物一致性、色调统一、构图电影感等约束",
+      "group": "prompts",
+      "default": "保持人物外观一致，色调光影与参考图统一，背景元素延续不突变，构图具备电影感。输出时以Next Scene:开头，每一段文字100字左右。"
+    }
+  ],
+  "groups": [
+    {"id": "images", "name": "参考图片", "collapsed": false, "layout": "grid"},
+    {"id": "prompts", "name": "分镜提示词", "collapsed": false, "layout": "list"}
+  ]
+}

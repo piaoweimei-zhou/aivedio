@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.venv-test/
+venv/
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+backend/logs/
+backend/output/**/pipeline_gen/*.log
+backend/output/**/video_gen/*.log
+
+# Editor state
+.reasonix/
+.idea/
+.vscode/
+
+# Data（运行时产物，不入库）
+data/
+backend/data/
+backend/output/
+backend/assets/
+backend/static/director/comfyui_output/
+
+# ComfyUI 自定义节点（外部依赖）
+custom_nodes/
+
+# Archive
+backend/_archive/
+
+# Build
+frontend-director/dist/

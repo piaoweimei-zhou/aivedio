@@ -1,0 +1,442 @@
+{
+  "2": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "7": {
+    "inputs": {
+      "shift": 3.0000000000000004,
+      "model": [
+        "82",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "11": {
+    "inputs": {
+      "image": "ComfyUI_00001_giszd_1776685890.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "13": {
+    "inputs": {
+      "aspect_ratio": "16:9",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1536,
+      "background_color": "#000000",
+      "image": [
+        "137",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "17": {
+    "inputs": {
+      "prompt": [
+        "39",
+        0
+      ],
+      "start_index": 0,
+      "max_rows": 1000,
+      "remove_empty_lines": ""
+    },
+    "class_type": "easy promptLine",
+    "_meta": {
+      "title": "提示词行"
+    }
+  },
+  "18": {
+    "inputs": {
+      "text": "雨歇后的溪畔，发明家赤脚涉水调试浮空装置，镜头自水面倒影缓缓上移，先现他沾泥的裤管再推至专注眉眼；女孩坐在青苔石上，将烘干的雏菊别进他衣领，指尖轻触锁骨处未愈的擦伤。背景是虹霓横跨山谷，萤火虫群如星屑游弋，镜头切至她背后过肩视角，他抬头微笑时，光斑在他睫毛投下细碎阴影——衣物已换为干爽亚麻衬衫，环境湿度蒸腾出薄雾，魔幻与日常在此刻交融成永恒帧。",
+      "anything": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "展示任何"
+    }
+  },
+  "19": {
+    "inputs": {
+      "seed": 187064925328742,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "6",
+        0
+      ],
+      "positive": [
+        "22",
+        0
+      ],
+      "negative": [
+        "28",
+        0
+      ],
+      "latent_image": [
+        "29",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "22": {
+    "inputs": {
+      "prompt": [
+        "17",
+        0
+      ],
+      "target_size": 1024,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "pad",
+      "instruction": "Describe the key features of the input image (color, shape, size, texture, objects, background), then explain how the user's text instruction should alter or modify the image. Generate a new image that meets the user's requirements while maintaining consistency with the original input where appropriate.",
+      "clip": [
+        "2",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ],
+      "vl_resize_image1": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlusAdvance lrzjason"
+    }
+  },
+  "28": {
+    "inputs": {
+      "conditioning": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "条件零化"
+    }
+  },
+  "29": {
+    "inputs": {
+      "pixels": [
+        "13",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码"
+    }
+  },
+  "30": {
+    "inputs": {
+      "samples": [
+        "19",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "33": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "35": {
+    "inputs": {
+      "text": "这是一部的4宫格动漫爱情电影剧照，宫崎骏动漫风格。帮我生成9张男人和女人相识的过程的单张图片（不要出现宫格图），要有相互的过肩镜头，不同运镜和角度，不同的视角和景别"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "36": {
+    "inputs": {
+      "text": "【核心指令】\n作为资深影视导演，请严格基于【参考图】的视觉基因，生成逻辑连续的分镜剧本。你必须在三维空间逻辑下管理画面中的所有角色，严禁出现任何形式的人物克隆或外观雷同的冗余角色。\n\n【实体唯一性与服装动态法则】\n\n单一主角判定（Unique Instance）： 画面中必须有且仅有一个主角实体继承参考图的生物特征。禁止在同一格画面中出现两个外貌、体型、发色相似的角色。 如果剧情需要配角，必须在描述中赋予配角截然不同的视觉特征（如：主角是金发白人，配角必须是黑发亚裔或有明显胡须等），以产生绝对的视觉区分。\n\n服装逻辑锚定（Contextual Outfit）： 保持人物五官与发色不变。服装必须根据剧情场景实时刷新：若剧情进入运动/睡眠/战斗状态，服装必须产生相应的物理逻辑变化（如更换运动服、睡衣或出现破损），严禁不分场合地复刻参考图中的衣物。\n\n空间位移逻辑： 严格遵循摄像机轴线原则。主角在画面中的物理位置（左/中/右）需根据镜头运动（平移/推拉）产生位移，禁止在背景中凭空生成主角的镜像。\n\n【输出约束】\n\n前缀： 必须以 Next Scene: 开头。\n\n结构： 紧随其后生成由用户指定数量的连续描述段落。\n\n形态： 每一段约为 100 字，纯流式叙事。严禁出现序号（1. 2. 3.）、破折号或任何解释。\n\n内容： 每一段必须清晰定义：谁在动（唯一主体）+ 摄像机怎么走（镜头语言）+ 环境如何变化 + 光影质感演进。"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "39": {
+    "inputs": {
+      "input_string": [
+        "44",
+        0
+      ],
+      "option": "去空行"
+    },
+    "class_type": "ProcessString",
+    "_meta": {
+      "title": "常规处理字符🐠meeeyo.com"
+    }
+  },
+  "44": {
+    "inputs": {
+      "prefix": "",
+      "suffix": "",
+      "input": [
+        "125",
+        0
+      ]
+    },
+    "class_type": "SomethingToString",
+    "_meta": {
+      "title": "Something To String"
+    }
+  },
+  "61": {
+    "inputs": {
+      "text": "这是一部电影级动画短片的4宫格剧照，宫崎骏动漫风格。采用手绘、吉卜力风格的美学，呈现柔和的灯光、动人的叙事以及自然的动态环境。整体基调充满魔力、怀旧感且氛围感十足。\n根据提供的男女主角，帮我生成12张单张图片（不要出现宫格图），使用多样的摄像机角度：特写、广角、低角度、俯拍、侧面轮廓、后方、3/4 视角等，故事发生在一个小城镇，一个男人和2个女人的爱情故事。"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "62": {
+    "inputs": {
+      "text": "这是一部的4宫格电影级动画短片剧照，宫崎骏动漫风格。采用手绘、吉卜力风格的美学，呈现柔和的灯光、动人的叙事以及自然的动态环境。整体基调充满魔力、怀旧感且氛围感十足。\n\n帮我生成4张男人和女人相识的过程的单张图片（不要出现宫格图），要有相互的过肩镜头，不同运镜和角度，不同的视角和景别\n\n创作一部电影级动画短片，采用手绘、吉卜力风格的美学，呈现柔和的灯光、动人的叙事以及自然的动态环境。整体基调充满魔力、怀旧感且氛围感十足。\n故事发生在一个宁静的乡村，一位年轻的发明家制造了一台飞行器，改变了村民们仰望天空的方式。"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "66": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00003_npmgl_1776530407.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像1"
+    }
+  },
+  "67": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00005_gdjal_1776530699.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像2"
+    }
+  },
+  "68": {
+    "inputs": {
+      "image": "ComfyUI_temp_fpakq_00004_xqqhq_1776530531.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像3"
+    }
+  },
+  "72": {
+    "inputs": {
+      "images": [
+        "137",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "79": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "80": {
+    "inputs": {
+      "lora_name": "next-scene_lora-v2-3000.safetensors",
+      "strength_model": 1,
+      "model": [
+        "79",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "81": {
+    "inputs": {
+      "lora_name": "Kook_Qwen_V3极致真实.safetensors",
+      "strength_model": 1,
+      "model": [
+        "80",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "82": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32.safetensors",
+      "strength_model": 1,
+      "model": [
+        "81",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "125": {
+    "inputs": {
+      "api_tokens": "",
+      "prompt1": [
+        "36",
+        0
+      ],
+      "prompt2": [
+        "62",
+        0
+      ],
+      "model": "Qwen/Qwen3-VL-235B-A22B-Instruct",
+      "max_tokens": 1000,
+      "temperature": 0.7,
+      "seed": 434459819,
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "ModelScopeImageCaptionNode",
+    "_meta": {
+      "title": "ModelScope 图像描述生成"
+    }
+  },
+  "137": {
+    "inputs": {
+      "间距": 0,
+      "背景色": "白色",
+      "边框宽度": 0,
+      "边框颜色": "透明",
+      "布局模式": "自动",
+      "列数": 3,
+      "缩放比例": 1,
+      "宽高比": "16:9",
+      "显示序号": false,
+      "字体大小": 24,
+      "字体颜色": "白色",
+      "排序方式": "原始顺序",
+      "图片1": [
+        "66",
+        0
+      ],
+      "图片2": [
+        "67",
+        0
+      ],
+      "图片3": [
+        "68",
+        0
+      ]
+    },
+    "class_type": "ImageGrid_TY",
+    "_meta": {
+      "title": "Image Grid TY"
+    }
+  },
+  "142": {
+    "inputs": {
+      "text": "【输入方式】：参考图 + 文本描述  \n【延展目标】：基于上一张图的画面风格、人物外形、光影氛围、镜头语言，生成下一张分镜图，使得剧情延续\n\n保持人物外观一致  \n色调光影与参考图统一  \n背景元素延续，不突变  \n构图具备电影感（景别 / 光影 / 空间层次）\n\n镜头类型（特写 / 中景 / 远景 / 俯拍 / 跟拍 / 环绕 / 侧移 / 拉远）  \n镜头运动节奏（慢推 / 快切 / 手持感）  \n\n人物发色、身形不变  \n服饰延续衔接，不跳变  \n动作表情是上一个镜头的自然推进  \n背景环境连续递进\n\n高清画面  \n电影级光影  \n真实材质  \n无噪点无畸变  \n可作为下一张分镜生成基础\n\n输出时以Next Scene:开头，后面马上接文字。每一段文字是连续的，没有特殊符号，没有多余的解释，每一段文字100字左右，直接输出内容"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  }
+}

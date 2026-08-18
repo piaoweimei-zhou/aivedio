@@ -1,0 +1,23 @@
+# 导演工作台 — Python 依赖
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-dotenv==1.0.0
+httpx==0.25.2
+aiohttp>=3.9.0
+Pillow>=10.0.0
+psutil>=5.9.0
+python-multipart>=0.0.6
+
+# 图像处理（template_clean_stage / comfyui_service）
+opencv-python==5.0.0.93
+numpy==2.5.2
+PyYAML==6.0.3
+
+# 文本生成 / TTS（延迟导入，运行时需要）
+openai>=1.0.0
+edge-tts>=6.1.0
+
+# 开发/测试依赖
+pytest>=8.0
+pytest-asyncio>=0.23

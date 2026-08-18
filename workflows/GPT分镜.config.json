@@ -1,0 +1,61 @@
+{
+  "title": "GPT分镜",
+  "description": "使用GPT-image-2模型生成拼图式分镜：输入人物参考图和故事描述，生成多宫格分镜",
+  "fields": [
+    {
+      "id": "image_57",
+      "node": "57",
+      "input": "image",
+      "type": "image",
+      "name": "人物图1",
+      "description": "第一个角色的参考图",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_41",
+      "node": "41",
+      "input": "image",
+      "type": "image",
+      "name": "人物图2",
+      "description": "第二个角色的参考图",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_63",
+      "node": "63",
+      "input": "image",
+      "type": "image",
+      "name": "人物图3",
+      "description": "第三个角色的参考图（可选）",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "prompt_61",
+      "node": "61",
+      "input": "value",
+      "type": "textarea",
+      "name": "分镜提示词",
+      "description": "描述想要的分镜风格、镜头角度、故事内容",
+      "group": "prompts",
+      "default": "宫崎骏动漫风格。帮我生成3x4拼图式分镜，16:9画面，使用多样的摄像机角度：特写、广角、低角度、俯拍、侧面轮廓、后方、3/4视角等。"
+    },
+    {
+      "id": "prompt_22",
+      "node": "22",
+      "input": "value",
+      "type": "textarea",
+      "name": "详细提示词（可选）",
+      "description": "更详细的场景描述和构图要求，会覆盖分镜提示词",
+      "group": "prompts",
+      "optional": true
+    }
+  ],
+  "groups": [
+    {"id": "images", "name": "参考图片", "collapsed": false, "layout": "grid"},
+    {"id": "prompts", "name": "分镜提示词", "collapsed": false, "layout": "list"}
+  ]
+}

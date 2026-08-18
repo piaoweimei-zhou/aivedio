@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # 宿主机 ComfyUI（GPU 进程不容器化）
+      - COMFYUI_BASE_URL=http://host.docker.internal:8188
+      - GEN_TASK_TIMEOUT=1800
+    volumes:
+      # 持久化生成资产 / 任务状态 / 上传
+      - ./backend/data:/app/backend/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend-director
+      dockerfile: Dockerfile
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

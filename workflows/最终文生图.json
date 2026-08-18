@@ -1,0 +1,179 @@
+{
+  "26": {
+    "inputs": {
+      "samples": [
+        "28",
+        0
+      ],
+      "vae": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "27": {
+    "inputs": {
+      "anything": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "easy cleanGpuUsed",
+    "_meta": {
+      "title": "清理显存占用"
+    }
+  },
+  "28": {
+    "inputs": {
+      "seed": 21,
+      "steps": 25,
+      "cfg": 2,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "38",
+        0
+      ],
+      "positive": [
+        "41",
+        0
+      ],
+      "negative": [
+        "32",
+        0
+      ],
+      "latent_image": [
+        "34",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "29": {
+    "inputs": {
+      "images": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "30": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "31": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "32": {
+    "inputs": {
+      "text": "泛黄，发绿，模糊，低分辨率，低质量图像，扭曲的肢体，诡异的外观，丑陋，AI感，AI痕迹，噪点，网格感，JPEG压缩条纹，异常的肢体，水印，乱码，意义不明的字符，泛蓝，手指畸形，手指残缺，坏的手指，多出来的手指，手指多余，脖子僵硬，脖子过长，脖子过短，歪脖子，肩颈分离，锁骨畸形，头部畸形，五官扭曲，眼睛大小不一，手部畸形，手指缺失，脚部畸形，鞋子变形，肢体截断，身体比例失调，驼背，耸肩，姿态僵硬，塑料质感，蜡像感，皮肤过白，磨皮过度，卡通感，二次元，油画质感，背景杂乱，阴影过重，过曝，死黑，失焦，文字，logo",
+      "clip": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "34": {
+    "inputs": {
+      "width": 1080,
+      "height": 1920,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  },
+  "36": {
+    "inputs": {
+      "unet_name": "z_image_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "37": {
+    "inputs": {
+      "lora_name": "Kook_Zimage_瑶光.safetensors",
+      "strength_model": 1.0000000000000002,
+      "model": [
+        "36",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "38": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "41": {
+    "inputs": {
+      "text": "3一位身份尊贵的东方古典宫廷女性，匹配的极简柔光浅灰背景，双脚自然打开与肩同宽，双臂自然贴于身体两侧，自然站立，双掌向大腿内侧自然扣合，正对镜头，全景深平视，正面完整全身摄影，头顶与脚踝无任何截断，完整呈现从头顶至鞋底的全身轮廓，85mm定焦镜头，f/8光圈，全景深，电影级影棚布光，光影均匀无死黑，无过度曝光，五官精致柔和，脸型圆润，肤色白皙透亮，眼部细节：深棕色眼眸，眼型修长，眼妆采用暖色大地色系，眼神端庄沉静，发型细节：乌黑亮泽的发丝盘成高耸华丽的古典发髻，佩戴着极尽奢华的金红配色凤凰金冠，冠上镶嵌红色宝石与流苏步摇，垂坠至两颊两侧，耳部佩戴长款金色流苏耳环，颈部与胸口佩戴多层金镶红宝项链，服饰叠穿逻辑：内层为粉色轻纱抹胸，中层为同色系刺绣抹胸，外层为粉色提花织锦长袍，肩部呈夸张的层叠花瓣状造型，衣身布满精细的白色羽毛刺绣纹理，衣摆垂坠自然，腰部细节：腰间系有同色系宽腰带，下装细节：粉色长裙自然垂落，面料带有光泽感，鞋履细节：粉色绣花软底鞋，裙摆遮盖鞋面，身材比例：身形纤细修长，头身比优越，体态优雅挺拔",
+      "clip": [
+        "30",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "42": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  }
+}

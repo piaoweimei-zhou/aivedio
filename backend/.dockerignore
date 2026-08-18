@@ -1,0 +1,11 @@
+.venv-test
+__pycache__
+*.pyc
+data
+logs
+output
+assets
+.env
+echo
+pause
+set

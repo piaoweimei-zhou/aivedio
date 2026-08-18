@@ -1,0 +1,127 @@
+{
+  "last_node_id": 250,
+  "last_link_id": 400,
+  "nodes": [
+    {
+      "id": 100,
+      "type": "PrimitiveInt",
+      "pos": [50, 850],
+      "size": [150, 40],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "INT", "type": "INT", "links": [100]}],
+      "widgets_values": [2],
+      "title": "分层数量"
+    },
+    {
+      "id": 101,
+      "type": "LoadImage",
+      "pos": [50, 50],
+      "size": [210, 82],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [101]}],
+      "widgets_values": ["T09_四人围坐_full_mask.png"],
+      "title": "完整蒙版"
+    },
+    {
+      "id": 102,
+      "type": "LoadImage",
+      "pos": [50, 150],
+      "size": [210, 82],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [102]}],
+      "widgets_values": ["T09_四人围坐_depth_clean.png"],
+      "title": "共享清场深度图"
+    },
+    {
+      "id": 103,
+      "type": "MaskSplit",
+      "pos": [300, 50],
+      "size": [210, 100],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "mask", "type": "MASK", "link": 101},
+        {"name": "split_count", "type": "INT", "link": 100}
+      ],
+      "outputs": [
+        {"name": "mask_1", "type": "MASK", "links": [103]},
+        {"name": "mask_2", "type": "MASK", "links": [104]}
+      ],
+      "title": "蒙版分层拆分"
+    },
+    {
+      "id": 104,
+      "type": "Group",
+      "pos": [550, 50],
+      "size": [1000, 500],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "title": "A组生成（2人）",
+      "nodes": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115]
+    },
+    {
+      "id": 105,
+      "type": "Group",
+      "pos": [550, 600],
+      "size": [1000, 500],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "title": "B组生成（2人）",
+      "nodes": [116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126]
+    },
+    {
+      "id": 106,
+      "type": "ImageComposite",
+      "pos": [1600, 50],
+      "size": [210, 100],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "image1", "type": "IMAGE", "link": 105},
+        {"name": "image2", "type": "IMAGE", "link": 106}
+      ],
+      "outputs": [{"name": "IMAGE", "type": "IMAGE", "links": [107]}],
+      "widgets_values": ["normal", 1.0],
+      "title": "自动合成"
+    },
+    {
+      "id": 107,
+      "type": "SaveImage",
+      "pos": [1850, 50],
+      "size": [210, 82],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 107}],
+      "outputs": [],
+      "widgets_values": ["ComfyUI_multi_layer_final"],
+      "title": "保存最终合成图"
+    }
+  ],
+  "links": [
+    [100, 0, 103, 1],
+    [101, 0, 103, 0],
+    [102, 0, 104, 1],
+    [103, 0, 104, 0],
+    [104, 0, 105, 0],
+    [105, 0, 106, 0],
+    [106, 0, 107, 0]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

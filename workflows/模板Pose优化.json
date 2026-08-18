@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "title": "模板Pose优化",
+    "description": "从完整OpenPose骨架图生成简化7节点骨架，自动去除冗余关节点"
+  },
+  "1": {
+    "inputs": {
+      "image": "pose_raw.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载原始Pose图"
+    }
+  },
+  "2": {
+    "inputs": {
+      "pose_image": ["1", 0],
+      "joint_radius": 5,
+      "line_width": 3,
+      "head_radius": 8,
+      "background_color": "black"
+    },
+    "class_type": "SimplifiedPoseRenderer",
+    "_meta": {
+      "title": "简化骨架渲染"
+    }
+  },
+  "3": {
+    "inputs": {
+      "filename_prefix": "pose",
+      "images": ["2", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存简化Pose图"
+    }
+  }
+}

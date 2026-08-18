@@ -1,0 +1,69 @@
+{
+  "title": "多人分镜三元约束",
+  "description": "双人分镜+蒙版约束：输入两个人物参考图和蒙版模板，精确控制人物位置",
+  "fields": [
+    {
+      "id": "image_1",
+      "node": "1",
+      "input": "image",
+      "type": "image",
+      "name": "人物A",
+      "description": "人物A的四视图或正面照",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_2",
+      "node": "2",
+      "input": "image",
+      "type": "image",
+      "name": "人物B",
+      "description": "人物B的四视图或正面照",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_3",
+      "node": "3",
+      "input": "image",
+      "type": "image",
+      "name": "蒙版模板",
+      "description": "双人位置蒙版图，定义人物A和B的空间位置",
+      "group": "images",
+      "compact": true
+    },
+    {
+      "id": "image_91",
+      "node": "91",
+      "input": "image",
+      "type": "image",
+      "name": "场景参考",
+      "description": "场景/背景参考图",
+      "group": "images",
+      "compact": true,
+      "optional": true
+    },
+    {
+      "id": "prompt_174",
+      "node": "174",
+      "input": "value",
+      "type": "textarea",
+      "name": "正向提示词",
+      "description": "描述双人分镜画面",
+      "group": "prompts"
+    },
+    {
+      "id": "prompt_306",
+      "node": "306",
+      "input": "value",
+      "type": "textarea",
+      "name": "负向提示词",
+      "description": "描述不希望出现的元素",
+      "group": "prompts"
+    }
+  ],
+  "groups": [
+    {"id": "images", "name": "参考图片", "collapsed": false, "layout": "grid"},
+    {"id": "prompts", "name": "分镜提示词", "collapsed": false, "layout": "list"}
+  ]
+}

@@ -1,0 +1,353 @@
+{
+  "1": {
+    "inputs": {
+      "image": "ComfyUI_00101_ (1).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "人物A（4视图）"
+    }
+  },
+  "2": {
+    "inputs": {
+      "image": "ComfyUI_00105_ (1).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "人物B（4视图）"
+    }
+  },
+  "10": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "cpu"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "11": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "12": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "13": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "12",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "14": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "15": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V2.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Lightning LoRA"
+    }
+  },
+  "16": {
+    "inputs": {
+      "lora_name": "InSubject-0.5.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "InSubject LoRA"
+    }
+  },
+  "18": {
+    "inputs": {
+      "lora_name": "qwen-studio-realism.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Studio Realism LoRA"
+    }
+  },
+  "19": {
+    "inputs": {
+      "lora_name": "next-scene_lora-v2-3000.safetensors",
+      "strength_model": 0.9,
+      "model": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Next-Scene LoRA"
+    }
+  },
+  "30": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.5,
+      "resolution_steps": 1,
+      "image": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "人物A缩放"
+    }
+  },
+  "31": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.5,
+      "resolution_steps": 1,
+      "image": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "人物B缩放"
+    }
+  },
+  "40": {
+    "inputs": {
+      "value": "masterpiece, best quality, ultra realistic photo, warm home living room, on the left side is the adult woman, on the right side is the 7-year-old boy, sitting side by side on soft sofa, mother and child reading story book together..."
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "PROMPT"
+    }
+  },
+  "60": {
+    "inputs": {
+      "prompt": [
+        "40",
+        0
+      ],
+      "target_size": 1024,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "center",
+      "instruction": "Analyze each input character image separately (facial features, hairstyle, clothing, body proportions). Then analyze the scene/background image (architecture, lighting, perspective). Generate a new image that places all characters into the scene at their specified positions, maintaining each character's identity strictly. Ensure consistent lighting direction, shadow alignment, and scale proportions across all characters.Place the female character on the left and the male character on the right according to the mask positions",
+      "clip": [
+        "10",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ],
+      "vl_resize_image1": [
+        "30",
+        0
+      ],
+      "vl_resize_image2": [
+        "31",
+        0
+      ],
+      "vl_resize_image3": [
+        "87",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "_meta": {
+      "title": "多人融合文本编码"
+    }
+  },
+  "70": {
+    "inputs": {
+      "seed": 943570999559502,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "19",
+        0
+      ],
+      "positive": [
+        "60",
+        0
+      ],
+      "negative": [
+        "83",
+        0
+      ],
+      "latent_image": [
+        "82",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器（4步闪电采样）"
+    }
+  },
+  "71": {
+    "inputs": {
+      "samples": [
+        "70",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "72": {
+    "inputs": {
+      "filename_prefix": "multi_person",
+      "images": [
+        "71",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "82": {
+    "inputs": {
+      "width": 896,
+      "height": 1408,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "空Latent图像"
+    }
+  },
+  "83": {
+    "inputs": {
+      "text": [
+        "84",
+        0
+      ],
+      "clip": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "84": {
+    "inputs": {
+      "value": "blurry, low resolution, deformed face, distorted limbs, extra fingers, messy facial features, ugly, noisy, overexposed, fuzzy edges, mismatched skin texture, disfigured, cartoon, painting, 3d render"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "PROMPT"
+    }
+  },
+  "86": {
+    "inputs": {
+      "images": [
+        "87",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "87": {
+    "inputs": {
+      "drawing_version": 1782110799314,
+      "crop_left": 1436,
+      "crop_right": 1867,
+      "crop_top": 332,
+      "crop_bottom": 246,
+      "crop_width": 793,
+      "crop_height": 446,
+      "last_width": 4096,
+      "last_height": 1024,
+      "Snap to": "none",
+      "Aspect Ratio": "9:16",
+      "Aspect Ratio Lock": true,
+      "Set Ratio from Crop": "set_ratio",
+      "Force Refresh": "refresh",
+      "Hide Info Text": null,
+      "Box Color": "Lime",
+      "Reset Crop": "reset",
+      "image": [
+        "89",
+        0
+      ]
+    },
+    "class_type": "OlmDragCrop",
+    "_meta": {
+      "title": "Olm Drag Crop"
+    }
+  },
+  "89": {
+    "inputs": {
+      "image": "ComfyUI_00170_ (1).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  }
+}

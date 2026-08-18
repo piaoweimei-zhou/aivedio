@@ -1,0 +1,266 @@
+{
+  "1": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "3": {
+    "inputs": {
+      "prompt": [
+        "37",
+        0
+      ],
+      "start_index": 0,
+      "max_rows": 1000,
+      "remove_empty_lines": ""
+    },
+    "class_type": "easy promptLine",
+    "_meta": {
+      "title": "提示词行"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "7": {
+    "inputs": {
+      "samples": [
+        "12",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "10": {
+    "inputs": {
+      "text": "添加人物, 新增家具, 新增灯具, 悬浮物体, 改变酒瓶颜色, 改变大理石纹理, 改变灯光色温, 风格不统一, 低质量, 模糊, 扭曲变形",
+      "clip": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码（负面提示词）"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "BarScene_6Angle",
+      "images": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "12": {
+    "inputs": {
+      "seed": 833315228595047,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 0.7,
+      "model": [
+        "24",
+        0
+      ],
+      "positive": [
+        "14",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "latent_image": [
+        "14",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "K采样器"
+    }
+  },
+  "13": {
+    "inputs": {
+      "image": "std_ref_scene.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像（酒吧场景原图）"
+    }
+  },
+  "14": {
+    "inputs": {
+      "prompt": [
+        "3",
+        0
+      ],
+      "target_size": 1024,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "pad",
+      "instruction": "You are editing a bar scene for a short drama. STRICTLY preserve all core elements from the reference image: three brass pendant lamps with warm yellow glow, backlit liquor bottles arranged on shelf behind counter, black marble counter with golden veins, cyberpunk neon cityscape outside grid windows. Maintain exact lighting direction (warm amber interior light from upper-left, cool blue-purple exterior neon), material properties (brass metal, glass bottles, marble stone), and spatial relationships. Only modify the camera angle and perspective as specified in the user's prompt. ABSOLUTELY DO NOT add new objects, people, furniture, or light sources. DO NOT alter colors, materials, or textures of existing objects. If perspective change conflicts with element visibility, prioritize preserving recognizable layout and proportions of core objects over strict perspective accuracy. Generate photorealistic cinematic frame consistent with the original scene.",
+      "clip": [
+        "1",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "vl_resize_image1": [
+        "200",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlusAdvance lrzjason"
+    }
+  },
+  "18": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-8steps-V1.1.safetensors",
+      "strength_model": 1,
+      "model": [
+        "35",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "19": {
+    "inputs": {
+      "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+      "strength_model": 1,
+      "model": [
+        "18",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "24": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "25",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFG归一化"
+    }
+  },
+  "25": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "采样算法（AuraFlow）"
+    }
+  },
+  "35": {
+    "inputs": {
+      "unet_name": "qwen-image-edit-2511-Q4_K_S.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "37": {
+    "inputs": {
+      "value": "Next Scene：广角全景，展示完整酒吧内部空间与窗外霓虹夜景。保持三盏黄铜吊灯、背光酒瓶阵列、黑色大理石吧台完全不变，严禁添加人物或新物体。\nNext Scene：正面中景，平视展示吧台与酒瓶阵列标准构图。保持三盏黄铜吊灯、背光酒瓶、黑色大理石吧台、窗外霓虹夜景完全不变，严禁添加人物或新物体。\nNext Scene：左侧45度斜侧，增加空间纵深与窗景层次。保持三盏黄铜吊灯、背光酒瓶、黑色大理石吧台、窗外霓虹夜景完全不变，严禁添加人物或新物体。\nNext Scene：右侧45度斜侧，对称展示吧台另一侧酒瓶排列。保持三盏黄铜吊灯、背光酒瓶、黑色大理石吧台、窗外霓虹夜景完全不变，严禁添加人物或新物体。\nNext Scene：特写镜头，聚焦中央黄铜吊灯与下方酒瓶玻璃质感。保持灯罩金属拉丝、酒瓶琥珀色反光、窗外虚化霓虹完全不变，严禁添加人物或新物体。\nNext Scene：正上方90度俯视，展示吧台与酒瓶平面布局。保持三盏黄铜吊灯呈圆形光斑、酒瓶阵列位置、大理石台面轮廓完全不变，允许简化俯视角不可见细节，严禁添加人物或新物体。"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "字符串（多行）"
+    }
+  },
+  "38": {
+    "inputs": {
+      "images": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览图像"
+    }
+  },
+  "39": {
+    "inputs": {
+      "purge_cache": true,
+      "purge_models": true,
+      "anything": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: PurgeVRAM V2",
+    "_meta": {
+      "title": "图层工具：清除VRAM V2"
+    }
+  },
+  "200": {
+    "inputs": {
+      "aspect_ratio": "1:1",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  }
+}

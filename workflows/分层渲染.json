@@ -1,0 +1,149 @@
+{
+  "100": {
+    "inputs": { "image": "T09_四人围坐_depth_clean_placeholder.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "共享清场深度图" }
+  },
+  "110": {
+    "inputs": { "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors", "type": "qwen_image", "device": "cpu" },
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "加载CLIP" }
+  },
+  "111": {
+    "inputs": { "vae_name": "qwen_image_vae.safetensors" },
+    "class_type": "VAELoader",
+    "_meta": { "title": "加载VAE" }
+  },
+  "112": {
+    "inputs": { "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors", "weight_dtype": "default" },
+    "class_type": "UNETLoader",
+    "_meta": { "title": "UNet加载器" }
+  },
+  "113": {
+    "inputs": { "shift": 3, "model": ["112", 0] },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": { "title": "采样算法（AuraFlow）" }
+  },
+  "114": {
+    "inputs": { "strength": 1, "model": ["113", 0] },
+    "class_type": "CFGNorm",
+    "_meta": { "title": "CFG归一化" }
+  },
+  "115": {
+    "inputs": { "lora_name": "Qwen-Image-Lightning-8steps-V2.0.safetensors", "strength_model": 1, "model": ["114", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Lightning LoRA" }
+  },
+  "116": {
+    "inputs": { "lora_name": "InSubject-0.5.safetensors", "strength_model": 0.7, "model": ["115", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "InSubject LoRA" }
+  },
+  "117": {
+    "inputs": { "lora_name": "qwen-boreal-general-discrete-low-rank.safetensors", "strength_model": 0.85, "model": ["116", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Boreal LoRA" }
+  },
+  "118": {
+    "inputs": { "lora_name": "qwen-studio-realism.safetensors", "strength_model": 0.7, "model": ["117", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Studio Realism LoRA" }
+  },
+  "119": {
+    "inputs": { "lora_name": "next-scene_lora-v2-3000.safetensors", "strength_model": 0.9, "model": ["118", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "Next-Scene LoRA" }
+  },
+  "120": {
+    "inputs": { "lora_name": "251018_MICKMUMPITZ_QWEN-EDIT_360_03.safetensors", "strength_model": 0.9, "model": ["119", 0] },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "360 LoRA" }
+  },
+  "130": {
+    "inputs": { "image": "character_A_placeholder.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "A组人物1" }
+  },
+  "131": {
+    "inputs": { "image": "character_B_placeholder.png" },
+    "class_type": "LoadImage",
+    "_meta": { "title": "A组人物2" }
+  },
+  "140": {
+    "inputs": { "upscale_method": "lanczos", "megapixels": 1, "resolution_steps": 1, "image": ["130", 0] },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": { "title": "A组人物1缩放" }
+  },
+  "141": {
+    "inputs": { "upscale_method": "lanczos", "megapixels": 1, "resolution_steps": 1, "image": ["131", 0] },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": { "title": "A组人物2缩放" }
+  },
+  "150": {
+    "inputs": { "control_net_name": "depth_midas_v3.1_fp16.safetensors" },
+    "class_type": "ControlNetLoader",
+    "_meta": { "title": "加载深度ControlNet" }
+  },
+  "160": {
+    "inputs": { "value": "PROMPT_A_PLACEHOLDER" },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": { "title": "A组提示词" }
+  },
+  "170": {
+    "inputs": {
+      "prompt": ["160", 0],
+      "target_size": 1024,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "center",
+      "instruction": "Analyze each input character image separately. Generate a new image placing characters at their specified positions, maintaining each character's identity strictly.",
+      "clip": ["110", 0],
+      "vae": ["111", 0],
+      "vl_resize_image1": ["140", 0],
+      "vl_resize_image2": ["141", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "_meta": { "title": "A组文本编码" }
+  },
+  "171": {
+    "inputs": {
+      "conditioning": ["170", 0],
+      "control_net": ["150", 0],
+      "image": ["100", 0],
+      "strength": 0.8
+    },
+    "class_type": "ControlNetApply",
+    "_meta": { "title": "A组深度约束" }
+  },
+  "172": {
+    "inputs": { "conditioning": ["170", 0] },
+    "class_type": "ConditioningZeroOut",
+    "_meta": { "title": "A组负面条件零化" }
+  },
+  "190": {
+    "inputs": {
+      "seed": 21,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["120", 0],
+      "positive": ["171", 0],
+      "negative": ["172", 0],
+      "latent_image": ["170", 1]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "A组K采样器" }
+  },
+  "191": {
+    "inputs": { "samples": ["190", 0], "vae": ["111", 0] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "A组VAE解码" }
+  },
+  "200": {
+    "inputs": { "filename_prefix": "layered_render_A", "images": ["191", 0] },
+    "class_type": "SaveImage",
+    "_meta": { "title": "保存A组图层" }
+  }
+}

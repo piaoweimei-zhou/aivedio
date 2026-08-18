@@ -1,0 +1,25 @@
+{
+  "templates": [
+    {
+      "id": "T01_双人正面对话",
+      "name": "T01 双人正面对话",
+      "description": "3333",
+      "scene": "33",
+      "person_count": 2,
+      "files": {
+        "pose": "T01_双人正面对话_pose.png",
+        "depth_raw": "T01_双人正面对话_depth_raw.png",
+        "lineart": "T01_双人正面对话_lineart.png",
+        "depth_clean": "T01_双人正面对话_depth_clean.png",
+        "mask": "T01_双人正面对话_mask.png"
+      },
+      "recommended_params": {
+        "depth_weight": 0.8,
+        "pose_weight": 0.45,
+        "mask_blur": 2
+      },
+      "status": "cleaned"
+    }
+  ],
+  "version": "1.0"
+}

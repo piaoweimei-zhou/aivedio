@@ -1,0 +1,31 @@
+{
+  "10": {
+    "inputs": {
+      "image": ""
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "输入图片加载"
+    }
+  },
+  "13": {
+    "inputs": {
+      "coarse": "disable",
+      "image": ["10", 0]
+    },
+    "class_type": "LineArtPreprocessor",
+    "_meta": {
+      "title": "LineArt 线稿提取"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "lineart_output",
+      "images": ["13", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存线稿图"
+    }
+  }
+}
