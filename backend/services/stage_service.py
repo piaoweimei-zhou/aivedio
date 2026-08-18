@@ -317,6 +317,25 @@ BUILTIN_STAGES = {
         supported_providers=["local"],
         description="多素材分屏合成（horizontal/vertical/grid/split_compare 四种布局，支持视频和图片混合）",
     ),
+    # 短视频后期阶段（Phase 1：字幕 + 钩子）
+    "subtitle": StageDef(
+        stage_id="subtitle",
+        name="字幕烧录",
+        input_types=["video"],
+        output_type="video",
+        default_provider="local",
+        supported_providers=["local"],
+        description="竖版大字幕烧录（关键词高亮描边，纯 ffmpeg）",
+    ),
+    "hook_overlay": StageDef(
+        stage_id="hook_overlay",
+        name="结尾钩子引导框",
+        input_types=["video"],
+        output_type="video",
+        default_provider="local",
+        supported_providers=["local"],
+        description="结尾固定引导框（评论区扣1领工具模板化），ffmpeg overlay",
+    ),
 }
 
 
@@ -362,6 +381,8 @@ class StageService:
             "compose": "services.stages.compose_stage:ComposeStage",
             "graphic": "services.stages.graphic_stage:GraphicStage",
             "tts": "services.stages.tts_stage:TtsStage",
+            "subtitle": "services.stages.subtitle_stage:SubtitleStage",
+            "hook_overlay": "services.stages.hook_overlay_stage:HookOverlayStage",
         }
 
         import importlib
