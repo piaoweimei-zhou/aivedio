@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.provider_service import get_provider_service
 from services.stage_service import StageDef, StagePlugin
+from services.style_registry import get_style
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,10 @@ class ScriptStage(StagePlugin):
         tone_extra = params.get("tone_extra", "").strip()
         target_audience = params.get("target_audience", "").strip()
         hook_style = params.get("hook_style", "comment_1")  # comment_1 / main_page / dm
+        style_id = params.get("style_id", "")
+        # 仅显式指定 style_id 时注入风格（保持 API 向后兼容）
+        style = get_style(style_id) if style_id else None
+        style_guidance = style.get("script_guidance", "") if style else ""
         model = params.get("model", "")
         temperature = float(params.get("temperature", 0.85))
         max_tokens = int(params.get("max_tokens", 6000))
@@ -125,6 +130,7 @@ class ScriptStage(StagePlugin):
             tone_extra=tone_extra,
             target_audience=target_audience,
             hook_style=hook_style,
+            style_guidance=style_guidance,
         )
         user_prompt = self._build_user_prompt(
             topic=topic,
@@ -198,6 +204,8 @@ class ScriptStage(StagePlugin):
             "tone_extra": tone_extra,
             "target_audience": target_audience,
             "hook_style": hook_style,
+            "style_id": style["style_id"] if style else "",
+            "style_name": style["name"] if style else "",
             "model": result.model,
             "provider_id": provider_id,
             "generated_at": time.time(),
@@ -257,6 +265,7 @@ class ScriptStage(StagePlugin):
         tone_extra: str,
         target_audience: str,
         hook_style: str,
+        style_guidance: str = "",
     ) -> str:
         hook_desc = {
             "comment_1": "评论区扣1（强互动，私信发链接）",
@@ -266,6 +275,8 @@ class ScriptStage(StagePlugin):
 
         chars_str = "、".join(characters) if characters else "由你自行设计2-3个鲜明角色"
         audience_str = target_audience or "短视频平台泛流量用户"
+
+        style_block = f"\n9. 网感风格：{style_guidance}\n" if style_guidance else ""
 
         return (
             "你是一位专业短视频剧本编剧，擅长制作能在抖音/B站/小红书爆款的短剧脚本。\n"
@@ -279,7 +290,9 @@ class ScriptStage(StagePlugin):
             f"7. 情感基调：{template['tone']}"
             + (f"，{tone_extra}" if tone_extra else "")
             + "\n"
-            f"8. 结尾钩子方式：{hook_desc}\n\n"
+            f"8. 结尾钩子方式：{hook_desc}"
+            + style_block
+            + "\n"
             "输出要求：返回严格的 JSON 对象，结构如下：\n"
             "{\n"
             '  "title": "视频标题（吸引眼球，含数字/疑问/反差）",\n'

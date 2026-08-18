@@ -7,6 +7,7 @@ import CanvasPanel from '../components/CanvasPanel'
 import IframeEmbed from '../components/IframeEmbed'
 import ProjectSelector from '../components/ProjectSelector'
 import { initCanvasRealtime } from '../services/canvasRealtime'
+import { styleApi, StyleOption } from '../services/directorApi'
 
 const { Title, Text } = Typography
 
@@ -32,6 +33,8 @@ export default function StoryboardPage() {
   const [frames, setFrames] = useState<StoryboardFrame[]>([])
   const [providerId, setProviderId] = useState('comfyui')
   const [templateType, setTemplateType] = useState('')
+  const [styleId, setStyleId] = useState('')
+  const [styles, setStyles] = useState<StyleOption[]>([])
   const [loading, setLoading] = useState(false)
   const [availableProviders, setAvailableProviders] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<'canvas' | 'infinite'>('canvas')
@@ -41,6 +44,13 @@ export default function StoryboardPage() {
     loadStages()
     // 建立画布实时订阅：接收其他客户端对当前画布的变更并刷新
     initCanvasRealtime()
+    // 加载网感风格
+    styleApi.list().then(res => {
+      const list = res.styles || []
+      setStyles(list)
+      const def = list.find(s => s.is_default)
+      if (def) setStyleId(def.style_id)
+    }).catch(() => {})
   }, [])
 
   // 获取分镜阶段支持的供应商
@@ -131,6 +141,9 @@ export default function StoryboardPage() {
       if (templateType) {
         params.template = templateType
       }
+      if (styleId) {
+        params.style_id = styleId
+      }
       const result = await executeStage({
         stage_id: 'storyboard',
         input_asset_ids: selectedAssetIds,
@@ -173,6 +186,14 @@ export default function StoryboardPage() {
             onChange={setTemplateType}
             style={{ width: 150 }}
             options={STORYBOARD_TEMPLATES}
+          />
+          <Text>风格:</Text>
+          <Select
+            value={styleId}
+            onChange={setStyleId}
+            style={{ width: 140 }}
+            options={styles.map(s => ({ label: s.name, value: s.style_id }))}
+            placeholder="网感风格"
           />
           <Text>供应商:</Text>
           <Select

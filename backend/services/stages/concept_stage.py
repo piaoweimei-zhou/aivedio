@@ -13,6 +13,7 @@ from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin
+from services.style_registry import get_style
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,19 @@ _PROMPT_PREFIX = {
     "emotional_scene": "情绪共鸣场景图，强调光线氛围与人物情绪表达，电影质感，",
     "":          "",
 }
+
+
+def _apply_style_prompt(prompt: str, style_id: str) -> str:
+    """追加网感风格的视觉提示词（英文关键词，兼容 ComfyUI 与云端）"""
+    if not style_id:
+        return prompt
+    style = get_style(style_id)
+    if not style:
+        return prompt
+    visual = style.get("visual_prompt", "")
+    if visual and visual not in prompt:
+        return f"{prompt}, {visual}"
+    return prompt
 
 
 class ConceptStage(StagePlugin):
@@ -76,6 +90,8 @@ class ConceptStage(StagePlugin):
         model = params.get("model", "")
         parent_id = params.get("parent_id", "")
         enhance_prompt = params.get("enhance_prompt", True)
+        style_id = params.get("style_id", "")
+        style = get_style(style_id) if style_id else None
 
         if not prompt:
             if input_assets:
@@ -89,6 +105,9 @@ class ConceptStage(StagePlugin):
             prefix = _PROMPT_PREFIX[content_type]
             if prefix and not prompt.startswith(prefix):
                 prompt = prefix + prompt
+
+        # 追加网感风格视觉提示词
+        prompt = _apply_style_prompt(prompt, style_id)
 
         provider_id = self._resolve_provider(provider_id)
 
@@ -118,7 +137,7 @@ class ConceptStage(StagePlugin):
                 asset_type="concept",
                 name=name,
                 parent_id=parent_id,
-                extra_metadata={"prompt": prompt, "model": model or result.model, "size": size, "content_type": content_type},
+                extra_metadata={"prompt": prompt, "model": model or result.model, "size": size, "content_type": content_type, "style_id": style["style_id"] if style else "", "style_name": style["name"] if style else ""},
                 content_type=content_type,
             )
 
@@ -166,10 +185,12 @@ class ConceptStage(StagePlugin):
         size = params.get("size") or _DEFAULT_SIZES.get(content_type, "1024x1024")
         model = params.get("model", "")
         enhance_prompt = params.get("enhance_prompt", True)
+        style_id = params.get("style_id", "") or script.get("meta", {}).get("style_id", "")
+        style = get_style(style_id) if style_id else None
 
         logger.info(
             f"[ConceptStage] Script 感知 | script={script_asset.asset_id} | "
-            f"characters={len(characters)} | provider={provider_id}"
+            f"characters={len(characters)} | provider={provider_id} | style={style['style_id'] if style else ''}"
         )
 
         created_assets: List[AssetRef] = []
@@ -181,6 +202,9 @@ class ConceptStage(StagePlugin):
                 prefix = _PROMPT_PREFIX[content_type]
                 if prefix and not prompt.startswith(prefix):
                     prompt = prefix + prompt
+
+            # 追加网感风格视觉提示词
+            prompt = _apply_style_prompt(prompt, style_id)
 
             try:
                 result = await provider_svc.generate_image(
@@ -204,6 +228,8 @@ class ConceptStage(StagePlugin):
                         "role": char.get("role", ""),
                         "script_asset_id": script_asset.asset_id,
                         "character_index": i,
+                        "style_id": style["style_id"] if style else "",
+                        "style_name": style["name"] if style else "",
                     },
                     content_type=content_type,
                 )

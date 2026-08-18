@@ -233,6 +233,23 @@ async def list_video_types():
     return {"video_types": list_video_types()}
 
 
+@router.get("/styles")
+async def list_styles():
+    """列出全部网感风格预设（含默认标记）"""
+    from services.style_registry import list_styles
+    return {"styles": list_styles()}
+
+
+@router.get("/styles/{style_id}")
+async def get_style(style_id: str):
+    """查询单个网感风格"""
+    from services.style_registry import get_style
+    style = get_style(style_id)
+    if not style:
+        raise HTTPException(status_code=404, detail=f"风格不存在: {style_id}")
+    return {"style": style}
+
+
 @router.get("/graphic/types")
 async def list_graphic_types():
     """列出图文生成支持的 6 种图文类型"""

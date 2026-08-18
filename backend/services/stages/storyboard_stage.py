@@ -14,8 +14,22 @@ from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin, collect_content_type
+from services.style_registry import get_style
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_style_prompt(prompt: str, style_id: str) -> str:
+    """追加网感风格的视觉提示词（英文关键词，兼容 ComfyUI 与云端）"""
+    if not style_id:
+        return prompt
+    style = get_style(style_id)
+    if not style:
+        return prompt
+    visual = style.get("visual_prompt", "")
+    if visual and visual not in prompt:
+        return f"{prompt}, {visual}"
+    return prompt
 
 
 class StoryboardStage(StagePlugin):
@@ -64,10 +78,15 @@ class StoryboardStage(StagePlugin):
         model = params.get("model", "")
         template = params.get("template", "")
         fusion_mode = params.get("fusion_mode", "3img")
+        style_id = params.get("style_id", "")
+        style = get_style(style_id) if style_id else None
+
+        # 追加网感风格视觉提示词
+        prompt = _apply_style_prompt(prompt, style_id)
 
         logger.info(
             f"[StoryboardStage] 分镜 | provider={provider_id} | "
-            f"refs={len(reference_images)} | template={template or 'default'}"
+            f"refs={len(reference_images)} | template={template or 'default'} | style={style['style_id'] if style else ''}"
         )
 
         try:
@@ -101,6 +120,8 @@ class StoryboardStage(StagePlugin):
                     "template": template,
                     "fusion_mode": fusion_mode,
                     "size": size,
+                    "style_id": style["style_id"] if style else "",
+                    "style_name": style["name"] if style else "",
                 },
                 content_type=content_type,
             )
@@ -161,10 +182,12 @@ class StoryboardStage(StagePlugin):
         model = params.get("model", "")
         template = params.get("template", "")
         fusion_mode = params.get("fusion_mode", "3img")
+        style_id = params.get("style_id", "") or script.get("meta", {}).get("style_id", "")
+        style = get_style(style_id) if style_id else None
 
         logger.info(
             f"[StoryboardStage] Script 感知 | script={script_asset.asset_id} | "
-            f"acts={len(acts)} | refs={len(reference_images)}"
+            f"acts={len(acts)} | refs={len(reference_images)} | style={style['style_id'] if style else ''}"
         )
 
         created_assets: List[AssetRef] = []
@@ -177,6 +200,8 @@ class StoryboardStage(StagePlugin):
             # 拼接旁白作为画面提示
             if narration and narration != prompt:
                 prompt = f"{prompt}。{narration}"
+            # 追加网感风格视觉提示词
+            prompt = _apply_style_prompt(prompt, style_id)
 
             try:
                 gen_kwargs = {}
@@ -206,6 +231,8 @@ class StoryboardStage(StagePlugin):
                         "act_index": i,
                         "act_number": act.get("act", i + 1),
                         "scene": scene_desc,
+                        "style_id": style["style_id"] if style else "",
+                        "style_name": style["name"] if style else "",
                     },
                     content_type="",
                 )

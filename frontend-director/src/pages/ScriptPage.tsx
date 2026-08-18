@@ -8,8 +8,8 @@ import {
   VideoCameraOutlined, FileTextOutlined, MessageOutlined,
 } from '@ant-design/icons'
 import {
-  scriptApi, stageApi, assetApi,
-  VideoTypeOption, ScriptData, ScriptParams,
+  scriptApi, stageApi, assetApi, styleApi,
+  VideoTypeOption, ScriptData, ScriptParams, StyleOption,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 
@@ -27,6 +27,7 @@ export default function ScriptPage() {
   const { currentProject } = useProject()
   const [form] = Form.useForm()
   const [videoTypes, setVideoTypes] = useState<VideoTypeOption[]>([])
+  const [styles, setStyles] = useState<StyleOption[]>([])
   const [loading, setLoading] = useState(false)
   const [taskId, setTaskId] = useState<string>('')
   const [taskStatus, setTaskStatus] = useState<any>(null)
@@ -43,6 +44,15 @@ export default function ScriptPage() {
       }
     }).catch(err => {
       message.error(`加载视频类型失败: ${err.message}`)
+    })
+    // 加载网感风格
+    styleApi.list().then(res => {
+      const list = res.styles || []
+      setStyles(list)
+      const def = list.find(s => s.is_default)
+      if (def) form.setFieldValue('style_id', def.style_id)
+    }).catch(err => {
+      message.error(`加载风格失败: ${err.message}`)
     })
     loadScripts()
   }, [])
@@ -93,6 +103,7 @@ export default function ScriptPage() {
         tone_extra: values.tone_extra || '',
         target_audience: values.target_audience || '',
         hook_style: values.hook_style || 'comment_1',
+        style_id: values.style_id || '',
         model: values.model || '',
         temperature: values.temperature ?? 0.85,
         max_tokens: values.max_tokens || 6000,
@@ -183,6 +194,29 @@ export default function ScriptPage() {
                   </Paragraph>
                 </Card>
               )}
+
+              <Form.Item
+                name="style_id"
+                label="网感风格"
+                tooltip="风格会同时影响剧本叙事风格与后续概念图/分镜的视觉风格"
+              >
+                <Select
+                  placeholder="选择网感风格"
+                  options={styles.map(s => ({
+                    value: s.style_id,
+                    label: (
+                      <Space direction="vertical" size={0} style={{ padding: '4px 0' }}>
+                        <Space>
+                          <Text strong>{s.name}</Text>
+                          {s.is_default && <Tag color="green">默认</Tag>}
+                          {s.tags?.map(t => <Tag key={t} color="blue">{t}</Tag>)}
+                        </Space>
+                        <Text type="secondary" style={{ fontSize: 12 }}>{s.description}</Text>
+                      </Space>
+                    ),
+                  }))}
+                />
+              </Form.Item>
 
               <Row gutter={8}>
                 <Col span={6}>
@@ -297,6 +331,7 @@ export default function ScriptPage() {
                     <Space>
                       <Text strong>{s.name}</Text>
                       <Tag>{s.metadata?.video_type || 'unknown'}</Tag>
+                      {s.metadata?.style_name && <Tag color="purple">{s.metadata.style_name}</Tag>}
                       <Text type="secondary">{s.metadata?.topic}</Text>
                     </Space>
                   ),

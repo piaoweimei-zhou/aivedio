@@ -121,9 +121,23 @@ export interface ScriptParams {
   tone_extra?: string
   target_audience?: string
   hook_style?: string  // comment_1/main_page/dm
+  style_id?: string  // 网感风格
   model?: string
   temperature?: number
   max_tokens?: number
+}
+
+// 网感风格选项
+export interface StyleOption {
+  style_id: string
+  name: string
+  category: string
+  description: string
+  script_guidance?: string
+  visual_prompt?: string
+  params?: Record<string, any>
+  tags?: string[]
+  is_default?: boolean
 }
 
 // 剧本 JSON 结构
@@ -204,6 +218,18 @@ export const scriptApi = {
       params,
       async_mode: false,
     }, { timeout: 300000 }).then(r => r.data),
+}
+
+// ==================== 网感风格 API ====================
+
+export const styleApi = {
+  // 列出全部风格预设
+  list: (): Promise<{ styles: StyleOption[] }> =>
+    api.get('/stages/styles').then(r => r.data),
+
+  // 查询单个风格
+  get: (styleId: string): Promise<{ style: StyleOption }> =>
+    api.get(`/stages/styles/${styleId}`).then(r => r.data),
 }
 
 export const screenRecordApi = {
