@@ -101,7 +101,7 @@ PROVIDER_CONFIG_META = [
             {"key": "ARK_API_KEY", "label": "ARK API Key", "default": "", "required": True},
             {"key": "VOLCENGINE_BASE_URL", "label": "Base URL", "default": "https://ark.cn-beijing.volces.com", "required": False},
             {"key": "VOLCENGINE_IMAGE_MODEL", "label": "图像模型（Endpoint ID）", "default": "doubao-seedream-4-5", "required": False},
-            {"key": "VOLCENGINE_VIDEO_MODEL", "label": "视频模型（Endpoint ID）", "default": "doubao-seedance-1-5-pro", "required": False},
+            {"key": "VOLCENGINE_VIDEO_MODEL", "label": "视频模型（Endpoint ID）", "default": "doubao-seedance-1-0-pro-fast", "required": False},
             {"key": "VOLCENGINE_TEXT_MODEL", "label": "文本模型（Endpoint ID）", "default": "doubao-seed-2-0-pro", "required": False},
         ],
         "docs_url": "https://www.volcengine.com/product/ark",

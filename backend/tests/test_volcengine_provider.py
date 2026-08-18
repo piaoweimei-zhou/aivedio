@@ -55,7 +55,7 @@ def test_capabilities_include_text(provider):
 
 def test_default_models(provider):
     assert provider._get_image_model() == "doubao-seedream-4-5"
-    assert provider._get_video_model() == "doubao-seedance-1-5-pro"
+    assert provider._get_video_model() == "doubao-seedance-1-0-pro-fast"
     assert provider._get_text_model() == "doubao-seed-2-0-pro"
 
 

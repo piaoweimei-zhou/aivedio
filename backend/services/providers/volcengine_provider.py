@@ -52,8 +52,9 @@ class VolcEngineProvider(ProviderPlugin):
         return os.getenv("VOLCENGINE_IMAGE_MODEL", "doubao-seedream-4-5").strip()
 
     def _get_video_model(self) -> str:
-        # 免费额度模型：doubao-seedance-1-5-pro / doubao-seedance-1-0-pro / doubao-seedance-1-0-lite-i2v
-        return os.getenv("VOLCENGINE_VIDEO_MODEL", "doubao-seedance-1-5-pro").strip()
+        # 免费额度模型：doubao-seedance-1-0-pro-fast / doubao-seedance-1-0-pro / doubao-seedance-1-0-lite-i2v
+        # 注意：doubao-seedance-1-5-pro 已下线，勿再使用
+        return os.getenv("VOLCENGINE_VIDEO_MODEL", "doubao-seedance-1-0-pro-fast").strip()
 
     def _get_text_model(self) -> str:
         # 免费额度模型：doubao-seed-2-0-pro / doubao-seed-1-6 / doubao-1-5-pro-32k
