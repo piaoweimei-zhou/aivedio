@@ -29,6 +29,7 @@ interface VideoTask {
 }
 
 const PROVIDERS = [
+  { label: 'MiniMax H3 (本地文本出片)', value: 'minimax_h3' },
   { label: '即梦 (Jimeng)', value: 'jimeng' },
   { label: 'RunningHub', value: 'runninghub' },
   { label: '火山引擎 (VolcEngine)', value: 'volcengine' },

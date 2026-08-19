@@ -997,6 +997,7 @@ class ComfyUIGenerationMixin:
     async def _wait_for_completion(
         self, prompt_id: str, progress_callback: Optional[callable] = None,
         task_type: str = 'generate',
+        output_fields: tuple = ("images", "audio"),
     ) -> List[str]:
         """
         等待 ComfyUI 生成完成并获取所有输出文件名（含多图片场景）。
@@ -1082,8 +1083,8 @@ class ComfyUIGenerationMixin:
                             temp_filenames: List[str] = []
                             for node_id, node_output in outputs.items():
                                 media_items = []
-                                media_items.extend(node_output.get("images", []))
-                                media_items.extend(node_output.get("audio", []))
+                                for _f in output_fields:
+                                    media_items.extend(node_output.get(_f, []) or [])
                                 for item in media_items:
                                     fname = item.get("filename", "")
                                     subfolder = item.get("subfolder", "")

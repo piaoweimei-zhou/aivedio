@@ -28,7 +28,7 @@ class VideoStage(StagePlugin):
         input_content_types=[],  # Script 模式下不强制 content_type
         output_type="video",
         default_provider="comfyui",
-        supported_providers=["comfyui", "jimeng", "runninghub", "volcengine"],
+        supported_providers=["comfyui", "jimeng", "runninghub", "volcengine", "minimax_h3"],
         description="从图片生成视频（图生视频，支持本地 LTX-2.3 和云端 provider，支持 script 批量生成）",
     )
 
@@ -57,13 +57,19 @@ class VideoStage(StagePlugin):
             )
 
         # ── 原有逻辑：单段视频生成 ──
-        err = self._require_urls(input_assets[0])
-        if err:
-            return self._error_result(err)
+        # MiniMax H3 是纯文本→视频源，不强制需要图片；其余 provider 需参考图
+        is_text_source = provider_id == "minimax_h3"
+        if not is_text_source:
+            err = self._require_urls(input_assets[0])
+            if err:
+                return self._error_result(err)
 
         source = input_assets[0]
 
-        prompt = params.get("prompt", f"Animate this scene: {source.name}")
+        prompt = params.get(
+            "prompt",
+            source.name if is_text_source else f"Animate this scene: {source.name}",
+        )
         model = params.get("model", "")
         aspect_ratio = params.get("aspect_ratio", "16:9")
         resolution = params.get("resolution", "480p")

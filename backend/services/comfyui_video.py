@@ -876,3 +876,76 @@ class ComfyUIVideoMixin:
             )
         finally:
             pass
+
+    async def generate_minimax_h3(
+        self,
+        prompt: str = "",
+        width: int = 480,
+        height: int = 864,
+        duration_seconds: float = 5.0,
+        seed: Optional[int] = None,
+        audio_mode: str = "native",
+        video_steps: int = 8,
+        audio_steps: int = 10,
+        filename_prefix: str = "minimax_h3",
+        progress_callback: Optional[Callable] = None,
+        **kwargs,
+    ) -> ComfyUIGenResult:
+        """MiniMax H3 文本→视频（本地 FL2VA 链路，含同步生成环境音）
+
+        使用 workflow_minimax 构建器动态生成参数化工作流，经 ComfyUI 队列提交。
+        输出为带音轨的 mp4（VHS_VideoCombine），从 /history 的 gifs/videos 字段取回。
+        """
+        from services.workflow_minimax import build_minimax_h3_video_workflow
+
+        start = time.time()
+        actual_seed = seed if seed is not None else int(time.time() * 1000) % (2 ** 32)
+        # MiniMax 分辨率选择器要求 32 对齐，交由 builder 统一处理
+        if "frame_rate" in kwargs:
+            del kwargs["frame_rate"]
+
+        workflow = build_minimax_h3_video_workflow(
+            prompt=prompt,
+            width=int(width or 480),
+            height=int(height or 864),
+            duration_seconds=float(duration_seconds or 5.0),
+            seed=actual_seed,
+            audio_mode=audio_mode or "native",
+            video_steps=int(video_steps or 8),
+            audio_steps=int(audio_steps or 10),
+            filename_prefix=filename_prefix,
+        )
+        logger.info(
+            f"[MiniMaxH3] 提交 | prompt={prompt[:50]}... | size={workflow['cond']['inputs']['width']}x"
+            f"{workflow['cond']['inputs']['height']} | seed={actual_seed} | audio={audio_mode}"
+        )
+
+        prompt_id = await self._queue_prompt_with_retry(workflow)
+        logger.info(f"[MiniMaxH3] 已提交 | prompt_id={prompt_id}")
+
+        # 等待完成（视频文件输出在 gifs/videos 字段，video 超时档）
+        filenames = await self._wait_for_completion(
+            prompt_id=prompt_id, task_type="video", progress_callback=progress_callback,
+            output_fields=("gifs", "videos"),
+        )
+        video_filename = filenames[0] if filenames else ""
+
+        video_url = ""
+        if video_filename:
+            video_url = f"{self.config.base_url}/view?filename={video_filename}"
+
+        elapsed_ms = int((time.time() - start) * 1000)
+        logger.info(
+            f"[MiniMaxH3] 完成 | file={video_filename} | elapsed={elapsed_ms}ms | url={video_url[:80]}"
+        )
+
+        return ComfyUIGenResult(
+            image_url=video_url,
+            filename=video_filename,
+            images=[video_url] if video_url else [],
+            filenames=[video_filename] if video_filename else [],
+            prompt_id=prompt_id,
+            elapsed_ms=elapsed_ms,
+            seed=actual_seed,
+            prompt=prompt,
+        )

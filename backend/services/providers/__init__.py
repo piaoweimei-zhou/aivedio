@@ -11,6 +11,7 @@ from services.providers.jimeng_provider import JimengProvider
 from services.providers.volcengine_provider import VolcEngineProvider
 from services.providers.gemini_provider import GeminiProvider
 from services.providers.modelscope_provider import ModelScopeProvider
+from services.providers.minimax_provider import MinimaxProvider
 
 __all__ = [
     "ComfyUIProvider",
@@ -20,4 +21,5 @@ __all__ = [
     "VolcEngineProvider",
     "GeminiProvider",
     "ModelScopeProvider",
+    "MinimaxProvider",
 ]
