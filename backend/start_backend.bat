@@ -3,8 +3,8 @@ setlocal
 cd /d "%~dp0"
 
 rem ===== Director backend launcher (fixed local ComfyUI config) =====
-set "COMFYUI_DIR=D:\cai\ComfyUI_windows_portable\ComfyUI"
-set "COMFYUI_PYTHON=D:\cai\ComfyUI_windows_portable\python_embeded\python.exe"
+set "COMFYUI_DIR=D:\1\2\ComfyUI_windows_portable\ComfyUI"
+set "COMFYUI_PYTHON=D:\1\2\ComfyUI_windows_portable\python_embeded\python.exe"
 set "COMFYUI_BASE_URL=http://127.0.0.1:8188"
 set "PYTHONUTF8=1"
 

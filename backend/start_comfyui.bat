@@ -5,4 +5,4 @@ if not errorlevel 1 (
     exit /b 0
 )
 echo Starting ComfyUI...
-start "ComfyUI" "D:\cai\ComfyUI_windows_portable\run_nvidia_gpu.bat"
+start "ComfyUI" "D:\1\2\ComfyUI_windows_portable\run_nvidia_gpu.bat"
