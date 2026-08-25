@@ -156,7 +156,7 @@
     <p class="muted">描述 6 个前端页面、11 个阶段、4 个 API；实际前端已有 17 页、阶段 21 个、API 10+ 个。README 中列出的 <code>pipeline_executor.py</code>、<code>video_service.py</code> 在源码中<b>不存在</b>。</p>
   </details>
   <details>
-    <summary>plan.md（asset_type / content_type 两级分类改造方案）</summary>
+    <summary>../01_规划/plan.md（asset_type / content_type 两级分类改造方案）</summary>
     <p class="muted">风险评估中多处引用 <code>pipeline_executor.py</code>（36 处引用）——该文件已被 <code>workflow_builder / dag_executor / gen_task_manager</code> 重构替代，方案基于的载体已不存在。好消息：方案要落地的 <code>content_type</code> 两级分类<b>已在后端实现</b>。</p>
   </details>
   <details>
@@ -164,8 +164,8 @@
     <p class="muted">功能描述与现状较吻合，但同样引用了磁盘上不存在的 <code>video_api.py / video_service.py</code>（仅剩 __pycache__ 残留）。声称"17 个阶段"，磁盘实际 21 个。</p>
   </details>
   <details>
-    <summary>顶层大量 .md 与 industrial 规划（ai_video.md / 优化集成.md / 工业化/ 等）</summary>
-    <p class="muted">含 227KB 的《小工具方案.md》、商业差距/第三方建议/方案评估等，反映项目的商业化/工业化探索方向，但多数未能在代码中定位到对应实现，属于"规划层"。文档整体明显多于实现。</p>
+    <summary>顶层大量 .md 与 industrial 规划（../01_规划/AI视频.md / ../01_规划/优化集成.md / 工业化/ 等）</summary>
+    <p class="muted">含 227KB 的《../01_规划/小工具方案.md》、商业差距/第三方建议/方案评估等，反映项目的商业化/工业化探索方向，但多数未能在代码中定位到对应实现，属于"规划层"。文档整体明显多于实现。</p>
   </details>
   <div class="alert warn">⚑ 治理建议：明确定位<span class="pill mid">现状文档</span>（系统功能.md）与<span class="pill mid">目标规划</span>（各 .md / 工业化），删除过时的 <code>pipeline_executor</code> 引用，避免新人以错误蓝图为准。</div>
 </section>
