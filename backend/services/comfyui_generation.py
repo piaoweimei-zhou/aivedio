@@ -392,7 +392,7 @@ class ComfyUIGenerationMixin(ComfyUIGenerationVisionMixin):
         last_msg = str(last_error) if last_error else "未知错误"
         raise RuntimeError(f"ComfyUI 提交失败（已重试3次）: {last_msg}")
 
-    def _strip_workflow_meta(workflow: dict) -> dict:
+    def _strip_workflow_meta(self, workflow: dict) -> dict:
         """深拷贝工作流并剥离可能引起自定义节点崩溃的 _meta / _comment 字段
 
         同时剥离工作流顶层的非节点键（如 _meta、_comment），
