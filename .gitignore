@@ -61,3 +61,6 @@ docs/99_归档/
 backend/.coverage
 backend/htmlcov/
 backend/coverage.xml
+
+# 测试重定向输出
+backend/*_out.txt
