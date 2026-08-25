@@ -72,13 +72,17 @@ def cmd_lint(args):
 
 def cmd_gates(args):
     print("=" * 46)
-    print("director 门禁 G0-G6（当前实现 G0 lint + G1 单测）")
+    print("director 门禁 G0-G6")
     print("=" * 46)
-    ok = True
-    ok &= (cmd_lint(args) == 0)
-    ok &= (cmd_test(args) == 0)
-    print("\n门禁结果:", "PASS" if ok else "FAIL")
-    return 0 if ok else 1
+    cmd = [_py(), os.path.join(BACKEND, "scripts", "gates.py")]
+    if getattr(args, "g2", False):
+        cmd.append("--g2")
+    if getattr(args, "release", False):
+        cmd.append("--release")
+    if getattr(args, "no_cov", False):
+        cmd.append("--no-cov")
+    r = _run(cmd, cwd=BACKEND)
+    return 0 if r.returncode == 0 else 1
 
 
 def cmd_health(args):
@@ -111,7 +115,11 @@ def main():
     sub.add_parser("status", help="git 状态 + 运行时目录概览")
     sub.add_parser("test", help="跑单元测试（G1）")
     sub.add_parser("lint", help="跑 flake8（G0）")
-    sub.add_parser("gates", help="跑门禁（G0+G1）")
+    sub.add_parser("gates", help="跑门禁 G0-G6").add_argument("--no-cov", action="store_true", dest="no_cov", help="跳过覆盖率")
+    gp = sub.add_parser("gates-g2", help="跑门禁含 G2 一键成片")
+    gp.add_argument("--g2", action="store_true", default=True, help=argparse.SUPPRESS)
+    gp.add_argument("--release", action="store_true", help="发布模式")
+    gp.add_argument("--no-cov", action="store_true", dest="no_cov", help="跳过覆盖率")
     h = sub.add_parser("health", help="后端健康检查")
     h.add_argument("--url", default="http://127.0.0.1:8000")
     sub.add_parser("start", help="启动后端")
