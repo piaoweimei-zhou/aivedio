@@ -37,6 +37,16 @@ class UpdateAssetRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class BatchDeleteRequest(BaseModel):
+    asset_ids: List[str]
+    purge_files: bool = True
+
+
+class DeleteChainRequest(BaseModel):
+    """一键删除一次成片：从根资产/任一层级删整条生产链（含所有衍生资产+文件）"""
+    purge_files: bool = True
+
+
 # ==================== Type Endpoints ====================
 
 @router.get("/types")
@@ -235,13 +245,13 @@ async def update_asset(asset_id: str, request: UpdateAssetRequest):
 
 
 @router.delete("/{asset_id}")
-async def delete_asset(asset_id: str):
-    """删除资产"""
+async def delete_asset(asset_id: str, purge_files: bool = Query(False, description="连带删除磁盘文件")):
+    """删除资产（可选连带删除磁盘文件以释放空间）"""
     svc = get_asset_service()
-    ok = await svc.delete(asset_id)
+    ok = await svc.delete(asset_id, purge_files=purge_files)
     if not ok:
         raise HTTPException(status_code=404, detail="资产不存在")
-    return {"success": True}
+    return {"success": True, "purge_files": purge_files}
 
 
 # ==================== Lineage Endpoints ====================
@@ -277,14 +287,156 @@ async def cleanup_orphaned_assets(
     generated_dir: str = Query("", description="持久化图片目录"),
     comfyui_output_dir: str = Query("", description="ComfyUI output 目录"),
 ):
-    """清理图片文件已丢失的孤岛资产"""
+    """清理图片文件已丢失的孤岛资产
+
+    ⚠️ 若 generated_dir / comfyui_output_dir 未显式传入，则自动推断默认目录；
+    否则 search_dirs 为空会把「所有有 urls 的资产」误判为孤岛而误删。
+    """
     svc = get_asset_service()
+    # 自动推断默认目录（防止空目录导致误判误删）
+    if not generated_dir:
+        try:
+            from services.comfyui_helpers import GENERATED_DIR
+            generated_dir = GENERATED_DIR
+        except Exception:
+            generated_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+    if not comfyui_output_dir:
+        try:
+            from services.comfyui.config import COMFYUI_OUTPUT_DIR
+            comfyui_output_dir = COMFYUI_OUTPUT_DIR
+        except Exception:
+            comfyui_output_dir = ""
     report = await svc.cleanup_orphaned(
-        generated_dir=generated_dir or "",
+        generated_dir=generated_dir,
         comfyui_output_dir=comfyui_output_dir or "",
         dry_run=dry_run,
     )
     return {"report": report, "dry_run": dry_run}
+
+
+# ==================== 批量 / 链路 / 孤儿清理 ====================
+
+@router.post("/batch-delete")
+async def batch_delete_assets(req: BatchDeleteRequest):
+    """批量删除资产（可选连带删除磁盘文件）"""
+    svc = get_asset_service()
+    deleted: List[str] = []
+    missing: List[str] = []
+    purged_files = 0
+    for aid in req.asset_ids:
+        asset = svc.get(aid)
+        if not asset:
+            missing.append(aid)
+            continue
+        purged_files += len(svc._purge_asset_files(asset)) if req.purge_files else 0
+        if await svc.delete(aid):
+            deleted.append(aid)
+    return {
+        "success": True,
+        "deleted": deleted,
+        "missing": missing,
+        "purged_files": purged_files,
+        "purge_files": req.purge_files,
+    }
+
+
+@router.post("/delete-chain/{asset_id}")
+async def delete_asset_chain(asset_id: str, req: Optional[DeleteChainRequest] = None):
+    """一键删除一次成片的整条生产链（该资产 + 所有衍生资产，含磁盘文件）。
+
+    以 asset_id 为根，递归收集其所有后代（children 的 children…），
+    连同根资产一起删除；purge_files 时连带清理磁盘文件。
+    """
+    purge = (req.purge_files if req else True)
+    svc = get_asset_service()
+    root = svc.get(asset_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="资产不存在")
+
+    # 递归收集整条链（根 + 所有衍生）
+    to_delete: List[str] = []
+
+    def collect(aid: str):
+        if aid not in to_delete:
+            to_delete.append(aid)
+        for child in svc.children(aid):
+            collect(child.asset_id)
+
+    collect(asset_id)
+
+    deleted: List[str] = []
+    purged_files = 0
+    for aid in to_delete:
+        a = svc.get(aid)
+        if not a:
+            continue
+        if purge:
+            purged_files += len(svc._purge_asset_files(a))
+        if await svc.delete(aid):
+            deleted.append(aid)
+    return {
+        "success": True,
+        "chain_size": len(to_delete),
+        "deleted": deleted,
+        "purged_files": purged_files,
+        "purge_files": purge,
+    }
+
+
+@router.post("/cleanup-orphan-files")
+async def cleanup_orphan_files(dry_run: bool = Query(True, description="仅统计不删除")):
+    """清理孤儿文件：generated/ 持久化目录中存在、但无任何 asset 引用的文件。
+
+    这些文件是生成时的废图/废弃候选（多张候选只采纳一张，其余留档未删）。
+    """
+    svc = get_asset_service()
+    try:
+        from services.comfyui_helpers import GENERATED_DIR
+    except Exception:
+        GENERATED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+
+    # 收集所有被 asset 引用的文件名
+    referenced: set = set()
+    from urllib.parse import urlparse, parse_qs
+    for a in svc._assets.values():
+        for u in a.urls or []:
+            p = urlparse(u)
+            fn = parse_qs(p.query).get("filename", [""])[0] if "filename" in p.query else ""
+            if not fn:
+                fn = u.rsplit("/", 1)[-1].split("?")[0]
+            if fn:
+                referenced.add(os.path.basename(fn))
+
+    orphans: List[str] = []
+    orphan_size = 0
+    if os.path.isdir(GENERATED_DIR):
+        for root, _dirs, files in os.walk(GENERATED_DIR):
+            for f in files:
+                if not f.lower().endswith((".png", ".jpg", ".jpeg", ".mp4", ".webp", ".flac", ".m4a", ".wav")):
+                    continue
+                if f in referenced:
+                    continue
+                fp = os.path.join(root, f)
+                orphans.append(fp)
+                orphan_size += os.path.getsize(fp)
+
+    removed = 0
+    if not dry_run:
+        for fp in orphans:
+            try:
+                os.remove(fp)
+                removed += 1
+            except Exception as e:
+                logger.warning(f"[AssetAPI] 孤儿文件删除失败 {fp}: {e}")
+
+    return {
+        "success": True,
+        "dry_run": dry_run,
+        "orphan_count": len(orphans),
+        "orphan_size_mb": round(orphan_size / 1e6, 1),
+        "removed": removed,
+        "sample": [os.path.relpath(p, GENERATED_DIR) for p in orphans[:20]],
+    }
 
 
 # ==================== Template Manifest Endpoint ====================

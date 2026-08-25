@@ -888,13 +888,15 @@ class ComfyUIVideoMixin:
         video_steps: int = 8,
         audio_steps: int = 10,
         filename_prefix: str = "minimax_h3",
+        reference_image_url: str = "",
         progress_callback: Optional[Callable] = None,
         **kwargs,
     ) -> ComfyUIGenResult:
-        """MiniMax H3 文本→视频（本地 FL2VA 链路，含同步生成环境音）
+        """MiniMax H3 视频生成（本地 FL2VA 链路，含同步生成环境音）
 
         使用 workflow_minimax 构建器动态生成参数化工作流，经 ComfyUI 队列提交。
         输出为带音轨的 mp4（VHS_VideoCombine），从 /history 的 gifs/videos 字段取回。
+        reference_image_url 非空时走 I2VA（图生视频），否则 T2VA（纯文本→视频）。
         """
         from services.workflow_minimax import build_minimax_h3_video_workflow
 
@@ -903,6 +905,14 @@ class ComfyUIVideoMixin:
         # MiniMax 分辨率选择器要求 32 对齐，交由 builder 统一处理
         if "frame_rate" in kwargs:
             del kwargs["frame_rate"]
+
+        reference_image = ""
+        if reference_image_url:
+            reference_image = await self._download_to_input(reference_image_url)
+            if not reference_image:
+                logger.warning(
+                    f"[MiniMaxH3] 参考图下载失败，回退 T2VA | url={reference_image_url[:80]}"
+                )
 
         workflow = build_minimax_h3_video_workflow(
             prompt=prompt,
@@ -914,10 +924,12 @@ class ComfyUIVideoMixin:
             video_steps=int(video_steps or 8),
             audio_steps=int(audio_steps or 10),
             filename_prefix=filename_prefix,
+            reference_image=reference_image,
         )
         logger.info(
             f"[MiniMaxH3] 提交 | prompt={prompt[:50]}... | size={workflow['cond']['inputs']['width']}x"
             f"{workflow['cond']['inputs']['height']} | seed={actual_seed} | audio={audio_mode}"
+            f" | mode={'I2VA' if reference_image else 'T2VA'}"
         )
 
         prompt_id = await self._queue_prompt_with_retry(workflow)

@@ -9,7 +9,7 @@ import {
   PictureOutlined, VideoCameraOutlined, AppstoreOutlined,
   InfoCircleOutlined, BranchesOutlined, ClockCircleOutlined,
   GlobalOutlined, CopyOutlined, DatabaseOutlined, ClearOutlined, EditOutlined,
-  DownloadOutlined
+  DownloadOutlined, DeleteOutlined, LinkOutlined
 } from '@ant-design/icons'
 import { useDirectorStore } from '../stores/directorStore'
 import directorApi from '../services/directorApi'
@@ -346,6 +346,94 @@ export default function AssetsPage() {
       message.error(e.message || `${label}失败`)
     }
   }, [selectedAssetIds, executeStage, loadAssets, assets])
+
+  // ── 资产治理：批量删除（含文件）──
+  const handleBatchDelete = useCallback(() => {
+    if (selectedAssetIds.length === 0) {
+      message.warning('请先勾选要删除的资产')
+      return
+    }
+    const ids = [...selectedAssetIds]
+    Modal.confirm({
+      title: `确认批量删除 ${ids.length} 个资产？`,
+      content: '将同时删除关联的磁盘文件（概念图/视频等），不可恢复。',
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const r = await directorApi.batchDeleteAssets(ids, true)
+          message.success(`已删除 ${r.deleted?.length ?? 0} 个资产，清理 ${r.purged_files ?? 0} 个文件`)
+          clearSelection()
+          await loadAssets(currentProjectId ? { project_id: currentProjectId } : undefined)
+        } catch (e: any) {
+          message.error(e.message || '批量删除失败')
+        }
+      },
+    })
+  }, [selectedAssetIds, clearSelection, loadAssets, currentProjectId])
+
+  // ── 资产治理：删除整条生产链（一键删一次成片）──
+  const handleChainDelete = useCallback((assetId: string) => {
+    Modal.confirm({
+      title: '确认删除整条生产链？',
+      content: '将删除该资产及其所有衍生资产（从概念图到成片）及对应磁盘文件，不可恢复。',
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const r = await directorApi.deleteAssetChain(assetId, true)
+          message.success(`已删除整条链 ${r.chain_size ?? 0} 个资产，清理 ${r.purged_files ?? 0} 个文件`)
+          clearSelection()
+          await loadAssets(currentProjectId ? { project_id: currentProjectId } : undefined)
+        } catch (e: any) {
+          message.error(e.message || '删除生产链失败')
+        }
+      },
+    })
+  }, [clearSelection, loadAssets, currentProjectId])
+
+  // ── 资产治理：扫描孤儿文件（仅统计）──
+  const handleOrphanScan = useCallback(async () => {
+    try {
+      const r = await directorApi.cleanupOrphanFiles(true)
+      message.info(`发现孤儿文件 ${r.orphan_count ?? 0} 个（约 ${r.orphan_size_mb ?? 0} MB）`)
+      Modal.info({
+        title: '孤儿文件扫描结果',
+        content: (
+          <div style={{ maxHeight: 300, overflow: 'auto' }}>
+            <p>孤儿文件：{r.orphan_count} 个，约 {r.orphan_size_mb} MB（generated/ 中存在但无资产引用）</p>
+            {(r.sample ?? []).slice(0, 20).map((p: string, i: number) => (
+              <div key={i} style={{ fontSize: 12, color: '#888' }}>{p}</div>
+            ))}
+          </div>
+        ),
+      })
+    } catch (e: any) {
+      message.error(e.message || '扫描失败')
+    }
+  }, [])
+
+  // ── 资产治理：清理孤儿文件（删除）──
+  const handleOrphanClean = useCallback(() => {
+    Modal.confirm({
+      title: '确认清理孤儿文件？',
+      content: '将删除 generated/ 中未被任何资产引用的废图/废弃候选文件，不可恢复。',
+      okText: '确认清理',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const r = await directorApi.cleanupOrphanFiles(false)
+          message.success(`已清理 ${r.removed ?? 0} 个孤儿文件（共 ${r.orphan_count ?? 0} 个）`)
+          await loadAssets(currentProjectId ? { project_id: currentProjectId } : undefined)
+        } catch (e: any) {
+          message.error(e.message || '清理失败')
+        }
+      },
+    })
+  }, [loadAssets, currentProjectId])
 
   // 资产图片重新生成：根据 asset_type 推断 stage_id 重新执行
   const handleRegenerateAsset = useCallback(async (asset: any) => {
@@ -1091,6 +1179,22 @@ export default function AssetsPage() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => !e.target.value && setSearchText('')}
           />
           <Button icon={<ReloadOutlined />} onClick={() => loadAssets(currentProjectId ? { project_id: currentProjectId } : undefined)}>刷新</Button>
+          <Dropdown menu={{ items: [
+            { key: 'batch_delete', icon: <DeleteOutlined />, danger: true,
+              label: `批量删除${selectedAssetIds.length ? ` (${selectedAssetIds.length})` : ''}`, disabled: selectedAssetIds.length === 0,
+              onClick: handleBatchDelete },
+            { key: 'chain_delete', icon: <LinkOutlined />, danger: true,
+              label: selectedAssetIds.length === 1 ? `删除整条生产链 (${selectedAssetIds.length})` : '删除整条生产链',
+              disabled: selectedAssetIds.length !== 1,
+              onClick: () => handleChainDelete(selectedAssetIds[0]) },
+            { type: 'divider' },
+            { key: 'orphan_scan', icon: <ClearOutlined />,
+              label: '清理孤儿资产(扫描)', onClick: () => handleOrphanScan() },
+            { key: 'orphan_clean', icon: <ClearOutlined />, danger: true,
+              label: '清理孤儿文件(删除)', onClick: () => handleOrphanClean() },
+          ] }}>
+            <Button size="middle" icon={<ClearOutlined />}>资产治理</Button>
+          </Dropdown>
         </Space>
       </div>
 

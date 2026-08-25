@@ -49,6 +49,18 @@ export const assetApi = {
       timeout: 120000,
     }).then(r => r.data)
   },
+
+  // 批量删除（可选连带删除磁盘文件）
+  batchDelete: (assetIds: string[], purgeFiles = true) =>
+    api.post('/assets/batch-delete', { asset_ids: assetIds, purge_files: purgeFiles }).then(r => r.data),
+
+  // 一键删除一次成片的整条生产链（含所有衍生资产 + 文件）
+  deleteChain: (assetId: string, purgeFiles = true) =>
+    api.post(`/assets/delete-chain/${assetId}`, { purge_files: purgeFiles }).then(r => r.data),
+
+  // 清理孤儿文件（generated 中存在但无 asset 引用的废图/废弃候选）
+  cleanupOrphanFiles: (dryRun = true) =>
+    api.post('/assets/cleanup-orphan-files', null, { params: { dry_run: dryRun } }).then(r => r.data),
 }
 
 // ==================== 供应商 API ====================
@@ -896,6 +908,9 @@ const directorApi = {
   assetStageTypes: assetApi.stageTypes,
   assetContentTypes: assetApi.contentTypes,
   uploadAssetFile: assetApi.upload,
+  batchDeleteAssets: assetApi.batchDelete,
+  deleteAssetChain: assetApi.deleteChain,
+  cleanupOrphanFiles: assetApi.cleanupOrphanFiles,
 
   listProviders: providerApi.list,
   getProvider: providerApi.get,

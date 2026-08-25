@@ -1,0 +1,10 @@
+﻿{
+    "params":  {
+                   "negative_prompt":  "blur,low quality",
+                   "prompt":  "sunset coast cinematic 4k"
+               },
+    "stage_id":  "concept",
+    "input_asset_ids":  [
+
+                        ]
+}

@@ -17,6 +17,7 @@ import {
 import { useProject } from '../contexts/ProjectContext'
 import { useDirectorStore } from '../stores/directorStore'
 import ProjectSelector from '../components/ProjectSelector'
+import QcReportCard from '../components/QcReportCard'
 import JSZip from 'jszip'
 
 // 按给定最大宽度把文本折成多行（用于 canvas 封面标题换行）
@@ -818,6 +819,7 @@ export default function OneClickVideoPage() {
   const [hookSubText, setHookSubText] = useState('免费链接私发你') // 钩子副文案
   const [exportEnabled, setExportEnabled] = useState(true)      // 平台规格导出
   const [exportPlatform, setExportPlatform] = useState('抖音')    // 导出平台规格
+  const [qcEnabled, setQcEnabled] = useState(true)             // 成片质检（默认开启）
   // 平台导出规格映射
   const PLATFORM_EXPORT_SPECS: Record<string, { resolution: string; desc: string }> = {
     抖音: { resolution: '1080x1920', desc: '9:16 全屏' },
@@ -984,13 +986,18 @@ export default function OneClickVideoPage() {
     }
   }, [])
 
+  // 成片质检报告关联的视频资产 id（export 步骤产出），供 QcReportCard 查询
+  const [qcVideoAssetId, setQcVideoAssetId] = useState<string | null>(null)
+
   // 批量全部完成后，取最终输出视频资产用于预览/下载
   useEffect(() => {
     if (!batch || batch.status !== 'completed' || finalVideo) return
     const doneSteps = (batch.steps || []).filter(s => s.status === 'completed' && s.output_asset_id)
-    const lastStep = doneSteps[doneSteps.length - 1]
-    const targetId = lastStep?.output_asset_id
+    // 视频预览取 export 步骤（而非最后一个 step，因为 qc 会挂在 export 之后）
+    const exportStep = doneSteps.find(s => s.stage_id === 'export') || doneSteps[doneSteps.length - 1]
+    const targetId = exportStep?.output_asset_id
     if (!targetId) return
+    setQcVideoAssetId(targetId)
     ;(async () => {
       try {
         const resp = await assetApi.get(targetId)
@@ -1084,6 +1091,28 @@ export default function OneClickVideoPage() {
       })
       lastId = 's_export'
     }
+    // 成片质检：默认挂在 export 之后，使端到端质量验证真正串进一键成片链路
+    if (qcEnabled) {
+      // 把真实发布文案拼给合规审核（钩子主/副文案 + 封面副文案 + 分段台词），
+      // 让 qc_stage 的本地合规关键词兜底真正生效（而非恒为空）。
+      const qcCaption = [
+        hookText?.trim(),
+        hookSubText?.trim(),
+        packSubtitle?.trim(),
+        scriptHook?.trim(),
+        ...(subtitleTexts || []).map(t => t?.trim()).filter(Boolean),
+      ].filter(Boolean).join(' | ')
+      steps.push({
+        step_id: 's_qc',
+        stage_id: 'qc',
+        name: '成片质检',
+        provider_id: 'local',
+        params: { threshold: 60.0, useSemantic: true, caption: qcCaption, caption_from: 'task' },
+        input_asset_ids: [],
+        input_from_steps: ['s_export'],
+      })
+      lastId = 's_qc'
+    }
     return steps
   }
 
@@ -1101,7 +1130,7 @@ export default function OneClickVideoPage() {
         step_id: 's_video',
         stage_id: 'video',
         name: '基于分镜图生成长视频（分段+拼接）',
-        provider_id: 'comfyui',
+        provider_id: 'minimax_h3',
         params: {
           prompt: values.video_prompt,
           duration: values.duration,
@@ -1204,7 +1233,7 @@ export default function OneClickVideoPage() {
       step_id: 's_video',
       stage_id: 'video',
       name: '基于多素材生成长视频（分段+拼接）',
-      provider_id: 'comfyui',
+      provider_id: 'minimax_h3',
       params: {
         prompt: values.video_prompt,
         duration: values.duration,
@@ -2066,6 +2095,14 @@ export default function OneClickVideoPage() {
                 </div>
               </Space>
             </Col>
+            {/* 成片质检 */}
+            <Col xs={24} lg={8}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Switch checked={qcEnabled} onChange={setQcEnabled} checkedChildren="质量质检" unCheckedChildren="质量质检" />
+                <Text type="secondary" style={{ fontSize: 12 }}>成片自动过质检（技术分 + AI 语义分 + 红线拦截）</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>默认阈值 60 分，不达标准可强制发布但留痕</Text>
+              </Space>
+            </Col>
           </Row>
         )}
       </Card>
@@ -2146,6 +2183,19 @@ export default function OneClickVideoPage() {
             </Col>
           </Row>
         </Card>
+      )}
+
+      {qcEnabled && qcVideoAssetId && (
+        <QcReportCard
+          assetId={qcVideoAssetId}
+          forcePublish={async (assetId: string, reason: string) => {
+            await fetch(`/api/qc/force-publish`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ asset_id: assetId, operator: '导演', reason }),
+            })
+          }}
+        />
       )}
 
       {finalVideo && (

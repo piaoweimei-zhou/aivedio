@@ -77,6 +77,7 @@ _SLOT_INDEX = {
     "guider": {"GUIDER": 0},
     "sampler": {"output": 0},
     "avdecode": {"frames": 0, "generated_audio": 1},
+    "loadimage": {"IMAGE": 0},
 }
 
 
@@ -106,8 +107,13 @@ def build_minimax_h3_video_workflow(
     shift_video: float = DEFAULT_SHIFT_VIDEO,
     shift_audio: float = DEFAULT_SHIFT_AUDIO,
     frame_rate: int = DEFAULT_FRAME_RATE,
+    reference_image: str = "",
 ) -> Dict[str, Dict[str, Any]]:
-    """构建 MiniMax H3 文本→视频工作流（ComfyUI API prompt 格式）。"""
+    """构建 MiniMax H3 视频工作流（ComfyUI API prompt 格式）。
+
+    reference_image 非空时走 I2VA（图生视频）：加载 ComfyUI input 目录下的图片
+    作为 ref_image_0 参考图；为空则保持 T2VA（纯文本→视频）。
+    """
     width, height = resolve_minimax_size(width, height)
     frames = frames_for_duration(duration_seconds)
 
@@ -134,7 +140,7 @@ def build_minimax_h3_video_workflow(
             "audio_vae": ["vae_audio", "VAE"],
             "prompt": _as_multiline(prompt),
             "width": width, "height": height, "length": frames,
-            "task_type": "auto",
+            "task_type": "I2VA" if reference_image else "auto",
             "audio_mode": audio_mode,
             "audio_denoise_strength": 0.0,
             "add_source_as_reference": False,
@@ -176,6 +182,9 @@ def build_minimax_h3_video_workflow(
             "videopreview": False,
         }},
     }
+    if reference_image:
+        wf["loadimage"] = {"class_type": "LoadImage", "inputs": {"image": reference_image}}
+        wf["cond"]["inputs"]["first_frame"] = ["loadimage", "IMAGE"]
     return _resolve_slots(wf)
 
 

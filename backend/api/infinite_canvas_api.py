@@ -8,9 +8,10 @@ import logging
 import os
 import uuid
 import time
+import datetime
 import asyncio
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
@@ -2339,3 +2340,177 @@ async def delete_prompt_category(category_id: str):
     _prompt_categories.pop(category_id, None)
     _save_library_state()
     return {"success": True}
+
+
+# ============================================================
+# QC 质检报告查询 / 强制发布留痕 端点
+# ============================================================
+
+def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
+    """从资产 metadata 或落盘 JSON 读取 QC 报告。
+
+    支持两种查询键：
+      - qc_report 资产自身的 asset_id
+      - 被质检的视频资产 asset_id（报告文件名含该 id）
+    """
+    from services.asset_service import get_asset_service
+    svc = get_asset_service()
+    # 1) 直接命中 qc_report 资产
+    asset = svc._assets.get(asset_id)
+    if asset is not None:
+        meta = getattr(asset, "metadata", None) or {}
+        if "qc" in meta:
+            return meta.get("qc")
+    # 2) 按视频资产 id 在落盘目录找 qc_report_{asset_id}.json
+    import os
+    qc_dir = os.path.join("data", "generated", "qc")
+    cand = os.path.join(qc_dir, f"qc_report_{asset_id}.json")
+    if os.path.exists(cand):
+        with open(cand, "r", encoding="utf-8") as f:
+            report = json.load(f)
+        # 合并独立 gate 文件：强制发布留痕写在 qc_gate_{id}.json（不被 qc_report 覆盖冲掉）
+        gate_path = os.path.join(qc_dir, f"qc_gate_{asset_id}.json")
+        if os.path.exists(gate_path):
+            try:
+                with open(gate_path, "r", encoding="utf-8") as gf:
+                    report["gate"] = json.load(gf)
+            except Exception:
+                pass
+        return report
+    # 3) 在资产库里反查 name 匹配的 qc_report
+    for a in svc._assets.values():
+        if getattr(a, "asset_type", "") == "qc_report" and getattr(a, "name", "").endswith(f"qc_report_{asset_id}.json"):
+            meta = getattr(a, "metadata", None) or {}
+            if "qc" in meta:
+                return meta.get("qc")
+    return None
+
+
+@router.get("/qc/report/{asset_id}")
+async def get_qc_report(asset_id: str):
+    """查询某资产（视频或 qc 报告）的质量质检报告。"""
+    report = _read_qc_report(asset_id)
+    if report is None:
+        return {"success": False, "error": "未找到该资产的质检报告", "asset_id": asset_id}
+    return {"success": True, "asset_id": asset_id, "report": report}
+
+
+@router.post("/qc/force-publish")
+async def qc_force_publish(request: Request):
+    """质检未达标时强制发布，留痕到门禁结果。
+
+    请求体：{"asset_id": "<视频资产 id>", "operator": "导演名(可选)", "reason": "强制发布原因"}
+    返回更新后的 gate 结果。
+    """
+    import os
+    body = await request.json()
+    asset_id = body.get("asset_id", "")
+    if not asset_id:
+        return {"success": False, "error": "缺少 asset_id"}
+    operator = body.get("operator", "未知操作者")
+    reason = body.get("reason", "")
+
+    report = _read_qc_report(asset_id)
+    if report is None:
+        return {"success": False, "error": "未找到该资产的质检报告", "asset_id": asset_id}
+
+    gate = report.get("gate", {})
+    gate["forced_publish"] = True
+    gate["forced_by"] = operator
+    gate["forced_reason"] = reason
+    gate["forced_at"] = datetime.now().isoformat()
+    gate["note"] = f"已强制发布（操作者:{operator}）。原因:{reason}"
+
+    # 回写落盘 gate 文件
+    qc_dir = os.path.join("data", "generated", "qc")
+    gate_path = os.path.join(qc_dir, f"qc_gate_{asset_id}.json")
+    try:
+        with open(gate_path, "w", encoding="utf-8") as f:
+            json.dump(gate, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+    # 同步回写 qc_report_{id}.json 内的 gate 副本（否则下次从文件读时强制标记丢失）
+    report_path = os.path.join(qc_dir, f"qc_report_{asset_id}.json")
+    try:
+        if os.path.exists(report_path):
+            with open(report_path, "r", encoding="utf-8") as f:
+                rep = json.load(f)
+            rep["gate"] = gate
+            with open(report_path, "w", encoding="utf-8") as f:
+                json.dump(rep, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    # 回写报告元数据（若资产仍在内存）
+    from services.asset_service import get_asset_service
+    svc = get_asset_service()
+    asset = svc._assets.get(asset_id)
+    if asset is not None:
+        meta = getattr(asset, "metadata", {}) or {}
+        if "qc" in meta:
+            meta["qc"]["gate"] = gate
+    return {"success": True, "asset_id": asset_id, "gate": gate}
+
+
+@router.get("/qc/history/{asset_id}")
+async def get_qc_history(asset_id: str):
+    """查询某视频资产的历次质检记录（#8 趋势对比）。
+
+    返回：按时间升序的历史条目列表（总分/维度/拦截状态/快照文件名），
+    以及基于首末两次的对比结论（趋势、维度变化、是否从拦截→通过等）。
+    """
+    import os
+    qc_dir = os.path.join("data", "generated", "qc")
+    history_path = os.path.join(qc_dir, f"qc_history_{asset_id}.json")
+    if not os.path.exists(history_path):
+        return {"success": False, "error": "该资产暂无质检历史", "asset_id": asset_id}
+    try:
+        with open(history_path, "r", encoding="utf-8") as f:
+            history = json.load(f)
+    except Exception as e:
+        return {"success": False, "error": f"历史文件解析失败: {e}", "asset_id": asset_id}
+    if not isinstance(history, list) or not history:
+        return {"success": False, "error": "该资产暂无质检历史", "asset_id": asset_id}
+
+    comparison = _build_qc_comparison(history)
+    return {
+        "success": True,
+        "asset_id": asset_id,
+        "count": len(history),
+        "history": history,
+        "comparison": comparison,
+    }
+
+
+def _build_qc_comparison(history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """基于首末两次 QC 生成对比结论。"""
+    first, last = history[0], history[-1]
+    dims = ["composition", "lip_sync", "rhythm", "compliance", "consistency"]
+
+    def _dims_of(entry: Dict[str, Any]) -> Dict[str, Any]:
+        d = entry.get("dimensions") or {}
+        if isinstance(d, dict):
+            return d
+        # 容忍历史快照里 dimensions 被存成 list 的异常格式
+        if isinstance(d, list) and d and isinstance(d[-1], dict):
+            return d[-1]
+        return {}
+
+    diff = {}
+    fd, ld = _dims_of(first), _dims_of(last)
+    for d in dims:
+        fv, lv = fd.get(d), ld.get(d)
+        if isinstance(fv, (int, float)) and isinstance(lv, (int, float)):
+            diff[d] = round(lv - fv, 1)
+    return {
+        "first_ts": first.get("ts"),
+        "last_ts": last.get("ts"),
+        "score_delta": round(float(last.get("total_score", 0)) - float(first.get("total_score", 0)), 1),
+        "dimension_delta": diff,
+        "blocked_from": bool(first.get("blocked")),
+        "blocked_to": bool(last.get("blocked")),
+        "passed_from": bool(first.get("passed")),
+        "passed_to": bool(last.get("passed")),
+        "improved": (not first.get("passed")) and bool(last.get("passed")),
+        "regressed": bool(first.get("passed")) and (not last.get("passed")),
+    }

@@ -47,6 +47,10 @@ class WorkflowStepTemplate:
     params: Dict[str, Any] = field(default_factory=dict)       # 默认参数
     max_retries: int = 0                            # 最大重试次数
     description: str = ""                           # 步骤说明
+    # 质检门禁（仅 qc 步骤使用，可选）：若设置，qc 不达标且非强制发布时阻断后续发布
+    # {"enabled": true, "threshold": 60.0, "block_on_redline": true,
+    #  "allow_force_publish": true, "note": "未达标可强制发布但留痕"}
+    gate: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -521,7 +525,52 @@ def _build_preset_templates() -> List[WorkflowTemplate]:
         updated_at=now,
     ))
 
+    # 为所有含 export 步骤的预置模板统一挂载 qc 质检步骤（export 之后），
+    # 使"端到端质量验证"默认串进一键成片链路。qc 仅质检+门禁提示，不强制阻断。
+    _append_qc_after_export(templates)
     return templates
+
+
+def _append_qc_after_export(templates: List[WorkflowTemplate]) -> None:
+    """给每个包含 export 步骤的模板，在 export 之后追加一个 qc 质检步骤。
+
+    门禁策略：默认不阻断发布（由导演决策），但会落盘 gate 结果供前端复核。
+    qc 步骤自带 gate 配置：未达标可强制发布但留痕。
+    """
+    for tpl in templates:
+        steps = list(tpl.steps)
+        export_idx = next((i for i, s in enumerate(steps) if s.stage_id == "export"), None)
+        if export_idx is None:
+            continue
+        # 已挂过 qc 则跳过（幂等）
+        if any(s.stage_id == "qc" for s in steps):
+            continue
+        # export 步骤在 DAG 中的引用键为 step_{export_idx+1}（DAG 按 list 顺序自动编号）
+        export_step_key = "step_" + str(export_idx + 1)
+        qc_step = WorkflowStepTemplate(
+            stage_id="qc",
+            name="成片质检",
+            input_from_steps=[export_step_key],
+            input_mode="auto",
+            provider_id="",
+            params={
+                "threshold": 60.0,
+                "use_semantic": True,
+                "caption_from": "task",
+            },
+            max_retries=0,
+            description="成片质量质检（技术分 + AI 语义分 + 红线拦截）",
+            gate={
+                "enabled": True,
+                "threshold": 60.0,
+                "block_on_redline": True,
+                "allow_force_publish": True,
+                "note": "质检不达标时默认提示，可强制发布但留痕",
+            },
+        )
+        # 在 export 步骤之后插入（steps 为 list，DAG 构建时 qc 自动成为下一个 step_N）
+        steps.insert(export_idx + 1, qc_step)
+        tpl.steps = steps
 
 
 class WorkflowTemplateService:

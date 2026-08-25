@@ -773,6 +773,7 @@ class ComfyUILifecycleMixin:
                 except Exception:
                     pass
             self._process = None
+    @staticmethod
     def _kill_process_on_port(port: int):
         """强制释放指定端口（Windows），防止端口占用导致重启失败
         

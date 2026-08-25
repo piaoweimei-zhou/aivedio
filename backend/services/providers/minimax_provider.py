@@ -61,6 +61,17 @@ class MinimaxProvider(ProviderPlugin):
             height = height or h
 
         audio_mode = kwargs.get("audio_mode") or "native"
+        # i2v：有参考图时传第一张给 H3 作 ref_image（I2VA）；否则纯文本 T2VA
+        reference_image_url = (images or [None])[0] or ""
+
+        # ⭐ H3 直出人声：H3 是音视频统一模型，音频由 prompt 驱动（audio_mode=native）。
+        # 把口播文案拼进 prompt，H3 的音频 DiT 会直接合成人声，无需 ComfyUI Qwen3TTS 旁支。
+        tts_texts = kwargs.get("tts_texts") or []
+        narration = "。".join(t.strip() for t in tts_texts if t and t.strip())
+        if narration:
+            prompt = f"{prompt}。台词/旁白：\"{narration}\""
+            logger.info(f"[MiniMaxH3] 人声注入 prompt | 台词={narration[:60]}...")
+
         result = await service.generate_minimax_h3(
             prompt=prompt,
             width=width,
@@ -71,6 +82,7 @@ class MinimaxProvider(ProviderPlugin):
             video_steps=int(kwargs.get("video_steps") or 8),
             audio_steps=int(kwargs.get("audio_steps") or 10),
             filename_prefix=kwargs.get("filename_prefix") or "minimax_h3",
+            reference_image_url=reference_image_url,
         )
 
         elapsed_ms = int((time.time() - start) * 1000)

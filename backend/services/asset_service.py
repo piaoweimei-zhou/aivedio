@@ -211,12 +211,20 @@ class AssetService:
         self._broadcast("asset:updated", asset)
         return asset
 
-    async def delete(self, asset_id: str) -> bool:
-        """删除资产，并通知 CanvasService 清理引用该资产的孤立节点"""
+    async def delete(self, asset_id: str, purge_files: bool = False) -> bool:
+        """删除资产，并通知 CanvasService 清理引用该资产的孤立节点
+
+        Args:
+            asset_id: 资产 ID
+            purge_files: 是否连带删除该资产引用的磁盘文件（generated/、ComfyUI output）
+                         默认 False（只删注册记录），True 时释放磁盘空间。
+        """
         async with self._lock:
             asset = self._assets.pop(asset_id, None)
             if not asset:
                 return False
+            if purge_files:
+                self._purge_asset_files(asset)
             await asyncio.get_event_loop().run_in_executor(None, self._save)
         # 通知 CanvasService 清理引用该资产的节点
         try:
@@ -227,6 +235,43 @@ class AssetService:
             logger.warning(f"[AssetService] 通知 CanvasService 清理孤立节点失败: {e}")
         self._broadcast("asset:deleted", asset)
         return True
+
+    def _purge_asset_files(self, asset: AssetRef) -> List[str]:
+        """删除资产引用的磁盘文件，返回已删除的文件路径列表。
+
+        通过 output_file_from_url 将 url 解析为本地路径（支持 generated/ 持久化目录、
+        ComfyUI output 目录、扁平/子目录结构），存在则删除。重复引用只删一次。
+        """
+        removed: List[str] = []
+        seen: set = set()
+        try:
+            from services.providers.provider_utils import output_file_from_url
+        except Exception as e:
+            logger.warning(f"[AssetService] purge 需 provider_utils 失败: {e}")
+            return removed
+        for url in asset.urls or []:
+            if not url:
+                continue
+            try:
+                local = output_file_from_url(url)
+            except Exception as e:
+                logger.warning(f"[AssetService] purge 解析 url 失败 {url}: {e}")
+                continue
+            if not local:
+                continue
+            key = os.path.abspath(local).lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            try:
+                if os.path.isfile(local):
+                    os.remove(local)
+                    removed.append(local)
+            except Exception as e:
+                logger.warning(f"[AssetService] 删除文件失败 {local}: {e}")
+        if removed:
+            logger.info(f"[AssetService] purge_files 删除 {len(removed)} 个文件: {asset.asset_id}")
+        return removed
 
     # ── 生产-消费 ─────────────────────────────────────────
 
@@ -360,6 +405,66 @@ class AssetService:
 
     # ── 清理孤岛资产 ──────────────────────────────────────
 
+    def _asset_url_exists(self, urls: List[str]) -> bool:
+        """判断资产 urls 中是否有任意一个可访问的文件。
+
+        判定优先级：
+        1. `output_file_from_url` 解析成本地路径（支持 /api/comfyui/image 与 generated/ 持久化）
+        2. generated/ 与 ComfyUI output 目录递归按文件名搜索
+        3. HTTP GET 兜底（前端即靠 HTTP 加载，200 才算存在）
+        """
+        import asyncio
+        from urllib.parse import urlparse, parse_qs
+
+        # 准备搜索目录（延迟获取，避免重）—— 用类属性默认
+        gen_dir = ""
+        comfy_dir = ""
+        try:
+            from services.comfyui_helpers import GENERATED_DIR as _g
+            gen_dir = _g if os.path.isdir(_g) else ""
+        except Exception:
+            pass
+        try:
+            from services.comfyui.config import COMFYUI_OUTPUT_DIR as _c
+            comfy_dir = _c if _c and os.path.isdir(_c) else ""
+        except Exception:
+            pass
+
+        def _local_exists(url: str) -> bool:
+            if not url:
+                return False
+            # 1) output_file_from_url 精确解析
+            try:
+                from services.providers.provider_utils import output_file_from_url
+                local = output_file_from_url(url)
+                if local and os.path.isfile(local):
+                    return True
+            except Exception:
+                pass
+            # 提取文件名
+            parsed = urlparse(url)
+            params = parse_qs(parsed.query)
+            fname = params.get("filename", [None])[0] or url.rsplit("/", 1)[-1].split("?")[0]
+            if not fname:
+                return False
+            fname = os.path.basename(fname)
+            # 2) 递归搜索 generated / ComfyUI output
+            for d in (gen_dir, comfy_dir):
+                if not d or not os.path.isdir(d):
+                    continue
+                if os.path.isfile(os.path.join(d, fname)):
+                    return True
+                for root, _dirs, files in os.walk(d):
+                    if fname in files:
+                        return True
+            return False
+
+        # 先本地判定（快、准）
+        for url in urls:
+            if url and _local_exists(url):
+                return True
+        return False
+
     async def cleanup_orphaned(
         self,
         generated_dir: str = "",
@@ -389,25 +494,7 @@ class AssetService:
                 # urls 为空 → 无图片关联，标记为孤岛
                 orphaned.append(a.asset_id)
                 continue
-            found = False
-            for url in a.urls:
-                if not url:
-                    continue
-                # 从 URL 提取文件名
-                from urllib.parse import urlparse, parse_qs
-                parsed = urlparse(url)
-                params = parse_qs(parsed.query)
-                fname = params.get("filename", [None])[0] or url.rsplit("/", 1)[-1].split("?")[0]
-                if not fname:
-                    continue
-                # 检查文件是否存在于任何搜索目录
-                for d in search_dirs:
-                    fpath = os.path.join(d, fname)
-                    if os.path.isfile(fpath):
-                        found = True
-                        break
-                if found:
-                    break
+            found = self._asset_url_exists(a.urls)
             if found:
                 kept += 1
             else:

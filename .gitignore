@@ -35,6 +35,16 @@ backend/output/
 backend/assets/
 backend/static/director/comfyui_output/
 
+# Runtime input（运行时输入，不入库）
+input/
+
+# 临时导出报告
+docs/qc-report-export-*/
+
+# 工具残留
+.codebuddy/
+.trae-html-share-packages/
+
 # ComfyUI 自定义节点（外部依赖）
 custom_nodes/
 

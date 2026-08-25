@@ -108,7 +108,7 @@ class ComfyUIFileHandler:
         if not image_url:
             return image_url
 
-        # 解析 URL 提取文件名
+        # 解析 URL 提取文件名与 subfolder（concept/angle 等出图可能落子目录）
         parsed = urlparse(image_url)
         params = parse_qs(parsed.query)
 
@@ -120,18 +120,30 @@ class ComfyUIFileHandler:
             filename = image_url
 
         fname = os.path.basename(filename)
+        # subfolder：如 "baseline/concept"，决定 output/input 下的子目录查找
+        subfolder = (params.get("subfolder", [""])[0] or "").strip("/")
         input_dir = self.input_dir
+        # 目标：统一复制到 input 根目录（扁平），保证 LoadImage 用纯文件名即可加载
         input_path = os.path.join(input_dir, fname)
+
+        # ⭐ 定位 output 中的真实源文件：优先 subfolder 结构，回退扁平根目录
+        def _output_src() -> str:
+            if subfolder:
+                p = os.path.join(self._output_dir, subfolder, fname)
+                if os.path.isfile(p):
+                    return p
+            p = os.path.join(self._output_dir, fname)
+            return p if os.path.isfile(p) else ""
 
         # ⭐ 检查 input 目录中的文件是否与 output 目录一致
         # 避免同名旧文件导致超分/精修使用了错误的图片
-        output_path = os.path.join(self._output_dir, fname)
-        if os.path.exists(input_path) and not os.path.exists(output_path):
+        output_path = _output_src()
+        if os.path.exists(input_path) and not output_path:
             # input 存在但 output 不存在（可能是上传的文件），直接使用
             _ref_elapsed = (time.time() - _ref_t0) * 1000
             logger.info(f"[REFIMG] 已存在(仅input) | file={fname} | elapsed={_ref_elapsed:.0f}ms")
             return fname
-        if os.path.exists(input_path) and os.path.exists(output_path):
+        if os.path.exists(input_path) and output_path:
             # 两者都存在，比较大小判断是否需要更新
             src_sz = os.path.getsize(output_path)
             dst_sz = os.path.getsize(input_path)
@@ -151,22 +163,24 @@ class ComfyUIFileHandler:
 
         os.makedirs(input_dir, exist_ok=True)
 
-        # 1. 从 output 目录复制
-        output_path = os.path.join(self._output_dir, fname)
-        if os.path.exists(output_path):
+        # 1. 从 output 目录复制（含 subfolder）
+        output_path = _output_src()
+        if output_path:
             try:
                 shutil.copy2(output_path, input_path)
                 _ref_elapsed = (time.time() - _ref_t0) * 1000
-                logger.info(f"[REFIMG] output复制 | file={fname} | elapsed={_ref_elapsed:.0f}ms")
+                logger.info(f"[REFIMG] output复制 | file={fname} | src={output_path} | elapsed={_ref_elapsed:.0f}ms")
                 return fname
             except Exception as e:
                 logger.warning(f"[ComfyUI] output 复制失败: {e}")
 
-        # 2. HTTP 下载
+        # 2. HTTP 下载（带 subfolder，否则 output 子目录图片取不到）
         try:
             import aiohttp
 
             dl_url = f"{self._base_url}/view?filename={fname}&type=output"
+            if subfolder:
+                dl_url += f"&subfolder={subfolder}"
             session = self._get_http_session()
             if session:
                 async with session.get(
@@ -251,10 +265,48 @@ class ComfyUIFileHandler:
             except Exception as e:
                 logger.warning(f"[ComfyUI] 项目目录搜索失败: {e}")
 
+        # 3. 从后端持久化目录（GENERATED_DIR）兜底搜索
+        # concept/angle 等出图会被 comfyui_lifecycle 持久化到 data/generated，
+        # 且可能带 subfolder 子目录；此处按 subfolder + 扁平两种结构查找。
+        try:
+            from services.comfyui_helpers import GENERATED_DIR as _PERSIST_DIR
+        except Exception as e:
+            _PERSIST_DIR = ""
+            logger.warning(f"[ComfyUI] GENERATED_DIR 导入失败: {e}")
+        if _PERSIST_DIR:
+            _candidates = []
+            if subfolder:
+                _candidates.append(os.path.join(_PERSIST_DIR, subfolder, fname))
+            _candidates.append(os.path.join(_PERSIST_DIR, fname))
+            for _cand in _candidates:
+                if os.path.isfile(_cand):
+                    try:
+                        os.makedirs(input_dir, exist_ok=True)
+                        shutil.copy2(_cand, input_path)
+                        logger.info(
+                            f"[ComfyUI] 从持久化目录复制 | {fname} ← {_cand}"
+                        )
+                        return fname
+                    except Exception as e:
+                        logger.warning(f"[ComfyUI] 持久化目录复制失败: {e}")
+            # 递归搜索（兼容其它子目录结构）
+            if not os.path.isfile(input_path):
+                for _root, _dirs, _files in os.walk(_PERSIST_DIR):
+                    if fname in _files:
+                        try:
+                            os.makedirs(input_dir, exist_ok=True)
+                            shutil.copy2(os.path.join(_root, fname), input_path)
+                            logger.info(
+                                f"[ComfyUI] 持久化目录递归复制 | {fname} ← {os.path.join(_root, fname)}"
+                            )
+                            return fname
+                        except Exception as e:
+                            logger.warning(f"[ComfyUI] 持久化目录递归复制失败: {e}")
+
         # 所有来源都失败
         logger.error(
             f"[ComfyUI] 无法找到图片文件: {fname}"
-            f"（output/缓存/HTTP/项目目录 均不可用）"
+            f"（output/缓存/HTTP/项目目录/持久化目录 均不可用）"
         )
         return fname  # 仍返回文件名，ComfyUI 会报更明确的错误
 

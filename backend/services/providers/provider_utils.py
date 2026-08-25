@@ -236,10 +236,46 @@ def output_file_from_url(url: str) -> Optional[str]:
         rel = clean[len("/assets/output/"):]
         return os.path.join(OUTPUT_DIR, "output", rel)
 
-    # 2. /api/comfyui/image?filename=xxx — 需要运行时解析，此处返回 None
-    #    （ComfyUI output 目录路径由 comfyui.config 提供，调用方需自行处理）
+    # 2. /api/comfyui/image?filename=xxx — 解析 filename + subfolder
+    #    到持久化目录 GENERATED_DIR（含 subfolder 子目录）与 ComfyUI output 目录查找
     if clean == "/api/comfyui/image":
-        return None  # 由调用方通过 _extract_filename_from_url + COMFYUI_OUTPUT_DIR 解析
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(str(url))
+        params = parse_qs(parsed.query)
+        filename = (params.get("filename", [""])[0] or "").strip()
+        subfolder = (params.get("subfolder", [""])[0] or "").strip("/")
+        if not filename:
+            return None
+        fname = os.path.basename(filename)
+        _gen_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+        # 1) 持久化目录（含 subfolder 结构）
+        if subfolder:
+            cand = os.path.join(_gen_dir, subfolder, fname)
+            if os.path.isfile(cand):
+                return cand
+        # 2) 持久化目录扁平
+        cand = os.path.join(_gen_dir, fname)
+        if os.path.isfile(cand):
+            return cand
+        # 3) 递归搜索持久化目录
+        if os.path.isdir(_gen_dir):
+            for _root, _dirs, _files in os.walk(_gen_dir):
+                if fname in _files:
+                    return os.path.join(_root, fname)
+        # 4) ComfyUI output 目录（含 subfolder）
+        try:
+            from services.comfyui.config import COMFYUI_OUTPUT_DIR
+        except Exception:
+            COMFYUI_OUTPUT_DIR = ""
+        if COMFYUI_OUTPUT_DIR:
+            if subfolder:
+                cand = os.path.join(COMFYUI_OUTPUT_DIR, subfolder, fname)
+                if os.path.isfile(cand):
+                    return cand
+            cand = os.path.join(COMFYUI_OUTPUT_DIR, fname)
+            if os.path.isfile(cand):
+                return cand
+        return None
 
     # 3. /static/director/uploads/xxx
     if clean.startswith("/static/director/uploads/"):

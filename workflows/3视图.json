@@ -541,7 +541,7 @@
   },
   "44": {
     "inputs": {
-      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
       "weight_dtype": "fp8_e4m3fn"
     },
     "class_type": "UNETLoader",
@@ -551,7 +551,7 @@
   },
   "45": {
     "inputs": {
-      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
       "weight_dtype": "fp8_e4m3fn"
     },
     "class_type": "UNETLoader",
@@ -824,7 +824,7 @@
   },
   "67": {
     "inputs": {
-      "unet_name": "qwen_image_edit_2511_fp8mixed.safetensors",
+      "unet_name": "qwen_image_edit_2511_fp8_fix_by_FeiHou.safetensors",
       "weight_dtype": "fp8_e4m3fn"
     },
     "class_type": "UNETLoader",

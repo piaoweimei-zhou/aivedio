@@ -6,6 +6,7 @@ ComfyUI 服务 — TTS 音频 Mixin
 
 import json
 import logging
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -318,9 +319,10 @@ class ComfyUITTSMixin:
         # 通常 ComfyUI input 目录在安装目录下
         # 这里用 API 上传
         try:
-            # 如果是本地 URL，直接复制
+            # 如果是后端自身的相对接口（/api/...），拼后端地址而非 ComfyUI 地址
             if url.startswith("/api/"):
-                full_url = f"{self.config.base_url}{url}" if not url.startswith("http") else url
+                backend_port = os.environ.get("DIRECTOR_PORT", "8000")
+                full_url = f"http://127.0.0.1:{backend_port}{url}"
             else:
                 full_url = url
 

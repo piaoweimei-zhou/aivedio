@@ -36,6 +36,14 @@ from services.qwen_workflow import YAOGUANG_DEFAULT_NEGATIVE
 logger = logging.getLogger(__name__)
 
 
+def _project_prefix(project_id: str) -> str:
+    """生成安全的项目短前缀（空/unknown 时兜底为 global，避免 'nknown' 这类截断产物）"""
+    pid = (project_id or "").strip()
+    if not pid or pid == "unknown":
+        return "global"
+    return pid[-6:]
+
+
 class ComfyUIGenerationMixin:
     async def _cache_image(self, filename: str):
         """确保图片存在于磁盘（委托到 file_handler 子模块）"""
@@ -177,7 +185,7 @@ class ComfyUIGenerationMixin:
         # 4. 根据工作流类型构建工作流
         if workflow_type == "qwen_refinement":
             # Qwen精修模式（单图编辑）
-            prefix = f"{ (project_id or 'unknown')[-6:] }_{ asset_tag or 'refine' }"
+            prefix = f"{ _project_prefix(project_id) }_{ asset_tag or 'refine' }"
             workflow, opt_prompt, prompt_sections = build_refinement_workflow(
                 reference_image=resolved_image,
                 role_desc=custom_text,
@@ -193,7 +201,7 @@ class ComfyUIGenerationMixin:
                 views=3,
                 character_name=custom_text or "角色",
                 seed=actual_seed,
-                filename_prefix=f"{ (project_id or 'unknown')[-6:] }_{ asset_tag or 'std' }",
+                filename_prefix=f"{ _project_prefix(project_id) }_{ asset_tag or 'std' }",
             )
             logger.info(f"[ComfyUI] 使用 Qwen 标准化工作流（3视图）")
 
@@ -421,7 +429,7 @@ class ComfyUIGenerationMixin:
             resolved_image = padded_filename
 
         # 4. 构建精修工作流（同时获取优化提示词）
-        prefix = f"{ (project_id or 'unknown')[-6:] }_{ asset_tag or 'refine' }"
+        prefix = f"{ _project_prefix(project_id) }_{ asset_tag or 'refine' }"
         workflow, opt_prompt, prompt_sections = build_refinement_workflow(
             reference_image=resolved_image,
             role_desc=role_desc,
@@ -751,7 +759,7 @@ class ComfyUIGenerationMixin:
                     per_frame_prompts=[frame_prompt],  # 只传当前帧
                     instruction=frame_instruction,
                     seed=frame_seed,
-                    filename_prefix=f"{ (project_id or 'unknown')[-6:] }_{ safe_name }_{ asset_tag or 'std' }_{frame_idx+1}of6",
+                    filename_prefix=f"{ _project_prefix(project_id) }_{ safe_name }_{ asset_tag or 'std' }_{frame_idx+1}of6",
                 )
                 prompt_id = await self._queue_prompt_with_retry(frame_workflow)
                 filenames = await self._wait_for_completion(prompt_id, progress_callback, task_type='standardize_3')
@@ -805,7 +813,7 @@ class ComfyUIGenerationMixin:
             character_name=asset_name,
             seed=actual_seed,
             full_prompt=full_prompt,
-            filename_prefix=f"{ (project_id or 'unknown')[-6:] }_{ safe_name }_{ asset_tag or 'std' }",
+            filename_prefix=f"{ _project_prefix(project_id) }_{ safe_name }_{ asset_tag or 'std' }",
             view_type=view_type or 'character',
             role_desc=role_desc,  # 传递优化后的描述
             width=width,   # ⭐ 传递自定义尺寸

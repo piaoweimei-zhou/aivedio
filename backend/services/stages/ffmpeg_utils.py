@@ -93,7 +93,7 @@ async def resolve_local_video(url: str) -> str:
     if url.startswith(("http://", "https://")):
         import httpx
         temp_path = output_path_for(f"temp_{uuid.uuid4().hex[:8]}.mp4", "temp")
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=300.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=20.0, read=300.0)) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             with open(temp_path, "wb") as f:

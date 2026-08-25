@@ -13,6 +13,7 @@
 - 每个 Stage 声明 input_type[] / output_type / provider
 """
 
+import asyncio
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -21,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
+from services.asset_organizer import organize_asset_files
 from services.provider_service import ProviderResult, get_provider_service
 
 logger = logging.getLogger(__name__)
@@ -113,6 +115,31 @@ class StagePlugin(ABC):
             error=error,
         )
 
+    async def _organize_urls(self, urls: List[str], content_keyword: str = "") -> List[str]:
+        """把本地生成资产整理到 data/generated/{project}/{stage}/ 语义目录
+
+        远程 URL（云端 provider 产物）无法本地定位，会原样保留。
+        使用移动而非复制：_persist_output_files 已在根目录留有副本，避免重复堆积。
+        """
+        if not urls:
+            return urls
+        project_id = _current_project_id_var.get()
+        stage_id = self.stage_def.stage_id if self.stage_def else "asset"
+        try:
+            organized, _skipped = await asyncio.to_thread(
+                organize_asset_files,
+                urls,
+                project_id or "",
+                stage_id,
+                content_keyword or "",
+                move=True,
+            )
+            if organized:
+                return organized
+        except Exception as e:
+            logger.warning(f"[StagePlugin] 资产整理失败，保留原 URL | {e}")
+        return urls
+
     async def _register_asset_direct(
         self,
         asset_svc,
@@ -137,6 +164,9 @@ class StagePlugin(ABC):
             project_id = _current_project_id_var.get()
 
         metadata = extra_metadata or {}
+
+        # 统一整理到语义目录（本地文件），远程 URL 原样保留
+        urls = await self._organize_urls(urls, content_keyword=content_type)
 
         return await asset_svc.create(
             asset_type=asset_type,
@@ -193,10 +223,14 @@ class StagePlugin(ABC):
         if project_id is None:
             project_id = _current_project_id_var.get()
 
+        # 统一整理到语义目录（本地文件），远程 URL 原样保留
+        urls = result.images or ([result.image_url] if result.image_url else [])
+        urls = await self._organize_urls(urls, content_keyword=content_type)
+
         return await asset_svc.create(
             asset_type=asset_type,
             name=name,
-            urls=result.images or ([result.image_url] if result.image_url else []),
+            urls=urls,
             metadata=metadata,
             parent_id=parent_id or None,
             content_type=content_type,
@@ -336,6 +370,16 @@ BUILTIN_STAGES = {
         supported_providers=["local"],
         description="结尾固定引导框（评论区扣1领工具模板化），ffmpeg overlay",
     ),
+    # 质检合规阶段（Phase 0 新增，零侵入：仅注册为可选 stage，不改默认一键成片序列）
+    "qc": StageDef(
+        stage_id="qc",
+        name="质检合规",
+        input_types=["video"],
+        output_type="qc_report",
+        default_provider="local",
+        supported_providers=["local"],
+        description="对成片做 100 分制质量/平台规则/版权质检，产出可复核报告（不拦截发布）",
+    ),
 }
 
 
@@ -383,6 +427,7 @@ class StageService:
             "tts": "services.stages.tts_stage:TtsStage",
             "subtitle": "services.stages.subtitle_stage:SubtitleStage",
             "hook_overlay": "services.stages.hook_overlay_stage:HookOverlayStage",
+            "qc": "services.stages.qc_stage:QcStage",
         }
 
         import importlib

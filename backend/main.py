@@ -205,8 +205,11 @@ logger.info(f"[Director] 持久化图片目录: {GENERATED_DIR}")
 
 
 @app.get("/api/comfyui/image")
-async def serve_comfyui_image(filename: str = "", pipeline_id: str = ""):
-    """从 ComfyUI output / 持久化目录 提供图片文件"""
+async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfolder: str = ""):
+    """从 ComfyUI output / 持久化目录 提供图片文件
+
+    subfolder: 持久化目录下的相对子目录（如 {project}/{stage}），用于分层资产访问。
+    """
     if not filename:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="filename 参数必填")
@@ -215,11 +218,18 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = ""):
     if safe_name != filename or ".." in filename:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="非法文件名")
+    # subfolder 同样做路径遍历防护
+    safe_sub = ""
+    if subfolder:
+        safe_sub = subfolder.replace("\\", "/").strip("/")
+        if ".." in safe_sub or safe_sub.startswith("/"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="非法子目录")
     # 搜索路径（按优先级）
     from services.comfyui_service import COMFYUI_DIR
     _upload_dir = os.path.join(os.path.dirname(__file__), "data", "uploads")
     search_dirs = [
-        GENERATED_DIR,                                      # 1. 持久化目录（优先）
+        os.path.join(GENERATED_DIR, safe_sub) if safe_sub else GENERATED_DIR,  # 1. 持久化目录（优先）
         _upload_dir,                                        # 2. 上传目录（含 canvas 上传）
         os.path.join(COMFYUI_DIR, "output") if COMFYUI_DIR else "",  # 3. ComfyUI output
     ]
@@ -238,6 +248,18 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = ""):
                 ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
             }
             return FileResponse(fpath, media_type=media_map.get(ext, "application/octet-stream"))
+    # 兼容旧 URL：持久化目录递归查找（存量资产迁移到子目录后仍可访问）
+    if not safe_sub:
+        for root, _dirs, files in os.walk(GENERATED_DIR):
+            if safe_name in files:
+                fpath = os.path.join(root, safe_name)
+                ext = os.path.splitext(safe_name)[1].lower()
+                media_map = {
+                    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                    ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
+                    ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+                }
+                return FileResponse(fpath, media_type=media_map.get(ext, "application/octet-stream"))
 
     # 4. 回退：通过 HTTP 从 ComfyUI /view 端点代理拉取（适用于远程 ComfyUI）
     import aiohttp

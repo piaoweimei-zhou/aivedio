@@ -211,6 +211,14 @@ class ExportStage(StagePlugin):
         # 获取本地文件
         local = await self._ensure_local(video_url, "video")
 
+        # MiniMax H3 等模型生成视频的音频头部常带 0.1-0.2s 满幅爆音/静音，
+        # 检测该死头长度，随后在输入层同步裁剪音视频，消除"开头乱糟糟、音画错位"。
+        head_trim = 0.0
+        if not mute:
+            head_trim = await self._detect_audio_head_trim(local, ffmpeg)
+            if head_trim > 0:
+                logger.info(f"[ExportStage] 检测到头爆音/静音，同步裁剪 {head_trim:.3f}s")
+
         # 处理水印图片（如需）
         watermark_local = ""
         if watermark_url:
@@ -227,18 +235,20 @@ class ExportStage(StagePlugin):
         # 构建 ffmpeg 命令
         args = [ffmpeg, "-y"]
 
-        # 裁剪（输入参数）
-        if trim_start > 0:
-            args.extend(["-ss", str(trim_start)])
+        # 裁剪（输入参数）：用户裁剪 + 自动头部爆音裁剪（同步裁音视频，保证音画对齐）
+        eff_start = trim_start + head_trim
+        if eff_start > 0:
+            args.extend(["-ss", str(eff_start)])
         args.extend(["-i", local])
         if watermark_local:
             args.extend(["-i", watermark_local])
         if trim_end > 0:
-            duration = max(trim_end - trim_start, 0.1)
+            duration = max(trim_end - eff_start, 0.1)
             args.extend(["-t", str(duration)])
 
         # 构建 filter_complex
         filters = []
+        audio_filter_str = ""  # 音频滤镜串（并入 filter_complex）
         overlay_inputs = 0  # 额外输入数量（watermark）
 
         # 分辨率
@@ -294,11 +304,31 @@ class ExportStage(StagePlugin):
                 filters.append(f"[0:v]{drawtext}[vtext]")
                 video_label = "[vtext]"
 
-        # 应用 filter_complex
-        if filters:
-            args.extend(["-filter_complex", ";".join(filters)])
+        # 音频滤镜（须在 filter_complex 判断之前构建，音频已随输入层同步裁剪，
+        # 这里补限幅防残余爆点 + 淡入 + 48kHz 重采样收尾）
+        audio_filter_str = ""
+        if not mute:
+            audio_filters = [
+                "alimiter=limit=0.85:level=false",  # 限幅，防残余满幅爆点
+                "afade=in:st=0:d=0.2",              # 淡入，消除开头突兀
+            ]
+            if normalize_audio:
+                audio_filters.append("loudnorm=I=-16:TP=-1.5:LRA=11")
+            audio_filters.append("aresample=48000")
+            audio_filter_str = ",".join(audio_filters)
+
+        # 应用 filter_complex（视频 + 音频滤镜统一处理，确保 -af 不因 filter_complex 失效）
+        if filters or audio_filter_str:
+            fc_parts = list(filters)
+            # 音频滤镜并入 filter_complex，输出 [outa]
+            if audio_filter_str:
+                fc_parts.append(f"[0:a]{audio_filter_str}[outa]")
+            args.extend(["-filter_complex", ";".join(fc_parts)])
             if video_label.startswith("["):
                 args.extend(["-map", video_label])
+            if audio_filter_str:
+                args.extend(["-map", "[outa]"])
+            elif not mute:
                 args.extend(["-map", "0:a?"])
         else:
             # 无滤镜
@@ -308,19 +338,17 @@ class ExportStage(StagePlugin):
         if codec and format_ != "gif":
             args.extend(["-c:v", codec])
 
-        # 码率
-        if bitrate and format_ != "gif":
-            args.extend(["-b:v", bitrate])
+        # 码率 / 质量：放大导出时若无显式 bitrate，用 CRF 恒定质量防劣化
+        if format_ != "gif":
+            if bitrate:
+                args.extend(["-b:v", bitrate])
+            else:
+                # 未指定码率 → 用恒定质量编码，避免默认码率导致放大后压缩劣化
+                args.extend(["-crf", "18", "-preset", "medium"])
 
         # 帧率
         if fps > 0:
             args.extend(["-r", str(fps)])
-
-        # 音频处理
-        if mute:
-            args.extend(["-an"])
-        elif normalize_audio:
-            args.extend(["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"])
 
         # GIF 特殊处理
         if format_ == "gif":
@@ -345,6 +373,42 @@ class ExportStage(StagePlugin):
             raise RuntimeError(f"ffmpeg 导出失败: {err_msg}")
 
         return output_url_for(os.path.basename(output_file), "output")
+
+    async def _detect_audio_head_trim(self, local: str, ffmpeg: str) -> float:
+        """检测音频开头的爆音/静音死头长度，返回需同步裁剪的秒数（0 表示无需裁剪）。
+
+        用 silencedetect 找开头第一个静音窗口，若它紧邻片头（head≤0.35s），
+        则把头到该静音结束点这一段（满幅爆音+静音）裁掉。正常语音开头的
+        中途停顿（>0.35s）不会被误判。
+        """
+        import re
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                ffmpeg, "-hide_banner", "-i", local,
+                "-af", "silencedetect=noise=-45dB:d=0.05",
+                "-f", "null", "-",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            _, stderr = await proc.communicate()
+            out = stderr.decode('utf-8', errors='replace')
+
+            m_start = re.search(r"silence_start:\s*(-?[\d.]+)", out)
+            if not m_start:
+                return 0.0
+            s = float(m_start.group(1))
+            m_end = re.search(r"silence_end:\s*([\d.]+)", out[m_start.end():])
+            if not m_end:
+                return 0.0
+            e = float(m_end.group(1))
+
+            # 静音窗口必须在片头附近（≤0.35s），且长度合理，否则是正常语音停顿，不裁剪
+            if s > 0.35 or e < 0.03 or e > 0.6:
+                return 0.0
+            return min(e + 0.03, 0.28)
+        except Exception as ex:
+            logger.warning(f"[ExportStage] 头部爆音检测失败（跳过后处理）: {ex}")
+            return 0.0
 
     async def _extract_cover(self, video_url: str, time_sec: float) -> str:
         """从视频提取封面图"""

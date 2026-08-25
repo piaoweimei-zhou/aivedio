@@ -188,7 +188,15 @@ class SubtitleStage(StagePlugin):
         font_color = str(params.get("font_color", _DEFAULT_FONT_COLOR)).lstrip("#").upper()
         highlight_color = str(params.get("highlight_color", _DEFAULT_HIGHLIGHT_COLOR)).lstrip("#").upper()
         outline = int(params.get("outline", max(3, width // 200)))
-        margin_v = int(params.get("margin_v", int(height * 0.12)))
+        margin_v_raw = params.get("margin_v", 0.12)
+        try:
+            margin_v = float(margin_v_raw)
+        except (TypeError, ValueError):
+            margin_v = 0.12
+        if 0 < margin_v <= 1:
+            margin_v = int(height * margin_v)
+        else:
+            margin_v = int(margin_v)
 
         header = (
             "[Script Info]\n"
