@@ -141,6 +141,118 @@ class ComfyUIStoryboardMixin(ComfyUIStoryboardBatchMixin):
             **kwargs,  # 透传额外参数到 build_storyboard_workflow_v2
         )
 
+    def _detect_and_crop_turnaround(
+        self, all_ref_items, template, reference_images, trace_id, progress_callback
+    ) -> int:
+        """三视图参考图检测与裁剪（V6.0：从图片本身检测，裁剪为单视图面板）"""
+        # 1.4 三视图参考图检测与裁剪（在 Phase-2 之前）
+        # ═══════════════════════════════════════════════════════════
+        # 根因：三视图参考图作为像素直接输入 Qwen Image Edit 模型，
+        # 视觉信号强度远超文本约束 → 必须从像素层面裁剪掉多余面板
+        # ⭐ 3视图模板的输入是单张概念图，不需要裁剪
+        # ⭐ V3.0 视觉分析已禁用，desc/visual_desc 为空，改为从图片本身检测
+        TURNAROUND_PATTERNS = [
+            "三张照片拼接",
+            "正面.*侧身.*背面",
+            "正面.*背面.*侧身",
+            "不同角度展示",
+            "多视角",
+            "三视图",
+            "三根造型相似",
+            "三个视角",
+            "多角度视图",
+            "正面照.*侧面照.*背面照",
+            "正面、侧面、背面",
+            "正面、背面、侧面",
+        ]
+        input_dir = os.path.join(self.config.comfyui_dir, "input")
+        cropped_count = 0
+        for item in all_ref_items or []:
+            # 3视图模板跳过裁剪
+            if template == "3view":
+                continue
+
+            # 优先从 desc/visual_desc 检测（V3.0 已禁用，通常为空）
+            desc = (item.get("visual_desc", "") or item.get("desc", "")).lower()
+            # fallback: 从 item type/role 检测
+            is_turnaround = any(
+                re.search(pat, desc, re.IGNORECASE) for pat in TURNAROUND_PATTERNS
+            )
+            # 如果 desc 为空，尝试从图片宽高比检测（三视图通常是宽图）
+            if not is_turnaround and not desc:
+                resolved_fn = item.get("resolved", "")
+                if resolved_fn:
+                    try:
+                        from PIL import Image
+
+                        img_path = os.path.join(input_dir, resolved_fn)
+                        if os.path.exists(img_path):
+                            with Image.open(img_path) as img:
+                                w, h = img.size
+                                # 三视图拼接图通常宽高比 > 2.5
+                                if w > h * 2.5:
+                                    is_turnaround = True
+                                    logger.info(
+                                        f"[StoryboardV2] [{trace_id}] "
+                                        f"检测到宽图(可能为三视图) | {w}x{h} | ratio={w/h:.2f}"
+                                    )
+                    except Exception as e:
+                        logger.debug(f"[StoryboardV2] 图片宽高比检测失败: {e}")
+
+            if not is_turnaround:
+                continue
+
+            item_type = item.get("type", "unknown")
+            logger.warning(
+                f"[StoryboardV2] [{trace_id}] ⚠️ 检测到三视图参考图"
+                f" type={item_type}，将裁剪为单视图面板"
+            )
+
+            # 查找该 item 对应的已解析文件名
+            resolved_fn = item.get("resolved", "")
+            if not resolved_fn:
+                # fallback: 遍历 reference_images 找匹配的 type
+                for key, ref_fn in reference_images.items():
+                    if key == item_type or key.startswith(item_type):
+                        # 验证文件存在
+                        test_path = os.path.join(input_dir, ref_fn)
+                        if os.path.exists(test_path):
+                            resolved_fn = ref_fn
+                            break
+
+            if resolved_fn:
+                cropped_fn = _crop_turnaround_to_front_view(input_dir, resolved_fn, trace_id)
+                if cropped_fn:
+                    # ⭐ 更新 reference_images（构建工作流时使用）
+                    for key, ref_fn in list(reference_images.items()):
+                        if ref_fn == resolved_fn:
+                            reference_images[key] = cropped_fn
+                            logger.info(
+                                f"[StoryboardV2] [{trace_id}] "
+                                f"reference_images['{key}']: {resolved_fn} → {cropped_fn}"
+                            )
+                            break
+                    # ⭐ 更新 item.resolved（后续引用）
+                    item["resolved"] = cropped_fn
+                    cropped_count += 1
+            else:
+                logger.warning(
+                    f"[StoryboardV2] [{trace_id}] 无法找到 type={item_type} "
+                    f"的已解析文件，跳过裁剪"
+                )
+
+        if cropped_count > 0:
+            logger.warning(
+                f"[StoryboardV2] [{trace_id}] ⚠️ 三视图裁剪完成: "
+                f"{cropped_count} 张参考图已替换为单视图面板"
+            )
+            if progress_callback:
+                progress_callback(
+                    f"✂️ 已裁剪 {cropped_count} 张三视图参考（保留正视图面板）...",
+                    42,
+                )
+        return cropped_count
+
     async def storyboard_generation_v2(
         self,
         project_id: str,
@@ -223,112 +335,9 @@ class ComfyUIStoryboardMixin(ComfyUIStoryboardBatchMixin):
                 progress_callback("⚡ 跳过视觉分析，直接进入融合...", 40)
 
             # ═══════════════════════════════════════════════════════════
-            # 1.4 三视图参考图检测与裁剪（在 Phase-2 之前）
-            # ═══════════════════════════════════════════════════════════
-            # 根因：三视图参考图作为像素直接输入 Qwen Image Edit 模型，
-            # 视觉信号强度远超文本约束 → 必须从像素层面裁剪掉多余面板
-            # ⭐ 3视图模板的输入是单张概念图，不需要裁剪
-            # ⭐ V3.0 视觉分析已禁用，desc/visual_desc 为空，改为从图片本身检测
-            TURNAROUND_PATTERNS = [
-                "三张照片拼接",
-                "正面.*侧身.*背面",
-                "正面.*背面.*侧身",
-                "不同角度展示",
-                "多视角",
-                "三视图",
-                "三根造型相似",
-                "三个视角",
-                "多角度视图",
-                "正面照.*侧面照.*背面照",
-                "正面、侧面、背面",
-                "正面、背面、侧面",
-            ]
-            input_dir = os.path.join(self.config.comfyui_dir, "input")
-            cropped_count = 0
-            for item in all_ref_items or []:
-                # 3视图模板跳过裁剪
-                if template == "3view":
-                    continue
-
-                # 优先从 desc/visual_desc 检测（V3.0 已禁用，通常为空）
-                desc = (item.get("visual_desc", "") or item.get("desc", "")).lower()
-                # fallback: 从 item type/role 检测
-                is_turnaround = any(
-                    re.search(pat, desc, re.IGNORECASE) for pat in TURNAROUND_PATTERNS
-                )
-                # 如果 desc 为空，尝试从图片宽高比检测（三视图通常是宽图）
-                if not is_turnaround and not desc:
-                    resolved_fn = item.get("resolved", "")
-                    if resolved_fn:
-                        try:
-                            from PIL import Image
-
-                            img_path = os.path.join(input_dir, resolved_fn)
-                            if os.path.exists(img_path):
-                                with Image.open(img_path) as img:
-                                    w, h = img.size
-                                    # 三视图拼接图通常宽高比 > 2.5
-                                    if w > h * 2.5:
-                                        is_turnaround = True
-                                        logger.info(
-                                            f"[StoryboardV2] [{trace_id}] "
-                                            f"检测到宽图(可能为三视图) | {w}x{h} | ratio={w/h:.2f}"
-                                        )
-                        except Exception as e:
-                            logger.debug(f"[StoryboardV2] 图片宽高比检测失败: {e}")
-
-                if not is_turnaround:
-                    continue
-
-                item_type = item.get("type", "unknown")
-                logger.warning(
-                    f"[StoryboardV2] [{trace_id}] ⚠️ 检测到三视图参考图"
-                    f" type={item_type}，将裁剪为单视图面板"
-                )
-
-                # 查找该 item 对应的已解析文件名
-                resolved_fn = item.get("resolved", "")
-                if not resolved_fn:
-                    # fallback: 遍历 reference_images 找匹配的 type
-                    for key, ref_fn in reference_images.items():
-                        if key == item_type or key.startswith(item_type):
-                            # 验证文件存在
-                            test_path = os.path.join(input_dir, ref_fn)
-                            if os.path.exists(test_path):
-                                resolved_fn = ref_fn
-                                break
-
-                if resolved_fn:
-                    cropped_fn = _crop_turnaround_to_front_view(input_dir, resolved_fn, trace_id)
-                    if cropped_fn:
-                        # ⭐ 更新 reference_images（构建工作流时使用）
-                        for key, ref_fn in list(reference_images.items()):
-                            if ref_fn == resolved_fn:
-                                reference_images[key] = cropped_fn
-                                logger.info(
-                                    f"[StoryboardV2] [{trace_id}] "
-                                    f"reference_images['{key}']: {resolved_fn} → {cropped_fn}"
-                                )
-                                break
-                        # ⭐ 更新 item.resolved（后续引用）
-                        item["resolved"] = cropped_fn
-                        cropped_count += 1
-                else:
-                    logger.warning(
-                        f"[StoryboardV2] [{trace_id}] 无法找到 type={item_type} "
-                        f"的已解析文件，跳过裁剪"
-                    )
-
-            if cropped_count > 0:
-                logger.warning(
-                    f"[StoryboardV2] [{trace_id}] ⚠️ 三视图裁剪完成: "
-                    f"{cropped_count} 张参考图已替换为单视图面板"
-                )
-                if progress_callback:
-                    progress_callback(
-                        f"✂️ 已裁剪 {cropped_count} 张三视图参考（保留正视图面板）...",
-                        42,
-                    )
+            self._detect_and_crop_turnaround(
+                all_ref_items, template, reference_images, trace_id, progress_callback
+            )
 
             # ═══════════════════════════════════════════════════════════
             # Phase 2: Generation（ComfyUI 独占显存）
