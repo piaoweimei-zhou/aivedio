@@ -1,35 +1,32 @@
 """
-ComfyUI 服务 — 分镜生成 Mixin
+ComfyUI 服务 — 分镜生成 Mixin 主类
 
-分镜批量生成、中间产物保存与断点续跑。
+P2 治理：批量生成/中间产物方法拆至 comfyui_storyboard_batch.py。
 """
 
 import asyncio
-import json
 import logging
 import os
 import re
-import shutil
 import time
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from services.comfyui_helpers import (
     ComfyUIGenResult,
     StoryboardStepResult,
-    _collect_all_reference_urls,
     _crop_turnaround_to_front_view,
     _get_ram_pct_safe,
     _get_step_progress_range,
     _mem_log,
     _update_workflow_input,
-    logger,
 )
+
+from services.comfyui_storyboard_batch import ComfyUIStoryboardBatchMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ComfyUIStoryboardMixin:
+class ComfyUIStoryboardMixin(ComfyUIStoryboardBatchMixin):
     async def generate_storyboard(
         self,
         reference_images: Dict[str, str] = None,  # {"character": url, "scene": url, "prop": url}
@@ -46,14 +43,16 @@ class ComfyUIStoryboardMixin:
         project_id: Optional[str] = None,
         asset_tag: Optional[str] = None,
         enable_resume: bool = False,
-        denoise: float = 1.0,   # Fish 融合固定 denoise=1，保留参数兼容接口
-        cfg: float = 1.0,       # Fish 融合固定 cfg=1，保留参数兼容接口
+        denoise: float = 1.0,  # Fish 融合固定 denoise=1，保留参数兼容接口
+        cfg: float = 1.0,  # Fish 融合固定 cfg=1，保留参数兼容接口
         character_count: int = 1,
         fusion_mode: str = "3img",
         previous_shot_url: str = "",
         width: Optional[int] = None,
         height: Optional[int] = None,
-        template: Optional[str] = None,  # ⭐ V6.0: 分镜模板类型 (costume_change/multi_frame/panorama/pose_transfer)
+        template: Optional[
+            str
+        ] = None,  # ⭐ V6.0: 分镜模板类型 (costume_change/multi_frame/panorama/pose_transfer)
         per_frame_prompts: Optional[List[str]] = None,  # ⭐ V6.0: 多帧分镜的每帧提示词
         pose_reference_image: str = "",  # ⭐ V6.0: 姿态迁移的参考图
         **kwargs,  # 透传额外参数到 storyboard_generation_v2
@@ -83,8 +82,9 @@ class ComfyUIStoryboardMixin:
         Returns:
             ComfyUIGenResult: 生成结果
         """
-        _t0 = time.time()
-        logger.info(f"[ComfyUI][分镜] 方法入口 | shot={shot_id} | project={project_id} | fusion={fusion_mode}")
+        logger.info(
+            f"[ComfyUI][分镜] 方法入口 | shot={shot_id} | project={project_id} | fusion={fusion_mode}"
+        )
         _mem_log("分镜入口", f"shot={shot_id} project={project_id}")
         self._mark_generation_active()
 
@@ -101,7 +101,7 @@ class ComfyUIStoryboardMixin:
             if url:
                 resolved = await self._ensure_image_in_input_dir(url, project_id=project_id or "")
                 item["resolved"] = resolved
-                _mem_log("参考图解析", f"type={item.get('type','?')} resolved={resolved}")
+                _mem_log("参考图解析", f"type={item.get('type', '?')} resolved={resolved}")
 
         # 构建 type → filename 映射
         workflow_refs: Dict[str, str] = {}
@@ -140,6 +140,7 @@ class ComfyUIStoryboardMixin:
             pose_reference_image=pose_reference_image,
             **kwargs,  # 透传额外参数到 build_storyboard_workflow_v2
         )
+
     async def storyboard_generation_v2(
         self,
         project_id: str,
@@ -195,14 +196,14 @@ class ComfyUIStoryboardMixin:
         # ⭐ V6.0: 步数由模板决定，默认1步
         total_steps = 1
         step_results: List[StoryboardStepResult] = []
-        
+
         _mem_log("V2入口", f"trace={trace_id} chars={character_count}")
 
         logger.info(
             f"[StoryboardV2] [{trace_id}] 开始分镜生成"
             f" | chars={character_count}, steps={total_steps}"
             f" | seed={actual_seed}"
-            f" | refs={ {k: v for k, v in (reference_images or {}).items()} }"
+            f" | refs={reference_images or {}}"
         )
 
         try:
@@ -216,8 +217,7 @@ class ComfyUIStoryboardMixin:
             # 对融合质量无帮助且耗时 1.5~3 分钟（含 ComfyUI 启停）。
             # 改用 V3.0 固定增强提示词（含尺度/透视/光影指令）替代。
             logger.info(
-                f"[StoryboardV2] [{trace_id}] ⭐ V3.0 跳过视觉分析阶段"
-                f" | 使用固定增强提示词替代"
+                f"[StoryboardV2] [{trace_id}] ⭐ V3.0 跳过视觉分析阶段" f" | 使用固定增强提示词替代"
             )
             if progress_callback:
                 progress_callback("⚡ 跳过视觉分析，直接进入融合...", 40)
@@ -230,14 +230,22 @@ class ComfyUIStoryboardMixin:
             # ⭐ 3视图模板的输入是单张概念图，不需要裁剪
             # ⭐ V3.0 视觉分析已禁用，desc/visual_desc 为空，改为从图片本身检测
             TURNAROUND_PATTERNS = [
-                "三张照片拼接", "正面.*侧身.*背面", "正面.*背面.*侧身",
-                "不同角度展示", "多视角", "三视图", "三根造型相似",
-                "三个视角", "多角度视图", "正面照.*侧面照.*背面照",
-                "正面、侧面、背面", "正面、背面、侧面",
+                "三张照片拼接",
+                "正面.*侧身.*背面",
+                "正面.*背面.*侧身",
+                "不同角度展示",
+                "多视角",
+                "三视图",
+                "三根造型相似",
+                "三个视角",
+                "多角度视图",
+                "正面照.*侧面照.*背面照",
+                "正面、侧面、背面",
+                "正面、背面、侧面",
             ]
             input_dir = os.path.join(self.config.comfyui_dir, "input")
             cropped_count = 0
-            for item in (all_ref_items or []):
+            for item in all_ref_items or []:
                 # 3视图模板跳过裁剪
                 if template == "3view":
                     continue
@@ -245,10 +253,8 @@ class ComfyUIStoryboardMixin:
                 # 优先从 desc/visual_desc 检测（V3.0 已禁用，通常为空）
                 desc = (item.get("visual_desc", "") or item.get("desc", "")).lower()
                 # fallback: 从 item type/role 检测
-                item_type_hint = (item.get("type", "") + " " + item.get("role", "")).lower()
                 is_turnaround = any(
-                    re.search(pat, desc, re.IGNORECASE)
-                    for pat in TURNAROUND_PATTERNS
+                    re.search(pat, desc, re.IGNORECASE) for pat in TURNAROUND_PATTERNS
                 )
                 # 如果 desc 为空，尝试从图片宽高比检测（三视图通常是宽图）
                 if not is_turnaround and not desc:
@@ -256,6 +262,7 @@ class ComfyUIStoryboardMixin:
                     if resolved_fn:
                         try:
                             from PIL import Image
+
                             img_path = os.path.join(input_dir, resolved_fn)
                             if os.path.exists(img_path):
                                 with Image.open(img_path) as img:
@@ -292,9 +299,7 @@ class ComfyUIStoryboardMixin:
                                 break
 
                 if resolved_fn:
-                    cropped_fn = _crop_turnaround_to_front_view(
-                        input_dir, resolved_fn, trace_id
-                    )
+                    cropped_fn = _crop_turnaround_to_front_view(input_dir, resolved_fn, trace_id)
                     if cropped_fn:
                         # ⭐ 更新 reference_images（构建工作流时使用）
                         for key, ref_fn in list(reference_images.items()):
@@ -329,19 +334,17 @@ class ComfyUIStoryboardMixin:
             # Phase 2: Generation（ComfyUI 独占显存）
             # ═══════════════════════════════════════════════════════════
             # 2. 停止 llama.cpp，释放显存
-            logger.info(
-                f"[StoryboardV2] [{trace_id}] Phase-2 开始: 图像生成 (ComfyUI 独占)"
-            )
+            logger.info(f"[StoryboardV2] [{trace_id}] Phase-2 开始: 图像生成 (ComfyUI 独占)")
             _mem_log("停止llama前", f"trace={trace_id}")
             await self._release_vram_for_comfyui()
             _mem_log("停止llama后", f"trace={trace_id}")
-            
+
             # ⭐ V6.0 优化：如果 ComfyUI 已在运行，直接复用，不重启
             # 旧逻辑：每次都 stop → sleep(5s) → ensure_running(加载模型30-60s)
             # 新逻辑：只在内存不足时才重启，否则直接使用
             comfyui_alive = await self._check_alive()
             _ram_now = _get_ram_pct_safe()
-            
+
             if comfyui_alive and _ram_now < 95:
                 # ComfyUI 在运行且内存充足 → 直接复用，跳过重启
                 logger.info(
@@ -360,16 +363,20 @@ class ComfyUIStoryboardMixin:
                 self.stop()
                 await asyncio.sleep(3)
                 import gc
+
                 gc.collect()
                 await asyncio.sleep(2)
                 _ram_after_stop = _get_ram_pct_safe()
-                _mem_log("停止ComfyUI后(内存已释放)", f"trace={trace_id} RAM={_ram_after_stop:.1f}% freed={_ram_now - _ram_after_stop:.1f}%")
+                _mem_log(
+                    "停止ComfyUI后(内存已释放)",
+                    f"trace={trace_id} RAM={_ram_after_stop:.1f}% freed={_ram_now - _ram_after_stop:.1f}%",  # noqa: E501
+                )
                 logger.info(
                     f"[StoryboardV2] [{trace_id}] ComfyUI 已停止，内存释放"
                     f" | RAM: {_ram_now:.1f}% → {_ram_after_stop:.1f}%"
                     f" | 释放了 {_ram_now - _ram_after_stop:.1f}%"
                 )
-            
+
             if progress_callback:
                 progress_callback("⚡ 启动生成引擎...", 45)
 
@@ -389,7 +396,13 @@ class ComfyUIStoryboardMixin:
             # ⭐ 超分模板使用 SeedVR2 模型（sd 族），不需要 qwen 清理
             # 三视图/其他模板使用 Qwen Image Edit 模型（qwen 族）
             # 提取类(姿态/线稿/深度图/三合一)和超分模板使用 sd 模型族，其他使用 qwen
-            _sd_templates = {"upscale", "pose_extraction", "lineart_extraction", "depth_map", "extract_all"}
+            _sd_templates = {
+                "upscale",
+                "pose_extraction",
+                "lineart_extraction",
+                "depth_map",
+                "extract_all",
+            }
             await self._ensure_clean_state("sd" if template in _sd_templates else "qwen")
 
             # 1.5 DeepSeek 优化提示词 — ⭐ V5.0 永久禁用
@@ -404,7 +417,10 @@ class ComfyUIStoryboardMixin:
 
             # 2. 构建工作流列表
             from services.workflow_builder import build_storyboard_workflow_v2
-            logger.info(f"[StoryboardV2] [{trace_id}] 构建工作流 | template={template} | refs={reference_images}")
+
+            logger.info(
+                f"[StoryboardV2] [{trace_id}] 构建工作流 | template={template} | refs={reference_images}"
+            )
             workflows, step_names, metadata = build_storyboard_workflow_v2(
                 reference_images=reference_images,
                 prompt_text=optimized_prompt,
@@ -424,22 +440,43 @@ class ComfyUIStoryboardMixin:
             # ⭐ V5.0: 记录每个 step 的 Fish 融合节点10/11/12初始赋值
             for si, (wf, sname) in enumerate(zip(workflows, step_names)):
                 # 诊断日志：读取 LoadImage 和 TextEncode 节点的参数
-                from services.workflow_builder import find_node_by_class_type, find_first_node_by_class_type_contains
-                _diag_loads = find_node_by_class_type(wf, 'LoadImage') if isinstance(wf, dict) else []
+                from services.workflow_builder import (
+                    find_node_by_class_type,
+                    find_first_node_by_class_type_contains,
+                )
+
+                _diag_loads = (
+                    find_node_by_class_type(wf, "LoadImage") if isinstance(wf, dict) else []
+                )
                 _diag_loads.sort(key=lambda x: x[0])
-                node10 = _diag_loads[0][1]['inputs'].get('image', 'N/A') if len(_diag_loads) >= 1 else 'N/A'
-                node11 = _diag_loads[1][1]['inputs'].get('image', 'N/A') if len(_diag_loads) >= 2 else 'N/A'
-                node12 = _diag_loads[2][1]['inputs'].get('image', 'N/A') if len(_diag_loads) >= 3 else 'N/A'
+                node10 = (
+                    _diag_loads[0][1]["inputs"].get("image", "N/A")
+                    if len(_diag_loads) >= 1
+                    else "N/A"
+                )
+                node11 = (
+                    _diag_loads[1][1]["inputs"].get("image", "N/A")
+                    if len(_diag_loads) >= 2
+                    else "N/A"
+                )
+                node12 = (
+                    _diag_loads[2][1]["inputs"].get("image", "N/A")
+                    if len(_diag_loads) >= 3
+                    else "N/A"
+                )
                 node22_prompt = ""
-                _nid_enc, _ndata_enc = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance') if isinstance(wf, dict) else (None, None)
+                _nid_enc, _ndata_enc = (
+                    find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
+                    if isinstance(wf, dict)
+                    else (None, None)
+                )
                 if _nid_enc and _ndata_enc:
-                    node22_prompt = _ndata_enc.get('inputs', {}).get('prompt', '')[:60]
+                    node22_prompt = _ndata_enc.get("inputs", {}).get("prompt", "")[:60]
                 logger.info(
                     f"[StoryboardV2] [{trace_id}] Step{si+1} '{sname}' 初始赋值: "
                     f"10(图1/角色)={node10}, 11(图2/场景)={node11}, 12(图3/道具)={node12}"
                     f" | prompt={node22_prompt}..."
                 )
-
 
             # 3. 逐步骤执行（进度: 50%~100%）
             step_count = len(workflows)
@@ -461,6 +498,7 @@ class ComfyUIStoryboardMixin:
                     f"尝试GC回收 + 等待内存释放..."
                 )
                 import gc
+
                 gc.collect()
                 self.clear_image_cache()
                 # 等待最多30秒让内存释放
@@ -508,9 +546,9 @@ class ComfyUIStoryboardMixin:
                     f"执行gc回收 + 清理缓存"
                 )
                 import gc
+
                 gc.collect()
                 self.clear_image_cache()
-
 
             for i, (wf, step_name) in enumerate(zip(workflows, step_names), 1):
                 ng_start, ng_end = _get_step_progress_range(i, step_count)
@@ -537,26 +575,31 @@ class ComfyUIStoryboardMixin:
                                 _sz = os.path.getsize(_fpath) if _exists else 0
                                 _s1_parts.append(f"节点{_nid}={_fname}(存在={_exists},大小={_sz}B)")
                         logger.info(
-                            f"[StoryboardV2] [{trace_id}] Step{i} 融合步骤 初始文件: " + ", ".join(_s1_parts)
+                            f"[StoryboardV2] [{trace_id}] Step{i} 融合步骤 初始文件: "
+                            + ", ".join(_s1_parts)
                         )
                     except Exception as diag_err:
-                        logger.warning(f"[StoryboardV2] [{trace_id}] Step{i} 诊断记录异常(非致命): {diag_err}")
+                        logger.warning(
+                            f"[StoryboardV2] [{trace_id}] Step{i} 诊断记录异常(非致命): {diag_err}"
+                        )
 
                 # ⭐ 多步骤时：前一步产物作为输入，但保留场景参考
                 # ⭐ BUG#7 修复：分层渲染的 A/B 组是独立工作流，不应链式注入
                 if current_image and i > 1 and template != "layered_render":
                     # 保存场景文件名，更新工作流后恢复
                     from services.workflow_builder import find_node_by_class_type
-                    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+
+                    load_nodes = find_node_by_class_type(wf, "LoadImage")
                     load_nodes.sort(key=lambda x: x[0])
                     scene_file = ""
                     if len(load_nodes) >= 2:
-                        scene_file = wf[load_nodes[1][0]]['inputs'].get('image', '')
+                        scene_file = wf[load_nodes[1][0]]["inputs"].get("image", "")
                     _update_workflow_input(wf, current_image, task_id=trace_id)
                     if scene_file and len(load_nodes) >= 2:
-                        wf[load_nodes[1][0]]['inputs']['image'] = scene_file
+                        wf[load_nodes[1][0]]["inputs"]["image"] = scene_file
                     # ⭐ 诊断：检查文件状态
                     input_dir = os.path.join(self.config.comfyui_dir, "input")
+
                     def _check_file(fname):
                         if not fname:
                             return (False, 0)
@@ -564,6 +607,7 @@ class ComfyUIStoryboardMixin:
                         if os.path.exists(path):
                             return (True, os.path.getsize(path))
                         return (False, 0)
+
                     scene_ok, scene_sz = _check_file(scene_file)
                     char_file = wf.get("10", {}).get("inputs", {}).get("image", "")
                     char_ok, char_sz = _check_file(char_file)
@@ -577,18 +621,24 @@ class ComfyUIStoryboardMixin:
 
                 # ⭐ 提交前记录关键节点参数
                 try:
-                    _nid_enc2, _ndata_enc2 = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance') if isinstance(wf, dict) else (None, None)
+                    _nid_enc2, _ndata_enc2 = (
+                        find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
+                        if isinstance(wf, dict)
+                        else (None, None)
+                    )
                     if _nid_enc2 and _ndata_enc2:
-                        _p = _ndata_enc2.get('inputs', {}).get('prompt', '')
-                        logger.info(f"[StoryboardV2] [{trace_id}] Step{i} 节点{_nid_enc2}(prompt)={_p[:80]}")
+                        _p = _ndata_enc2.get("inputs", {}).get("prompt", "")
+                        logger.info(
+                            f"[StoryboardV2] [{trace_id}] Step{i} 节点{_nid_enc2}(prompt)={_p[:80]}"
+                        )
                     # 查找 KSampler 节点（Fish 模板为节点6，通用查找）
                     for _ks_nid, _ks_node in wf.items():
                         if isinstance(_ks_node, dict) and _ks_node.get("class_type") == "KSampler":
                             _ks = _ks_node["inputs"]
                             logger.info(
                                 f"[StoryboardV2] [{trace_id}] Step{i} 节点{_ks_nid}(KSampler)="
-                                f"denoise={_ks.get('denoise')}, cfg={_ks.get('cfg')}, steps={_ks.get('steps')}, "
-                                f"sampler={_ks.get('sampler_name')}, scheduler={_ks.get('scheduler')}"
+                                f"denoise={_ks.get('denoise')}, cfg={_ks.get('cfg')}, steps={_ks.get('steps')}, "  # noqa: E501
+                                f"sampler={_ks.get('sampler_name')}, scheduler={_ks.get('scheduler')}"  # noqa: E501
                             )
                             break
                     # ⭐ 提交前重新检查所有输入图文件状态
@@ -600,27 +650,38 @@ class ComfyUIStoryboardMixin:
                             _fpath = os.path.join(_input_dir, _fname)
                             _exists = os.path.exists(_fpath)
                             _sz = os.path.getsize(_fpath) if _exists else 0
-                            _precheck_parts.append(f"节点{_nid}={_fname}(存在={_exists},大小={_sz}B)")
+                            _precheck_parts.append(
+                                f"节点{_nid}={_fname}(存在={_exists},大小={_sz}B)"
+                            )
                     logger.info(
-                        f"[StoryboardV2] [{trace_id}] Step{i} 提交前图片检查: " + ", ".join(_precheck_parts)
+                        f"[StoryboardV2] [{trace_id}] Step{i} 提交前图片检查: "
+                        + ", ".join(_precheck_parts)
                     )
                 except Exception as diag_err:
-                    logger.warning(f"[StoryboardV2] [{trace_id}] Step{i} 提交前诊断异常(非致命): {diag_err}")
+                    logger.warning(
+                        f"[StoryboardV2] [{trace_id}] Step{i} 提交前诊断异常(非致命): {diag_err}"
+                    )
 
                 # 步骤执行（单次，重试由 DagExecutor._run_single_step 统一控制）
-                logger.info(f"[StoryboardV2] [{trace_id}] Step{i} 准备提交工作流 | template={template} | nodes={len(wf)} | wf_type={type(wf).__name__}")
+                logger.info(
+                    f"[StoryboardV2] [{trace_id}] Step{i} 准备提交工作流 | template={template} | nodes={len(wf)} | wf_type={type(wf).__name__}"  # noqa: E501
+                )
                 _mem_log(f"Step{i}提交前", f"trace={trace_id} step={step_name}")
                 try:
                     prompt_id = await self._queue_prompt_with_retry(wf)
                     filenames = await self._wait_for_completion(
                         prompt_id,
                         progress_callback=(
-                            lambda msg, pct: progress_callback(
-                                msg,
-                                int(ng_start + (pct * (ng_end - ng_start)) / 100),
+                            (
+                                lambda msg, pct: progress_callback(
+                                    msg,
+                                    int(ng_start + (pct * (ng_end - ng_start)) / 100),
+                                )
                             )
-                        ) if progress_callback else None,
-                        task_type='storyboard',
+                            if progress_callback
+                            else None
+                        ),
+                        task_type="storyboard",
                     )
 
                     if not filenames:
@@ -629,14 +690,18 @@ class ComfyUIStoryboardMixin:
                     # 3视图/全景图模板有多个SaveImage（中间图+最终拼接），取最终拼接图为主图
                     if template == "panorama":
                         # 记录所有输出文件，方便排查拼接图缺失问题
-                        logger.info(
-                            f"[StoryboardV2] [{trace_id}] 全景图输出文件列表: {filenames}"
-                        )
+                        logger.info(f"[StoryboardV2] [{trace_id}] 全景图输出文件列表: {filenames}")
                         if len(filenames) > 1:
-                            final_files = [f for f in filenames if os.path.basename(f).startswith("panorama_final_")]
+                            final_files = [
+                                f
+                                for f in filenames
+                                if os.path.basename(f).startswith("panorama_final_")
+                            ]
                             if final_files:
                                 current_image = final_files[0]
-                                logger.info(f"[StoryboardV2] [{trace_id}] 全景图选择最终拼接 | file={current_image}")
+                                logger.info(
+                                    f"[StoryboardV2] [{trace_id}] 全景图选择最终拼接 | file={current_image}"
+                                )
                             else:
                                 current_image = filenames[-1]
                                 logger.warning(
@@ -655,11 +720,18 @@ class ComfyUIStoryboardMixin:
                         current_image = filenames[0]
                     all_filenames.extend(filenames)  # ⭐ V6.0: 收集所有输出文件
                     step_elapsed = int((time.time() - step_start) * 1000)
-                    _mem_log(f"Step{i}完成", f"trace={trace_id} file={current_image} elapsed={step_elapsed}ms")
-                    step_results.append(StoryboardStepResult(
-                        step_index=i, step_name=step_name,
-                        filename=current_image, elapsed_ms=step_elapsed,
-                    ))
+                    _mem_log(
+                        f"Step{i}完成",
+                        f"trace={trace_id} file={current_image} elapsed={step_elapsed}ms",
+                    )
+                    step_results.append(
+                        StoryboardStepResult(
+                            step_index=i,
+                            step_name=step_name,
+                            filename=current_image,
+                            elapsed_ms=step_elapsed,
+                        )
+                    )
 
                     # 持久化中间结果
                     await self._save_step_intermediate(
@@ -676,10 +748,14 @@ class ComfyUIStoryboardMixin:
                     )
 
                     # 检查输出文件大小
-                    _output_path = os.path.join(
-                        self.config.output_dir, current_image
-                    ) if current_image else ""
-                    _output_sz = os.path.getsize(_output_path) if _output_path and os.path.exists(_output_path) else 0
+                    _output_path = (
+                        os.path.join(self.config.output_dir, current_image) if current_image else ""
+                    )
+                    _output_sz = (
+                        os.path.getsize(_output_path)
+                        if _output_path and os.path.exists(_output_path)
+                        else 0
+                    )
                     logger.info(
                         f"[StoryboardV2] [{trace_id}] Step{i}/{step_count} 完成"
                         f" | {step_name} | elapsed={step_elapsed}ms"
@@ -710,7 +786,11 @@ class ComfyUIStoryboardMixin:
                         logger.warning(
                             f"[StoryboardV2] [{trace_id}] 触发深度VRAM清理"
                             f" | step={i}, vram={vram_after:.1f}%"
-                            + (f", 超过{VRAM_CRITICAL}%阈值" if vram_after > VRAM_CRITICAL else f", 每{CLEANUP_INTERVAL_STEPS}步例行")
+                            + (
+                                f", 超过{VRAM_CRITICAL}%阈值"
+                                if vram_after > VRAM_CRITICAL
+                                else f", 每{CLEANUP_INTERVAL_STEPS}步例行"
+                            )
                         )
                         if progress_callback:
                             progress_callback(
@@ -724,6 +804,7 @@ class ComfyUIStoryboardMixin:
                         # ⭐ 等待进程完全退出，内存释放后再启动
                         await asyncio.sleep(3)
                         import gc as _gc
+
                         _gc.collect()
                         await asyncio.sleep(2)
                         _mem_log(f"Step{i}深度清理后", f"trace={trace_id}")
@@ -731,8 +812,7 @@ class ComfyUIStoryboardMixin:
                         await self._notify_restart("ready", 0)
                         vram_after = await self._get_vram_usage()
                         logger.info(
-                            f"[StoryboardV2] [{trace_id}] 深度清理完成"
-                            f" | vram={vram_after:.1f}%"
+                            f"[StoryboardV2] [{trace_id}] 深度清理完成" f" | vram={vram_after:.1f}%"
                         )
                     elif vram_after > 85:
                         logger.warning(
@@ -759,13 +839,15 @@ class ComfyUIStoryboardMixin:
             # 构建 enriched_ref_items
             enriched_ref_items = []
             for item in all_ref_items:
-                enriched_ref_items.append({
-                    "type": item.get("type", ""),
-                    "url": item.get("image_url") or item.get("url", ""),
-                    "name": item.get("name", ""),
-                    "desc": item.get("desc", ""),
-                    "visual_desc": item.get("visual_desc", ""),
-                })
+                enriched_ref_items.append(
+                    {
+                        "type": item.get("type", ""),
+                        "url": item.get("image_url") or item.get("url", ""),
+                        "name": item.get("name", ""),
+                        "desc": item.get("desc", ""),
+                        "visual_desc": item.get("visual_desc", ""),
+                    }
+                )
 
             # ⭐ 标记生成完成，开始空闲定时器
             self._mark_generation_complete()
@@ -773,6 +855,7 @@ class ComfyUIStoryboardMixin:
             # ⭐ 生成完成后立即清理内存缓存和临时对象，防止多帧累积
             self.clear_image_cache()
             import gc
+
             gc.collect()
             _ram_after_gc = self._get_system_memory_usage()
             logger.info(
@@ -782,9 +865,11 @@ class ComfyUIStoryboardMixin:
             )
 
             # ⭐ V6.0: 从 all_filenames 构建多图 URL 列表
-            all_image_urls = [
-                f"/api/comfyui/image?filename={fn}" for fn in all_filenames
-            ] if all_filenames else ([image_url] if image_url else [])
+            all_image_urls = (
+                [f"/api/comfyui/image?filename={fn}" for fn in all_filenames]
+                if all_filenames
+                else ([image_url] if image_url else [])
+            )
 
             return ComfyUIGenResult(
                 image_url=image_url,
@@ -804,261 +889,10 @@ class ComfyUIStoryboardMixin:
             # ⭐ 异常时也清理缓存，防止内存泄漏
             self.clear_image_cache()
             import gc
+
             gc.collect()
             logger.error(
                 f"[StoryboardV2] [{trace_id}] 分镜生成失败"
                 f" | error={e} | completed_steps={len(step_results)}"
             )
             raise
-    async def batch_generate_storyboard(
-        self,
-        project_id: str,
-        shots: List[Dict[str, Any]],
-        reference_images: Dict[str, str],
-        reference_items: List[Dict[str, Any]],
-        character_count: int = 1,
-        preset_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        progress_callback: Optional[Callable] = None,
-        **kwargs,
-    ) -> List[ComfyUIGenResult]:
-        """批量生成多个分镜帧
-
-        ⭐ V5.0: Fish 融合 1 步直出，先统一预分析参考图，再逐帧生成。
-
-        Args:
-            project_id: 项目ID
-            shots: 分镜列表，每个元素 {"name": str, "prompt": str, "character_ids": [...], ...}
-            reference_images: 共享参考图字典
-            reference_items: 参考图条目列表
-            character_count: 角色数量
-            preset_name: 预设名称（保留接口兼容，V5.0 不使用）
-            seed: 随机种子
-            progress_callback: 全局进度回调 (msg, pct) → None
-
-        Returns:
-            每帧的生成结果列表
-        """
-        total_shots = len(shots)
-        results: List[ComfyUIGenResult] = []
-
-        logger.info(
-            f"[StoryboardBatch] 批量生成开始 | shots={total_shots}"
-            f" | chars={character_count}, preset={preset_name}"
-        )
-
-        # ═══════════════════════════════════════════════════════════════
-        # ⭐ Phase 0: 统一预分析所有参考图（一次 Vision，N 帧复用）
-        # ═══════════════════════════════════════════════════════════════
-        # 合并共享参考图 + 各分镜独立参考图（去重）
-        unique_refs = _collect_all_reference_urls(
-            reference_items=reference_items,
-            shots=shots,
-        )
-
-        if progress_callback:
-            try:
-                progress_callback(
-                    f"🔍 批量预分析: {len(unique_refs)} 张参考图 (缓存优先)...",
-                    0,
-                )
-            except Exception:
-                pass
-
-        # 统一预分析（自动缓存 + 崩溃恢复）
-        # 注意：此调用会停止 ComfyUI（如运行中），分析后不自动重启
-        # storyboard_generation_v2 会在 Phase 2 自动启动 ComfyUI
-        await self._pre_analyze_references(
-            unique_refs,
-            project_id=project_id,
-            progress_callback=(
-                lambda msg, pct: progress_callback(
-                    f"🔍 {msg}", max(0, min(5, int(pct * 0.05)))
-                ) if progress_callback else None
-            ),
-        )
-
-        # 将分析结果同步回原始 reference_items（供 storyboard_generation_v2 复用）
-        # unique_refs 和 reference_items 可能指向不同 dict 对象，需要同步 visual_desc
-        _sync_map: Dict[str, str] = {}
-        for ref in unique_refs:
-            url = ref.get("image_url") or ref.get("url", "") or ""
-            vd = ref.get("visual_desc", "")
-            if url and vd:
-                _sync_map[url] = vd
-
-        for ref in reference_items:
-            url = ref.get("image_url") or ref.get("url", "") or ""
-            if url and url in _sync_map and not ref.get("visual_desc"):
-                ref["visual_desc"] = _sync_map[url]
-
-        cached_count = sum(1 for r in unique_refs if r.get("visual_desc"))
-        if progress_callback:
-            try:
-                progress_callback(
-                    f"✅ 参考图预分析完成 ({cached_count}/{len(unique_refs)})，开始批量生成...",
-                    5,
-                )
-            except Exception:
-                pass
-
-        logger.info(
-            f"[StoryboardBatch] 预分析完成 | analyzed={cached_count}/{len(unique_refs)}"
-            f" | cache_synced={len(_sync_map)}"
-        )
-
-        # ═══════════════════════════════════════════════════════════════
-        # Phase 1-N: 逐帧生成（复用预分析的 visual_desc）
-        # ═══════════════════════════════════════════════════════════════
-        for shot_idx, shot in enumerate(shots):
-            shot_name = shot.get("name", f"分镜{shot_idx+1}")
-            shot_prompt = shot.get("prompt", "")
-
-            if progress_callback:
-                batch_pct = int((shot_idx / total_shots) * 100)
-                progress_callback(f"🎬 批量生成 ({shot_idx+1}/{total_shots}): {shot_name}", batch_pct)
-
-            # ⭐ 每帧生成前标记活跃状态
-            self._mark_generation_active()
-
-            shot_kwargs = {
-                "project_id": project_id,
-                "prompt_text": shot_prompt,
-                "reference_images": reference_images,
-                "reference_items": reference_items,
-                "character_count": character_count,
-                "seed": seed + shot_idx if seed else None,
-            }
-            # ⭐ V6.0: 传递模板参数
-            if shot.get("template"):
-                shot_kwargs["template"] = shot["template"]
-            if shot.get("per_frame_prompts"):
-                shot_kwargs["per_frame_prompts"] = shot["per_frame_prompts"]
-            if shot.get("pose_reference_image"):
-                shot_kwargs["pose_reference_image"] = shot["pose_reference_image"]
-
-            result = await self.storyboard_generation_v2(
-                **shot_kwargs,
-                progress_callback=(
-                    lambda msg, pct: progress_callback(
-                        f"({shot_idx+1}/{total_shots}) {msg}",
-                        int((shot_idx * 100 + pct) / total_shots),
-                    )
-                ) if progress_callback else None,
-                **kwargs,
-            )
-            results.append(result)
-            logger.info(f"[StoryboardBatch] {shot_name} 完成 | file={result.filename}")
-
-        if progress_callback:
-            progress_callback(f"✅ 批量生成完成 ({total_shots} 帧)", 100)
-
-        logger.info(f"[StoryboardBatch] 批量生成完成 | total_shots={total_shots}")
-        return results
-    def _get_intermediates_dir(self, project_id: str, trace_id: str) -> Path:
-        """获取中间结果保存目录"""
-        intermediates_dir = (
-            Path(__file__).parent.parent.parent
-            / "data"
-            / "storyboard_intermediates"
-            / project_id[-8:]
-            / trace_id
-        )
-        intermediates_dir.mkdir(parents=True, exist_ok=True)
-        return intermediates_dir
-    async def _save_step_intermediate(
-        self,
-        project_id: str,
-        trace_id: str,
-        step_index: int,
-        step_name: str,
-        image_filename: str,
-        metadata: Dict[str, Any],
-    ) -> str:
-        """持久化单步中间结果到磁盘
-        
-        Args:
-            project_id: 项目ID
-            trace_id: 本次生成追踪ID
-            step_index: 步骤序号
-            step_name: 步骤显示名
-            image_filename: ComfyUI 输出的图片文件名
-            metadata: 步骤元数据 (denoise, cfg, elapsed_ms 等)
-        
-        Returns:
-            保存的中间文件路径
-        """
-        intermediates_dir = self._get_intermediates_dir(project_id, trace_id)
-
-        # 保存元数据 JSON
-        meta_path = intermediates_dir / f"step{step_index:02d}_{step_name}.json"
-        meta_data = {
-            "step_index": step_index,
-            "step_name": step_name,
-            "image_filename": image_filename,
-            "timestamp": time.time(),
-            **metadata,
-        }
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump(meta_data, f, ensure_ascii=False, indent=2)
-
-        # 拷贝图片文件（如果存在）
-        comfyui_input = Path(self.config.output_dir) if hasattr(self.config, "output_dir") else Path("comfyui/output")
-        src_path = comfyui_input / image_filename if not Path(image_filename).is_absolute() else Path(image_filename)
-        dst_path = intermediates_dir / f"step{step_index:02d}_{step_name}.png"
-        if src_path.exists():
-            shutil.copy2(src_path, dst_path)
-            logger.debug(f"[Intermediates] 已保存: {dst_path}")
-        else:
-            logger.warning(f"[Intermediates] 源文件不存在: {src_path}")
-
-        return str(dst_path)
-    async def _resume_from_checkpoint(
-        self,
-        project_id: str,
-        trace_id: str,
-        total_steps: int,
-    ) -> Tuple[Optional[str], List[StoryboardStepResult], int]:
-        """从断点恢复生成流程
-        
-        检查中间目录中已完成的步骤，返回最后完成的图片和结果列表。
-        
-        Args:
-            project_id: 项目ID
-            trace_id: 本次生成追踪ID
-            total_steps: 总步骤数
-        
-        Returns:
-            (last_image: Optional[str], completed_results: List[StoryboardStepResult], resume_from: int)
-            resume_from = 0 表示从头开始（无检查点）
-        """
-        intermediates_dir = self._get_intermediates_dir(project_id, trace_id)
-        if not intermediates_dir.exists():
-            return None, [], 0
-
-        # 扫描已完成的步骤
-        completed_steps: List[StoryboardStepResult] = []
-        last_image = None
-        max_completed = 0
-
-        for step_idx in range(1, total_steps + 1):
-            meta_files = list(intermediates_dir.glob(f"step{step_idx:02d}_*.json"))
-            if meta_files:
-                with open(meta_files[0], "r", encoding="utf-8") as f:
-                    meta = json.load(f)
-                completed_steps.append(StoryboardStepResult(
-                    step_index=meta["step_index"],
-                    step_name=meta["step_name"],
-                    filename=meta["image_filename"],
-                    elapsed_ms=meta.get("elapsed_ms", 0),
-                ))
-                last_image = meta["image_filename"]
-                max_completed = max(max_completed, step_idx)
-
-        if max_completed > 0:
-            logger.info(
-                f"[Resume] [{trace_id}] 发现检查点: {max_completed}/{total_steps} 步已完成"
-                f" | last_image={last_image}"
-            )
-
-        return last_image, completed_steps, max_completed
