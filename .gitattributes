@@ -1,0 +1,19 @@
+# 行尾规范（P4 治理补充）：源码/文档统一 LF 入库，避免 CRLF/LF 混合导致 git 全文件 diff 噪音
+* text=auto
+
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+*.html text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+
+# Windows 批处理/脚本保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
