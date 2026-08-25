@@ -64,3 +64,6 @@ backend/coverage.xml
 
 # 测试重定向输出
 backend/*_out.txt
+
+# 临时中间产物
+backend/_*.txt
