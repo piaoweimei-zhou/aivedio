@@ -53,3 +53,6 @@ backend/_archive/
 
 # Build
 frontend-director/dist/
+
+# 归档（数据备份不入库）
+docs/99_归档/
