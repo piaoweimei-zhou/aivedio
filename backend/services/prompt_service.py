@@ -30,6 +30,7 @@ PromptEntry 模型：
 - usage_count: 使用次数
 - created_at / updated_at
 """
+from services.paths import PROMPTS_DIR
 
 import json
 import logging
@@ -42,7 +43,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-_PROMPT_DIR = "data/prompts"
+_PROMPT_DIR = PROMPTS_DIR
 
 # 变量占位符正则：{variable_name}
 _VAR_PATTERN = re.compile(r"\{(\w+)\}")

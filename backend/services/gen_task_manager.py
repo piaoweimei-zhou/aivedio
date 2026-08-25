@@ -14,6 +14,7 @@ P2+: 任务状态持久化
 - 服务重启后从磁盘恢复未完成任务
 - 已完成/失败任务自动过期清理
 """
+from services.paths import TASK_STATE_DIR
 
 import asyncio
 import dataclasses
@@ -31,7 +32,7 @@ from services.id_utils import gen_task_id
 logger = logging.getLogger(__name__)
 
 # 默认持久化目录（相对于 backend 工作目录）
-_DEFAULT_PERSIST_DIR = "data/task_state"
+_DEFAULT_PERSIST_DIR = TASK_STATE_DIR
 # 已完成/失败任务的过期时间（秒），默认 1 小时
 _COMPLETED_TTL = 3600
 # 任务执行超时（秒），默认 30 分钟；0 表示不限制

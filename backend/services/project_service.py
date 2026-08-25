@@ -13,6 +13,7 @@
 - 不破坏现有 AssetService 接口
 - 轻量级，无数据库依赖
 """
+from services.paths import PROJECTS_DIR
 
 import json
 import logging
@@ -26,7 +27,7 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # 持久化目录（相对于 backend 工作目录）
-_DEFAULT_PROJECTS_DIR = "data/projects"
+_DEFAULT_PROJECTS_DIR = PROJECTS_DIR
 
 
 @dataclass

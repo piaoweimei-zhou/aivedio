@@ -16,6 +16,7 @@
 - character_pipeline: 概念图 → 三视图 → 分镜 → 视频
 - refine_pipeline: 精修/超分流水线
 """
+from services.paths import WORKFLOW_TEMPLATES_DIR
 
 import json
 import logging
@@ -29,7 +30,7 @@ from services.batch_task_service import get_batch_task_service, BatchTask
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_TEMPLATE_DIR = "data/workflow_templates"
+_DEFAULT_TEMPLATE_DIR = WORKFLOW_TEMPLATES_DIR
 
 
 @dataclass

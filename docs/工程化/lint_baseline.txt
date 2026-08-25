@@ -1,146 +1,124 @@
-﻿api\batch_api.py:19:1: F401 'typing.Optional' imported but unused
+api\batch_api.py:19:1: F401 'typing.Optional' imported but unused
 api\canvas_api.py:25:1: F401 'typing.Any' imported but unused
 api\canvas_api.py:25:1: F401 'typing.List' imported but unused
 api\canvas_api.py:28:1: F401 'fastapi.responses.JSONResponse' imported but unused
-api\canvas_api.py:301:26: E401 multiple imports on one line
-api\canvas_api.py:304:13: E306 expected 1 blank line before a nested definition, found 0
-api\canvas_api.py:306:101: E501 line too long (103 > 100 characters)
-api\canvas_api.py:329:101: E501 line too long (113 > 100 characters)
-api\canvas_api.py:343:26: E401 multiple imports on one line
-api\canvas_api.py:346:13: E306 expected 1 blank line before a nested definition, found 0
-api\canvas_api.py:348:101: E501 line too long (103 > 100 characters)
-api\canvas_api.py:407:101: E501 line too long (128 > 100 characters)
-api\canvas_api.py:413:101: E501 line too long (101 > 100 characters)
-api\canvas_api.py:425:101: E501 line too long (108 > 100 characters)
-api\canvas_api.py:429:28: F541 f-string is missing placeholders
-api\canvas_api.py:490:101: E501 line too long (105 > 100 characters)
-api\canvas_api.py:514:101: E501 line too long (106 > 100 characters)
-api\director_asset_api.py:415:101: E501 line too long (111 > 100 characters)
-api\director_asset_api.py:456:5: F401 'services.template_utils.TEMPLATE_DIR' imported but unused
-api\director_asset_api.py:493:5: E129 visually indented line with same indent as next logical line
-api\director_provider_api.py:102:101: E501 line too long (131 > 100 characters)
-api\director_provider_api.py:103:101: E501 line too long (129 > 100 characters)
-api\director_provider_api.py:104:101: E501 line too long (138 > 100 characters)
-api\director_provider_api.py:105:101: E501 line too long (128 > 100 characters)
-api\director_provider_api.py:116:101: E501 line too long (135 > 100 characters)
-api\director_provider_api.py:127:101: E501 line too long (133 > 100 characters)
+api\canvas_api.py:302:26: E401 multiple imports on one line
+api\canvas_api.py:305:13: E306 expected 1 blank line before a nested definition, found 0
+api\canvas_api.py:307:101: E501 line too long (103 > 100 characters)
+api\canvas_api.py:330:101: E501 line too long (113 > 100 characters)
+api\canvas_api.py:344:26: E401 multiple imports on one line
+api\canvas_api.py:347:13: E306 expected 1 blank line before a nested definition, found 0
+api\canvas_api.py:349:101: E501 line too long (103 > 100 characters)
+api\canvas_api.py:408:101: E501 line too long (128 > 100 characters)
+api\canvas_api.py:414:101: E501 line too long (101 > 100 characters)
+api\canvas_api.py:426:101: E501 line too long (108 > 100 characters)
+api\canvas_api.py:430:28: F541 f-string is missing placeholders
+api\canvas_api.py:491:101: E501 line too long (105 > 100 characters)
+api\canvas_api.py:515:101: E501 line too long (106 > 100 characters)
+api\director_asset_api.py:416:101: E501 line too long (111 > 100 characters)
+api\director_asset_api.py:457:5: F401 'services.template_utils.TEMPLATE_DIR' imported but unused
+api\director_asset_api.py:494:5: E129 visually indented line with same indent as next logical line
 api\director_provider_api.py:56:101: E501 line too long (119 > 100 characters)
 api\director_provider_api.py:57:101: E501 line too long (104 > 100 characters)
 api\director_provider_api.py:68:101: E501 line too long (154 > 100 characters)
 api\director_provider_api.py:69:101: E501 line too long (157 > 100 characters)
 api\director_provider_api.py:80:101: E501 line too long (110 > 100 characters)
 api\director_provider_api.py:90:101: E501 line too long (104 > 100 characters)
+api\director_provider_api.py:102:101: E501 line too long (131 > 100 characters)
+api\director_provider_api.py:103:101: E501 line too long (129 > 100 characters)
+api\director_provider_api.py:104:101: E501 line too long (138 > 100 characters)
+api\director_provider_api.py:105:101: E501 line too long (128 > 100 characters)
+api\director_provider_api.py:116:101: E501 line too long (135 > 100 characters)
+api\director_provider_api.py:127:101: E501 line too long (133 > 100 characters)
 api\director_stage_api.py:15:1: F401 'typing.Optional' imported but unused
-api\infinite_canvas_api.py:1028:101: E501 line too long (152 > 100 characters)
-api\infinite_canvas_api.py:1032:101: E501 line too long (110 > 100 characters)
-api\infinite_canvas_api.py:1043:14: F541 f-string is missing placeholders
-api\infinite_canvas_api.py:1091:101: E501 line too long (123 > 100 characters)
-api\infinite_canvas_api.py:1146:101: E501 line too long (111 > 100 characters)
-api\infinite_canvas_api.py:1185:101: E501 line too long (128 > 100 characters)
-api\infinite_canvas_api.py:1275:1: E302 expected 2 blank lines, found 1
 api\infinite_canvas_api.py:13:1: F401 'pathlib.Path' imported but unused
-api\infinite_canvas_api.py:1312:101: E501 line too long (107 > 100 characters)
-api\infinite_canvas_api.py:1331:101: E501 line too long (101 > 100 characters)
-api\infinite_canvas_api.py:1335:14: F541 f-string is missing placeholders
-api\infinite_canvas_api.py:141:101: E501 line too long (126 > 100 characters)
-api\infinite_canvas_api.py:1474:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1482:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1486:101: E501 line too long (118 > 100 characters)
-api\infinite_canvas_api.py:1490:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1494:101: E501 line too long (187 > 100 characters)
-api\infinite_canvas_api.py:1516:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1523:101: E501 line too long (191 > 100 characters)
-api\infinite_canvas_api.py:1548:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1556:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1566:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1572:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1610:101: E501 line too long (169 > 100 characters)
-api\infinite_canvas_api.py:1613:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1621:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1625:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:1629:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1647:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1658:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:1683:101: E501 line too long (122 > 100 characters)
-api\infinite_canvas_api.py:1694:5: F841 local variable 'service' is assigned to but never used
 api\infinite_canvas_api.py:17:1: F401 'fastapi.responses.FileResponse' imported but unused
-api\infinite_canvas_api.py:1718:101: E501 line too long (123 > 100 characters)
-api\infinite_canvas_api.py:1734:101: E501 line too long (105 > 100 characters)
-api\infinite_canvas_api.py:1764:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:1779:101: E501 line too long (102 > 100 characters)
-api\infinite_canvas_api.py:1780:101: E501 line too long (125 > 100 characters)
-api\infinite_canvas_api.py:1802:101: E501 line too long (129 > 100 characters)
-api\infinite_canvas_api.py:2007:101: E501 line too long (101 > 100 characters)
-api\infinite_canvas_api.py:202:101: E501 line too long (101 > 100 characters)
-api\infinite_canvas_api.py:2038:5: F401 'io' imported but unused
-api\infinite_canvas_api.py:2059:101: E501 line too long (116 > 100 characters)
-api\infinite_canvas_api.py:2123:101: E501 line too long (102 > 100 characters)
-api\infinite_canvas_api.py:2129:101: E501 line too long (102 > 100 characters)
-api\infinite_canvas_api.py:2182:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:2224:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:2232:101: E501 line too long (102 > 100 characters)
-api\infinite_canvas_api.py:2249:101: E501 line too long (120 > 100 characters)
-api\infinite_canvas_api.py:2250:101: E501 line too long (116 > 100 characters)
-api\infinite_canvas_api.py:2254:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:2268:101: E501 line too long (112 > 100 characters)
-api\infinite_canvas_api.py:2271:101: E501 line too long (102 > 100 characters)
-api\infinite_canvas_api.py:2272:101: E501 line too long (106 > 100 characters)
-api\infinite_canvas_api.py:2382:101: E501 line too long (121 > 100 characters)
-api\infinite_canvas_api.py:2508:101: E501 line too long (104 > 100 characters)
-api\infinite_canvas_api.py:284:101: E501 line too long (104 > 100 characters)
-api\infinite_canvas_api.py:341:101: E501 line too long (126 > 100 characters)
-api\infinite_canvas_api.py:343:101: E501 line too long (119 > 100 characters)
-api\infinite_canvas_api.py:364:101: E501 line too long (135 > 100 characters)
-api\infinite_canvas_api.py:412:1: E302 expected 2 blank lines, found 1
-api\infinite_canvas_api.py:460:101: E501 line too long (161 > 100 characters)
-api\infinite_canvas_api.py:500:101: E501 line too long (113 > 100 characters)
-api\infinite_canvas_api.py:656:5: F841 local variable 'image_exts' is assigned to but never used
-api\infinite_canvas_api.py:703:13: F401 'services.comfyui_service.get_comfyui_service' imported but unused
-api\infinite_canvas_api.py:767:101: E501 line too long (121 > 100 characters)
-api\infinite_canvas_api.py:819:5: F841 local variable 'refs' is assigned to but never used
-api\infinite_canvas_api.py:822:101: E501 line too long (131 > 100 characters)
-api\infinite_canvas_api.py:901:101: E501 line too long (114 > 100 characters)
-api\infinite_canvas_api.py:921:38: E401 multiple imports on one line
-api\infinite_canvas_api.py:924:25: E306 expected 1 blank line before a nested definition, found 0
-api\infinite_canvas_api.py:926:101: E501 line too long (115 > 100 characters)
-api\infinite_canvas_api.py:929:101: E501 line too long (104 > 100 characters)
-api\infinite_canvas_api.py:941:101: E501 line too long (103 > 100 characters)
-api\infinite_canvas_api.py:949:101: E501 line too long (104 > 100 characters)
-api\infinite_canvas_api.py:950:101: E501 line too long (108 > 100 characters)
-api\infinite_canvas_api.py:954:101: E501 line too long (109 > 100 characters)
-api\infinite_canvas_api.py:955:101: E501 line too long (114 > 100 characters)
-api\infinite_canvas_api.py:959:101: E501 line too long (103 > 100 characters)
-api\infinite_canvas_api.py:960:101: E501 line too long (108 > 100 characters)
-api\infinite_canvas_api.py:994:101: E501 line too long (105 > 100 characters)
+api\infinite_canvas_api.py:142:101: E501 line too long (126 > 100 characters)
+api\infinite_canvas_api.py:203:101: E501 line too long (101 > 100 characters)
+api\infinite_canvas_api.py:285:101: E501 line too long (104 > 100 characters)
+api\infinite_canvas_api.py:342:101: E501 line too long (126 > 100 characters)
+api\infinite_canvas_api.py:344:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:365:101: E501 line too long (135 > 100 characters)
+api\infinite_canvas_api.py:413:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:461:101: E501 line too long (161 > 100 characters)
+api\infinite_canvas_api.py:501:101: E501 line too long (113 > 100 characters)
+api\infinite_canvas_api.py:657:5: F841 local variable 'image_exts' is assigned to but never used
+api\infinite_canvas_api.py:704:13: F401 'services.comfyui_service.get_comfyui_service' imported but unused
+api\infinite_canvas_api.py:768:101: E501 line too long (121 > 100 characters)
+api\infinite_canvas_api.py:820:5: F841 local variable 'refs' is assigned to but never used
+api\infinite_canvas_api.py:823:101: E501 line too long (131 > 100 characters)
+api\infinite_canvas_api.py:902:101: E501 line too long (114 > 100 characters)
+api\infinite_canvas_api.py:922:38: E401 multiple imports on one line
+api\infinite_canvas_api.py:925:25: E306 expected 1 blank line before a nested definition, found 0
+api\infinite_canvas_api.py:927:101: E501 line too long (115 > 100 characters)
+api\infinite_canvas_api.py:930:101: E501 line too long (104 > 100 characters)
+api\infinite_canvas_api.py:942:101: E501 line too long (103 > 100 characters)
+api\infinite_canvas_api.py:950:101: E501 line too long (104 > 100 characters)
+api\infinite_canvas_api.py:951:101: E501 line too long (108 > 100 characters)
+api\infinite_canvas_api.py:955:101: E501 line too long (109 > 100 characters)
+api\infinite_canvas_api.py:956:101: E501 line too long (114 > 100 characters)
+api\infinite_canvas_api.py:960:101: E501 line too long (103 > 100 characters)
+api\infinite_canvas_api.py:961:101: E501 line too long (108 > 100 characters)
+api\infinite_canvas_api.py:995:101: E501 line too long (105 > 100 characters)
+api\infinite_canvas_api.py:1029:101: E501 line too long (152 > 100 characters)
+api\infinite_canvas_api.py:1033:101: E501 line too long (110 > 100 characters)
+api\infinite_canvas_api.py:1044:14: F541 f-string is missing placeholders
+api\infinite_canvas_api.py:1092:101: E501 line too long (123 > 100 characters)
+api\infinite_canvas_api.py:1147:101: E501 line too long (111 > 100 characters)
+api\infinite_canvas_api.py:1186:101: E501 line too long (128 > 100 characters)
+api\infinite_canvas_api.py:1276:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1313:101: E501 line too long (107 > 100 characters)
+api\infinite_canvas_api.py:1332:101: E501 line too long (101 > 100 characters)
+api\infinite_canvas_api.py:1336:14: F541 f-string is missing placeholders
+api\infinite_canvas_api.py:1475:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1483:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1487:101: E501 line too long (118 > 100 characters)
+api\infinite_canvas_api.py:1491:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1495:101: E501 line too long (187 > 100 characters)
+api\infinite_canvas_api.py:1517:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1524:101: E501 line too long (191 > 100 characters)
+api\infinite_canvas_api.py:1549:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1557:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1567:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1573:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1611:101: E501 line too long (169 > 100 characters)
+api\infinite_canvas_api.py:1614:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1622:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1626:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:1630:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1648:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1659:1: E302 expected 2 blank lines, found 1
+api\infinite_canvas_api.py:1684:101: E501 line too long (122 > 100 characters)
+api\infinite_canvas_api.py:1695:5: F841 local variable 'service' is assigned to but never used
+api\infinite_canvas_api.py:1719:101: E501 line too long (123 > 100 characters)
+api\infinite_canvas_api.py:1735:101: E501 line too long (105 > 100 characters)
+api\infinite_canvas_api.py:1765:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:1780:101: E501 line too long (102 > 100 characters)
+api\infinite_canvas_api.py:1781:101: E501 line too long (125 > 100 characters)
+api\infinite_canvas_api.py:1803:101: E501 line too long (129 > 100 characters)
+api\infinite_canvas_api.py:2008:101: E501 line too long (101 > 100 characters)
+api\infinite_canvas_api.py:2039:5: F401 'io' imported but unused
+api\infinite_canvas_api.py:2060:101: E501 line too long (116 > 100 characters)
+api\infinite_canvas_api.py:2124:101: E501 line too long (102 > 100 characters)
+api\infinite_canvas_api.py:2130:101: E501 line too long (102 > 100 characters)
+api\infinite_canvas_api.py:2183:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:2225:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:2233:101: E501 line too long (102 > 100 characters)
+api\infinite_canvas_api.py:2250:101: E501 line too long (120 > 100 characters)
+api\infinite_canvas_api.py:2251:101: E501 line too long (116 > 100 characters)
+api\infinite_canvas_api.py:2255:101: E501 line too long (119 > 100 characters)
+api\infinite_canvas_api.py:2269:101: E501 line too long (112 > 100 characters)
+api\infinite_canvas_api.py:2272:101: E501 line too long (102 > 100 characters)
+api\infinite_canvas_api.py:2273:101: E501 line too long (106 > 100 characters)
+api\infinite_canvas_api.py:2383:101: E501 line too long (121 > 100 characters)
+api\infinite_canvas_api.py:2509:101: E501 line too long (104 > 100 characters)
 api\project_api.py:20:1: F401 'typing.List' imported but unused
-api\workflow_template_api.py:115:101: E501 line too long (104 > 100 characters)
 api\workflow_template_api.py:59:101: E501 line too long (102 > 100 characters)
+api\workflow_template_api.py:115:101: E501 line too long (104 > 100 characters)
 core\__init__.py:9:62: W292 no newline at end of file
-core\ws_manager.py:100:1: W293 blank line contains whitespace
-core\ws_manager.py:113:1: W293 blank line contains whitespace
-core\ws_manager.py:122:1: W293 blank line contains whitespace
-core\ws_manager.py:124:101: E501 line too long (132 > 100 characters)
-core\ws_manager.py:125:1: W293 blank line contains whitespace
-core\ws_manager.py:135:101: E501 line too long (104 > 100 characters)
-core\ws_manager.py:136:101: E501 line too long (132 > 100 characters)
-core\ws_manager.py:137:1: W293 blank line contains whitespace
-core\ws_manager.py:15:1: F401 'typing.Any' imported but unused
 core\ws_manager.py:15:1: F401 'typing.Callable' imported but unused
-core\ws_manager.py:153:1: W293 blank line contains whitespace
-core\ws_manager.py:174:1: W293 blank line contains whitespace
-core\ws_manager.py:190:1: W293 blank line contains whitespace
-core\ws_manager.py:195:1: W293 blank line contains whitespace
-core\ws_manager.py:199:1: W293 blank line contains whitespace
-core\ws_manager.py:203:1: W293 blank line contains whitespace
-core\ws_manager.py:223:1: W293 blank line contains whitespace
+core\ws_manager.py:15:1: F401 'typing.Any' imported but unused
 core\ws_manager.py:23:1: W293 blank line contains whitespace
-core\ws_manager.py:239:1: W293 blank line contains whitespace
-core\ws_manager.py:245:1: W293 blank line contains whitespace
-core\ws_manager.py:249:1: W293 blank line contains whitespace
-core\ws_manager.py:253:1: W293 blank line contains whitespace
-core\ws_manager.py:257:1: W293 blank line contains whitespace
-core\ws_manager.py:261:1: W293 blank line contains whitespace
-core\ws_manager.py:265:1: W293 blank line contains whitespace
 core\ws_manager.py:28:1: W293 blank line contains whitespace
 core\ws_manager.py:32:1: W293 blank line contains whitespace
 core\ws_manager.py:39:1: W293 blank line contains whitespace
@@ -155,10 +133,39 @@ core\ws_manager.py:83:1: W293 blank line contains whitespace
 core\ws_manager.py:91:1: W293 blank line contains whitespace
 core\ws_manager.py:92:101: E501 line too long (115 > 100 characters)
 core\ws_manager.py:95:1: W293 blank line contains whitespace
-main.py:121:1: E402 module level import not at top of file
-main.py:123:1: E302 expected 2 blank lines, found 1
-main.py:140:1: E302 expected 2 blank lines, found 1
-main.py:171:1: E402 module level import not at top of file
+core\ws_manager.py:100:1: W293 blank line contains whitespace
+core\ws_manager.py:113:1: W293 blank line contains whitespace
+core\ws_manager.py:122:1: W293 blank line contains whitespace
+core\ws_manager.py:124:101: E501 line too long (132 > 100 characters)
+core\ws_manager.py:125:1: W293 blank line contains whitespace
+core\ws_manager.py:135:101: E501 line too long (104 > 100 characters)
+core\ws_manager.py:136:101: E501 line too long (132 > 100 characters)
+core\ws_manager.py:137:1: W293 blank line contains whitespace
+core\ws_manager.py:153:1: W293 blank line contains whitespace
+core\ws_manager.py:174:1: W293 blank line contains whitespace
+core\ws_manager.py:190:1: W293 blank line contains whitespace
+core\ws_manager.py:195:1: W293 blank line contains whitespace
+core\ws_manager.py:199:1: W293 blank line contains whitespace
+core\ws_manager.py:203:1: W293 blank line contains whitespace
+core\ws_manager.py:223:1: W293 blank line contains whitespace
+core\ws_manager.py:239:1: W293 blank line contains whitespace
+core\ws_manager.py:245:1: W293 blank line contains whitespace
+core\ws_manager.py:249:1: W293 blank line contains whitespace
+core\ws_manager.py:253:1: W293 blank line contains whitespace
+core\ws_manager.py:257:1: W293 blank line contains whitespace
+core\ws_manager.py:261:1: W293 blank line contains whitespace
+core\ws_manager.py:265:1: W293 blank line contains whitespace
+main.py:41:1: E402 module level import not at top of file
+main.py:45:1: E402 module level import not at top of file
+main.py:50:1: E402 module level import not at top of file
+main.py:51:1: E402 module level import not at top of file
+main.py:52:1: E402 module level import not at top of file
+main.py:53:1: E402 module level import not at top of file
+main.py:54:1: E402 module level import not at top of file
+main.py:100:1: E402 module level import not at top of file
+main.py:122:1: E402 module level import not at top of file
+main.py:124:1: E302 expected 2 blank lines, found 1
+main.py:141:1: E302 expected 2 blank lines, found 1
 main.py:172:1: E402 module level import not at top of file
 main.py:173:1: E402 module level import not at top of file
 main.py:174:1: E402 module level import not at top of file
@@ -168,47 +175,38 @@ main.py:177:1: E402 module level import not at top of file
 main.py:178:1: E402 module level import not at top of file
 main.py:179:1: E402 module level import not at top of file
 main.py:180:1: E402 module level import not at top of file
-main.py:237:101: E501 line too long (101 > 100 characters)
-main.py:262:101: E501 line too long (101 > 100 characters)
-main.py:288:101: E501 line too long (108 > 100 characters)
-main.py:322:1: E402 module level import not at top of file
-main.py:333:1: E302 expected 2 blank lines, found 1
-main.py:345:5: F811 redefinition of unused 'FileResponse' from line 52
-main.py:366:101: E501 line too long (107 > 100 characters)
-main.py:373:101: E501 line too long (121 > 100 characters)
-main.py:40:1: E402 module level import not at top of file
-main.py:44:1: E402 module level import not at top of file
-main.py:49:1: E402 module level import not at top of file
-main.py:50:1: E402 module level import not at top of file
-main.py:51:1: E402 module level import not at top of file
-main.py:52:1: E402 module level import not at top of file
-main.py:53:1: E402 module level import not at top of file
-main.py:99:1: E402 module level import not at top of file
+main.py:181:1: E402 module level import not at top of file
+main.py:263:101: E501 line too long (101 > 100 characters)
+main.py:289:101: E501 line too long (108 > 100 characters)
+main.py:323:1: E402 module level import not at top of file
+main.py:334:1: E302 expected 2 blank lines, found 1
+main.py:346:5: F811 redefinition of unused 'FileResponse' from line 53
+main.py:367:101: E501 line too long (107 > 100 characters)
+main.py:374:101: E501 line too long (121 > 100 characters)
 services\asset_organizer.py:117:101: E501 line too long (102 > 100 characters)
 services\asset_organizer.py:212:101: E501 line too long (102 > 100 characters)
-services\asset_service.py:152:101: E501 line too long (151 > 100 characters)
-services\asset_service.py:180:101: E501 line too long (107 > 100 characters)
-services\asset_service.py:19:1: F401 'pathlib.Path' imported but unused
-services\asset_service.py:28:1: E302 expected 2 blank lines, found 1
-services\asset_service.py:32:101: E501 line too long (107 > 100 characters)
-services\asset_service.py:416:9: F401 'asyncio' imported but unused
-services\asset_service.py:525:1: E302 expected 2 blank lines, found 1
-services\batch_task_service.py:33:1: F401 'services.gen_task_manager.get_gen_task_manager' imported but unused
-services\batch_task_service.py:332:9: F401 'services.dag_executor.get_dag_structure' imported but unused
-services\batch_task_service.py:34:1: F401 'services.asset_service.get_asset_service' imported but unused
-services\batch_task_service.py:445:9: F401 'services.dag_executor.DagExecutor' imported but unused
-services\batch_task_service.py:445:9: F401 'services.dag_executor.get_dag_structure' imported but unused
-services\batch_task_service.py:446:9: F401 'services.ws_service' imported but unused
-services\batch_task_service.py:462:9: F401 'services.dag_executor.get_dag_structure' imported but unused
-services\canvas_service.py:149:101: E501 line too long (109 > 100 characters)
-services\canvas_service.py:22:101: E501 line too long (109 > 100 characters)
-services\canvas_service.py:25:101: E501 line too long (101 > 100 characters)
-services\canvas_service.py:325:101: E501 line too long (104 > 100 characters)
-services\canvas_service.py:342:101: E501 line too long (119 > 100 characters)
-services\canvas_service.py:344:101: E501 line too long (120 > 100 characters)
-services\canvas_service.py:432:101: E501 line too long (109 > 100 characters)
-services\canvas_service.py:482:1: E302 expected 2 blank lines, found 1
-services\canvas_service.py:56:101: E501 line too long (111 > 100 characters)
+services\asset_service.py:20:1: F401 'pathlib.Path' imported but unused
+services\asset_service.py:29:1: E302 expected 2 blank lines, found 1
+services\asset_service.py:33:101: E501 line too long (107 > 100 characters)
+services\asset_service.py:151:101: E501 line too long (151 > 100 characters)
+services\asset_service.py:179:101: E501 line too long (107 > 100 characters)
+services\asset_service.py:415:9: F401 'asyncio' imported but unused
+services\asset_service.py:524:1: E302 expected 2 blank lines, found 1
+services\batch_task_service.py:34:1: F401 'services.gen_task_manager.get_gen_task_manager' imported but unused
+services\batch_task_service.py:35:1: F401 'services.asset_service.get_asset_service' imported but unused
+services\batch_task_service.py:333:9: F401 'services.dag_executor.get_dag_structure' imported but unused
+services\batch_task_service.py:446:9: F401 'services.dag_executor.DagExecutor' imported but unused
+services\batch_task_service.py:446:9: F401 'services.dag_executor.get_dag_structure' imported but unused
+services\batch_task_service.py:447:9: F401 'services.ws_service' imported but unused
+services\batch_task_service.py:463:9: F401 'services.dag_executor.get_dag_structure' imported but unused
+services\canvas_service.py:26:101: E501 line too long (101 > 100 characters)
+services\canvas_service.py:57:101: E501 line too long (111 > 100 characters)
+services\canvas_service.py:150:101: E501 line too long (109 > 100 characters)
+services\canvas_service.py:326:101: E501 line too long (104 > 100 characters)
+services\canvas_service.py:343:101: E501 line too long (119 > 100 characters)
+services\canvas_service.py:345:101: E501 line too long (120 > 100 characters)
+services\canvas_service.py:433:101: E501 line too long (109 > 100 characters)
+services\canvas_service.py:483:1: E302 expected 2 blank lines, found 1
 services\comfyui\client.py:153:18: F841 local variable 'resp' is assigned to but never used
 services\comfyui\client.py:264:41: F841 local variable 'event_name' is assigned to but never used
 services\comfyui\client.py:271:101: E501 line too long (102 > 100 characters)
@@ -218,24 +216,21 @@ services\comfyui\file_handler.py:16:1: F401 'pathlib.Path' imported but unused
 services\comfyui\file_handler.py:17:1: F401 'typing.Any' imported but unused
 services\comfyui\file_handler.py:172:101: E501 line too long (115 > 100 characters)
 services\comfyui\process_manager.py:28:1: E402 module level import not at top of file
-services\comfyui\process_manager.py:29:1: E402 module level import not at top of file
-services\comfyui\process_manager.py:29:1: F401 'services.comfyui.config.MEMORY_CHECK_INTERVAL' imported but unused
 services\comfyui\process_manager.py:29:1: F401 'services.comfyui.config.MEMORY_HIGH_THRESHOLD' imported but unused
 services\comfyui\process_manager.py:29:1: F401 'services.comfyui.config.VRAM_HIGH_THRESHOLD' imported but unused
-services\comfyui_generation.py:1005:5: E301 expected 1 blank line, found 0
-services\comfyui_generation.py:1014:1: W293 blank line contains whitespace
-services\comfyui_generation.py:1019:1: W293 blank line contains whitespace
-services\comfyui_generation.py:1023:101: E501 line too long (125 > 100 characters)
-services\comfyui_generation.py:1052:101: E501 line too long (120 > 100 characters)
-services\comfyui_generation.py:1053:101: E501 line too long (102 > 100 characters)
-services\comfyui_generation.py:1062:45: F841 local variable 'event_name' is assigned to but never used
-services\comfyui_generation.py:1068:101: E501 line too long (121 > 100 characters)
-services\comfyui_generation.py:1075:101: E501 line too long (124 > 100 characters)
-services\comfyui_generation.py:1107:101: E501 line too long (118 > 100 characters)
-services\comfyui_generation.py:1201:1: W293 blank line contains whitespace
-services\comfyui_generation.py:1204:101: E501 line too long (103 > 100 characters)
-services\comfyui_generation.py:1206:1: W293 blank line contains whitespace
-services\comfyui_generation.py:1213:5: E301 expected 1 blank line, found 0
+services\comfyui\process_manager.py:29:1: F401 'services.comfyui.config.MEMORY_CHECK_INTERVAL' imported but unused
+services\comfyui\process_manager.py:29:1: E402 module level import not at top of file
+services\comfyui_generation.py:36:1: F811 redefinition of unused 'logger' from line 18
+services\comfyui_generation.py:51:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:51:101: E501 line too long (104 > 100 characters)
+services\comfyui_generation.py:54:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:57:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:60:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:60:101: E501 line too long (105 > 100 characters)
+services\comfyui_generation.py:63:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:77:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:80:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:83:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:137:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:159:101: E501 line too long (134 > 100 characters)
 services\comfyui_generation.py:161:21: F541 f-string is missing placeholders
@@ -254,7 +249,6 @@ services\comfyui_generation.py:245:25: F541 f-string is missing placeholders
 services\comfyui_generation.py:281:101: E501 line too long (103 > 100 characters)
 services\comfyui_generation.py:313:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:348:101: E501 line too long (122 > 100 characters)
-services\comfyui_generation.py:36:1: F811 redefinition of unused 'logger' from line 18
 services\comfyui_generation.py:401:101: E501 line too long (140 > 100 characters)
 services\comfyui_generation.py:420:25: F541 f-string is missing placeholders
 services\comfyui_generation.py:427:101: E501 line too long (102 > 100 characters)
@@ -271,8 +265,6 @@ services\comfyui_generation.py:495:58: W291 trailing whitespace
 services\comfyui_generation.py:497:1: W293 blank line contains whitespace
 services\comfyui_generation.py:500:1: W293 blank line contains whitespace
 services\comfyui_generation.py:504:1: W293 blank line contains whitespace
-services\comfyui_generation.py:51:101: E501 line too long (104 > 100 characters)
-services\comfyui_generation.py:51:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:510:1: W293 blank line contains whitespace
 services\comfyui_generation.py:513:1: W293 blank line contains whitespace
 services\comfyui_generation.py:517:1: W293 blank line contains whitespace
@@ -280,7 +272,6 @@ services\comfyui_generation.py:522:1: W293 blank line contains whitespace
 services\comfyui_generation.py:527:1: W293 blank line contains whitespace
 services\comfyui_generation.py:532:1: W293 blank line contains whitespace
 services\comfyui_generation.py:536:1: W293 blank line contains whitespace
-services\comfyui_generation.py:54:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:542:1: W293 blank line contains whitespace
 services\comfyui_generation.py:546:1: W293 blank line contains whitespace
 services\comfyui_generation.py:550:1: W293 blank line contains whitespace
@@ -288,15 +279,11 @@ services\comfyui_generation.py:553:1: W293 blank line contains whitespace
 services\comfyui_generation.py:560:1: W293 blank line contains whitespace
 services\comfyui_generation.py:566:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:569:1: W293 blank line contains whitespace
-services\comfyui_generation.py:57:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:573:1: W293 blank line contains whitespace
 services\comfyui_generation.py:576:1: W293 blank line contains whitespace
 services\comfyui_generation.py:587:1: W293 blank line contains whitespace
 services\comfyui_generation.py:589:5: E301 expected 1 blank line, found 0
-services\comfyui_generation.py:60:101: E501 line too long (105 > 100 characters)
-services\comfyui_generation.py:60:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:627:101: E501 line too long (159 > 100 characters)
-services\comfyui_generation.py:63:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:664:1: W293 blank line contains whitespace
 services\comfyui_generation.py:668:1: W293 blank line contains whitespace
 services\comfyui_generation.py:669:101: E501 line too long (243 > 100 characters)
@@ -307,20 +294,18 @@ services\comfyui_generation.py:712:101: E501 line too long (287 > 100 characters
 services\comfyui_generation.py:715:13: F841 local variable 'scene_label_en' is assigned to but never used
 services\comfyui_generation.py:744:1: W293 blank line contains whitespace
 services\comfyui_generation.py:755:101: E501 line too long (134 > 100 characters)
-services\comfyui_generation.py:762:101: E501 line too long (125 > 100 characters)
-services\comfyui_generation.py:762:105: E202 whitespace before '}'
 services\comfyui_generation.py:762:40: E201 whitespace after '{'
 services\comfyui_generation.py:762:68: E202 whitespace before '}'
 services\comfyui_generation.py:762:72: E201 whitespace after '{'
 services\comfyui_generation.py:762:82: E202 whitespace before '}'
 services\comfyui_generation.py:762:86: E201 whitespace after '{'
+services\comfyui_generation.py:762:101: E501 line too long (125 > 100 characters)
+services\comfyui_generation.py:762:105: E202 whitespace before '}'
 services\comfyui_generation.py:765:101: E501 line too long (116 > 100 characters)
-services\comfyui_generation.py:77:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:770:101: E501 line too long (115 > 100 characters)
-services\comfyui_generation.py:787:101: E501 line too long (135 > 100 characters)
 services\comfyui_generation.py:787:13: F841 local variable 'scene_image_urls' is assigned to but never used
+services\comfyui_generation.py:787:101: E501 line too long (135 > 100 characters)
 services\comfyui_generation.py:793:101: E501 line too long (145 > 100 characters)
-services\comfyui_generation.py:80:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:816:32: E201 whitespace after '{'
 services\comfyui_generation.py:816:60: E202 whitespace before '}'
 services\comfyui_generation.py:816:64: E201 whitespace after '{'
@@ -331,7 +316,6 @@ services\comfyui_generation.py:822:101: E501 line too long (111 > 100 characters
 services\comfyui_generation.py:825:101: E501 line too long (130 > 100 characters)
 services\comfyui_generation.py:829:101: E501 line too long (148 > 100 characters)
 services\comfyui_generation.py:829:104: E231 missing whitespace after ','
-services\comfyui_generation.py:83:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:837:101: E501 line too long (104 > 100 characters)
 services\comfyui_generation.py:858:101: E501 line too long (159 > 100 characters)
 services\comfyui_generation.py:871:5: E301 expected 1 blank line, found 0
@@ -342,128 +326,142 @@ services\comfyui_generation.py:904:30: F841 local variable 'clear_resp' is assig
 services\comfyui_generation.py:944:5: E301 expected 1 blank line, found 0
 services\comfyui_generation.py:947:1: W293 blank line contains whitespace
 services\comfyui_generation.py:961:5: E301 expected 1 blank line, found 0
-services\comfyui_helpers.py:10:1: E303 too many blank lines (3)
-services\comfyui_helpers.py:17:1: E402 module level import not at top of file
-services\comfyui_helpers.py:170:101: E501 line too long (146 > 100 characters)
+services\comfyui_generation.py:1005:5: E301 expected 1 blank line, found 0
+services\comfyui_generation.py:1014:1: W293 blank line contains whitespace
+services\comfyui_generation.py:1019:1: W293 blank line contains whitespace
+services\comfyui_generation.py:1023:101: E501 line too long (125 > 100 characters)
+services\comfyui_generation.py:1052:101: E501 line too long (120 > 100 characters)
+services\comfyui_generation.py:1053:101: E501 line too long (102 > 100 characters)
+services\comfyui_generation.py:1062:45: F841 local variable 'event_name' is assigned to but never used
+services\comfyui_generation.py:1068:101: E501 line too long (121 > 100 characters)
+services\comfyui_generation.py:1075:101: E501 line too long (124 > 100 characters)
+services\comfyui_generation.py:1107:101: E501 line too long (118 > 100 characters)
+services\comfyui_generation.py:1201:1: W293 blank line contains whitespace
+services\comfyui_generation.py:1204:101: E501 line too long (103 > 100 characters)
+services\comfyui_generation.py:1206:1: W293 blank line contains whitespace
+services\comfyui_generation.py:1213:5: E301 expected 1 blank line, found 0
+services\comfyui_helpers.py:11:1: E303 too many blank lines (3)
 services\comfyui_helpers.py:18:1: E402 module level import not at top of file
-services\comfyui_helpers.py:187:1: W293 blank line contains whitespace
 services\comfyui_helpers.py:19:1: E402 module level import not at top of file
 services\comfyui_helpers.py:20:1: E402 module level import not at top of file
 services\comfyui_helpers.py:21:1: E402 module level import not at top of file
-services\comfyui_helpers.py:21:1: F401 're' imported but unused
+services\comfyui_helpers.py:22:1: F401 're' imported but unused
 services\comfyui_helpers.py:22:1: E402 module level import not at top of file
 services\comfyui_helpers.py:23:1: E402 module level import not at top of file
-services\comfyui_helpers.py:23:1: F401 'signal' imported but unused
+services\comfyui_helpers.py:24:1: F401 'signal' imported but unused
 services\comfyui_helpers.py:24:1: E402 module level import not at top of file
-services\comfyui_helpers.py:24:1: F401 'subprocess' imported but unused
-services\comfyui_helpers.py:242:84: F821 undefined name 'asset_type'
+services\comfyui_helpers.py:25:1: F401 'subprocess' imported but unused
 services\comfyui_helpers.py:25:1: E402 module level import not at top of file
-services\comfyui_helpers.py:25:1: F401 'sys' imported but unused
-services\comfyui_helpers.py:256:101: E501 line too long (102 > 100 characters)
+services\comfyui_helpers.py:26:1: F401 'sys' imported but unused
 services\comfyui_helpers.py:26:1: E402 module level import not at top of file
-services\comfyui_helpers.py:26:1: F401 'tempfile' imported but unused
+services\comfyui_helpers.py:27:1: F401 'tempfile' imported but unused
 services\comfyui_helpers.py:27:1: E402 module level import not at top of file
-services\comfyui_helpers.py:276:35: F541 f-string is missing placeholders
 services\comfyui_helpers.py:28:1: E402 module level import not at top of file
-services\comfyui_helpers.py:28:1: F401 'collections.OrderedDict' imported but unused
+services\comfyui_helpers.py:29:1: F401 'collections.OrderedDict' imported but unused
 services\comfyui_helpers.py:29:1: E402 module level import not at top of file
-services\comfyui_helpers.py:29:1: F401 'pathlib.Path' imported but unused
+services\comfyui_helpers.py:30:1: F401 'pathlib.Path' imported but unused
 services\comfyui_helpers.py:30:1: E402 module level import not at top of file
-services\comfyui_helpers.py:30:1: F401 'typing.Awaitable' imported but unused
+services\comfyui_helpers.py:31:1: F401 'typing.Awaitable' imported but unused
 services\comfyui_helpers.py:31:1: E402 module level import not at top of file
-services\comfyui_helpers.py:33:1: E402 module level import not at top of file
-services\comfyui_helpers.py:33:1: F401 'aiohttp' imported but unused
-services\comfyui_helpers.py:35:1: E402 module level import not at top of file
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder._resolve_comfyui_image' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.build_comfyui_workflow' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.build_refinement_workflow' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.build_scene_multiangle_workflow' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.build_standardization_workflow' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.STORYBOARD_TEMPLATES' imported but unused
-services\comfyui_helpers.py:35:1: F401 'services.workflow_builder.structured_prompt_to_comfyui_prompt' imported but unused
-services\comfyui_helpers.py:44:1: E402 module level import not at top of file
-services\comfyui_helpers.py:44:1: F401 'services.qwen_workflow.YAOGUANG_DEFAULT_NEGATIVE' imported but unused
-services\comfyui_helpers.py:440:1: E402 module level import not at top of file
-services\comfyui_helpers.py:461:1: E402 module level import not at top of file
-services\comfyui_helpers.py:461:1: F401 'services.comfyui.config.COMFYUI_PYTHON' imported but unused
-services\comfyui_helpers.py:461:1: F811 redefinition of unused 'COMFYUI_DIR' from line 440
-services\comfyui_helpers.py:466:1: E402 module level import not at top of file
-services\comfyui_helpers.py:466:1: F401 'services.comfyui.config.MEMORY_CHECK_INTERVAL' imported but unused
-services\comfyui_helpers.py:466:1: F401 'services.comfyui.config.MEMORY_HIGH_THRESHOLD' imported but unused
-services\comfyui_helpers.py:466:1: F401 'services.comfyui.config.VRAM_HIGH_THRESHOLD' imported but unused
-services\comfyui_helpers.py:471:101: E501 line too long (103 > 100 characters)
-services\comfyui_helpers.py:474:101: E501 line too long (114 > 100 characters)
-services\comfyui_helpers.py:482:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:589:101: E501 line too long (104 > 100 characters)
-services\comfyui_helpers.py:591:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:595:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:598:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:605:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:612:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:618:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:640:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:643:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:648:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:659:1: W293 blank line contains whitespace
-services\comfyui_helpers.py:675:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:32:1: E402 module level import not at top of file
+services\comfyui_helpers.py:34:1: F401 'aiohttp' imported but unused
+services\comfyui_helpers.py:34:1: E402 module level import not at top of file
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.build_comfyui_workflow' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.build_refinement_workflow' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.build_standardization_workflow' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.build_scene_multiangle_workflow' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.STORYBOARD_TEMPLATES' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder.structured_prompt_to_comfyui_prompt' imported but unused
+services\comfyui_helpers.py:36:1: F401 'services.workflow_builder._resolve_comfyui_image' imported but unused
+services\comfyui_helpers.py:36:1: E402 module level import not at top of file
+services\comfyui_helpers.py:45:1: F401 'services.qwen_workflow.YAOGUANG_DEFAULT_NEGATIVE' imported but unused
+services\comfyui_helpers.py:45:1: E402 module level import not at top of file
+services\comfyui_helpers.py:171:101: E501 line too long (146 > 100 characters)
+services\comfyui_helpers.py:188:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:243:84: F821 undefined name 'asset_type'
+services\comfyui_helpers.py:257:101: E501 line too long (102 > 100 characters)
+services\comfyui_helpers.py:277:35: F541 f-string is missing placeholders
+services\comfyui_helpers.py:441:1: E402 module level import not at top of file
+services\comfyui_helpers.py:462:1: F811 redefinition of unused 'COMFYUI_DIR' from line 441
+services\comfyui_helpers.py:462:1: F401 'services.comfyui.config.COMFYUI_PYTHON' imported but unused
+services\comfyui_helpers.py:462:1: E402 module level import not at top of file
+services\comfyui_helpers.py:467:1: F401 'services.comfyui.config.MEMORY_HIGH_THRESHOLD' imported but unused
+services\comfyui_helpers.py:467:1: F401 'services.comfyui.config.VRAM_HIGH_THRESHOLD' imported but unused
+services\comfyui_helpers.py:467:1: F401 'services.comfyui.config.MEMORY_CHECK_INTERVAL' imported but unused
+services\comfyui_helpers.py:467:1: E402 module level import not at top of file
+services\comfyui_helpers.py:472:101: E501 line too long (103 > 100 characters)
+services\comfyui_helpers.py:475:101: E501 line too long (114 > 100 characters)
+services\comfyui_helpers.py:483:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:590:101: E501 line too long (104 > 100 characters)
+services\comfyui_helpers.py:592:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:596:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:599:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:606:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:613:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:619:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:641:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:644:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:649:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:660:1: W293 blank line contains whitespace
+services\comfyui_helpers.py:676:1: W293 blank line contains whitespace
+services\comfyui_lifecycle.py:15:1: F401 'pathlib.Path' imported but unused
+services\comfyui_lifecycle.py:26:1: F401 'services.comfyui_helpers.COMFYUI_BASE_URL' imported but unused
+services\comfyui_lifecycle.py:26:1: F401 'services.comfyui_helpers.GENERATED_DIR' imported but unused
+services\comfyui_lifecycle.py:41:1: F811 redefinition of unused 'logger' from line 26
+services\comfyui_lifecycle.py:47:1: W293 blank line contains whitespace
+services\comfyui_lifecycle.py:52:1: W293 blank line contains whitespace
+services\comfyui_lifecycle.py:60:101: E501 line too long (116 > 100 characters)
+services\comfyui_lifecycle.py:62:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:65:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:69:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:72:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:75:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:78:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:85:5: E301 expected 1 blank line, found 0
+services\comfyui_lifecycle.py:96:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:104:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:110:9: F824 `global GENERATED_DIR` is unused: name is never assigned in scope
 services\comfyui_lifecycle.py:129:101: E501 line too long (146 > 100 characters)
 services\comfyui_lifecycle.py:131:101: E501 line too long (113 > 100 characters)
 services\comfyui_lifecycle.py:142:21: F811 redefinition of unused 'COMFYUI_BASE_URL' from line 26
 services\comfyui_lifecycle.py:147:101: E501 line too long (105 > 100 characters)
-services\comfyui_lifecycle.py:15:1: F401 'pathlib.Path' imported but unused
 services\comfyui_lifecycle.py:159:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:175:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:185:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:210:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:231:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:26:1: F401 'services.comfyui_helpers.COMFYUI_BASE_URL' imported but unused
-services\comfyui_lifecycle.py:26:1: F401 'services.comfyui_helpers.GENERATED_DIR' imported but unused
 services\comfyui_lifecycle.py:331:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:342:101: E501 line too long (106 > 100 characters)
 services\comfyui_lifecycle.py:345:44: E741 ambiguous variable name 'l'
 services\comfyui_lifecycle.py:370:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:401:101: E501 line too long (104 > 100 characters)
-services\comfyui_lifecycle.py:41:1: F811 redefinition of unused 'logger' from line 26
 services\comfyui_lifecycle.py:414:101: E501 line too long (102 > 100 characters)
 services\comfyui_lifecycle.py:422:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:434:101: E501 line too long (105 > 100 characters)
 services\comfyui_lifecycle.py:442:101: E501 line too long (109 > 100 characters)
 services\comfyui_lifecycle.py:460:101: E501 line too long (107 > 100 characters)
-services\comfyui_lifecycle.py:47:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:470:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:499:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:506:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:516:1: W293 blank line contains whitespace
-services\comfyui_lifecycle.py:52:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:525:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:532:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:556:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:60:101: E501 line too long (116 > 100 characters)
 services\comfyui_lifecycle.py:601:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:604:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:62:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:649:16: E131 continuation line unaligned for hanging indent
-services\comfyui_lifecycle.py:65:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:685:22: F541 f-string is missing placeholders
 services\comfyui_lifecycle.py:689:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:69:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:72:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:728:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:730:1: W293 blank line contains whitespace
 services\comfyui_lifecycle.py:735:1: W293 blank line contains whitespace
-services\comfyui_lifecycle.py:75:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:776:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:779:1: W293 blank line contains whitespace
-services\comfyui_lifecycle.py:78:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:800:101: E501 line too long (104 > 100 characters)
 services\comfyui_lifecycle.py:805:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:809:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:814:5: E301 expected 1 blank line, found 0
 services\comfyui_lifecycle.py:844:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:85:5: E301 expected 1 blank line, found 0
-services\comfyui_lifecycle.py:96:5: E301 expected 1 blank line, found 0
 services\comfyui_service.py:18:1: F401 'os' imported but unused
 services\comfyui_service.py:20:1: F401 'time' imported but unused
 services\comfyui_service.py:22:1: F401 'pathlib.Path' imported but unused
@@ -471,20 +469,16 @@ services\comfyui_service.py:23:1: F401 'typing.Any' imported but unused
 services\comfyui_service.py:23:1: F401 'typing.Tuple' imported but unused
 services\comfyui_service.py:24:1: F401 'dataclasses.dataclass' imported but unused
 services\comfyui_service.py:29:1: F401 'services.comfyui_helpers.ComfyUIGenResult' imported but unused
-services\comfyui_storyboard.py:1006:101: E501 line too long (118 > 100 characters)
-services\comfyui_storyboard.py:1007:101: E501 line too long (117 > 100 characters)
-services\comfyui_storyboard.py:1016:5: E301 expected 1 blank line, found 0
-services\comfyui_storyboard.py:1023:1: W293 blank line contains whitespace
-services\comfyui_storyboard.py:1025:1: W293 blank line contains whitespace
-services\comfyui_storyboard.py:1030:1: W293 blank line contains whitespace
-services\comfyui_storyboard.py:1032:101: E501 line too long (104 > 100 characters)
+services\comfyui_storyboard.py:29:1: F811 redefinition of unused 'logger' from line 17
+services\comfyui_storyboard.py:56:101: E501 line too long (109 > 100 characters)
+services\comfyui_storyboard.py:86:9: F841 local variable '_t0' is assigned to but never used
+services\comfyui_storyboard.py:87:101: E501 line too long (105 > 100 characters)
 services\comfyui_storyboard.py:104:58: E231 missing whitespace after ','
 services\comfyui_storyboard.py:143:5: E301 expected 1 blank line, found 0
 services\comfyui_storyboard.py:198:1: W293 blank line contains whitespace
 services\comfyui_storyboard.py:205:24: E201 whitespace after '{'
 services\comfyui_storyboard.py:205:76: E202 whitespace before '}'
 services\comfyui_storyboard.py:248:17: F841 local variable 'item_type_hint' is assigned to but never used
-services\comfyui_storyboard.py:29:1: F811 redefinition of unused 'logger' from line 17
 services\comfyui_storyboard.py:338:1: W293 blank line contains whitespace
 services\comfyui_storyboard.py:344:1: W293 blank line contains whitespace
 services\comfyui_storyboard.py:366:101: E501 line too long (133 > 100 characters)
@@ -501,7 +495,6 @@ services\comfyui_storyboard.py:444:13: E303 too many blank lines (2)
 services\comfyui_storyboard.py:515:13: E303 too many blank lines (2)
 services\comfyui_storyboard.py:540:101: E501 line too long (101 > 100 characters)
 services\comfyui_storyboard.py:543:101: E501 line too long (102 > 100 characters)
-services\comfyui_storyboard.py:56:101: E501 line too long (109 > 100 characters)
 services\comfyui_storyboard.py:560:21: E301 expected 1 blank line, found 0
 services\comfyui_storyboard.py:580:101: E501 line too long (157 > 100 characters)
 services\comfyui_storyboard.py:583:101: E501 line too long (107 > 100 characters)
@@ -515,20 +508,25 @@ services\comfyui_storyboard.py:658:101: E501 line too long (109 > 100 characters
 services\comfyui_storyboard.py:682:101: E501 line too long (118 > 100 characters)
 services\comfyui_storyboard.py:713:101: E501 line too long (126 > 100 characters)
 services\comfyui_storyboard.py:813:5: E301 expected 1 blank line, found 0
-services\comfyui_storyboard.py:86:9: F841 local variable '_t0' is assigned to but never used
-services\comfyui_storyboard.py:87:101: E501 line too long (105 > 100 characters)
 services\comfyui_storyboard.py:958:5: E301 expected 1 blank line, found 0
 services\comfyui_storyboard.py:969:5: E301 expected 1 blank line, found 0
 services\comfyui_storyboard.py:979:1: W293 blank line contains whitespace
 services\comfyui_storyboard.py:987:1: W293 blank line contains whitespace
+services\comfyui_storyboard.py:1006:101: E501 line too long (118 > 100 characters)
+services\comfyui_storyboard.py:1007:101: E501 line too long (117 > 100 characters)
+services\comfyui_storyboard.py:1016:5: E301 expected 1 blank line, found 0
+services\comfyui_storyboard.py:1023:1: W293 blank line contains whitespace
+services\comfyui_storyboard.py:1025:1: W293 blank line contains whitespace
+services\comfyui_storyboard.py:1030:1: W293 blank line contains whitespace
+services\comfyui_storyboard.py:1032:101: E501 line too long (104 > 100 characters)
 services\comfyui_tts.py:10:1: F401 'subprocess' imported but unused
 services\comfyui_tts.py:15:1: F401 'aiohttp' imported but unused
+services\comfyui_tts.py:20:1: F811 redefinition of unused 'logger' from line 18
 services\comfyui_tts.py:152:5: E301 expected 1 blank line, found 0
 services\comfyui_tts.py:154:9: F811 redefinition of unused 'aiohttp' from line 15
-services\comfyui_tts.py:20:1: F811 redefinition of unused 'logger' from line 18
 services\comfyui_tts.py:203:101: E501 line too long (113 > 100 characters)
-services\comfyui_tts.py:211:101: E501 line too long (131 > 100 characters)
 services\comfyui_tts.py:211:5: E301 expected 1 blank line, found 0
+services\comfyui_tts.py:211:101: E501 line too long (131 > 100 characters)
 services\comfyui_tts.py:214:9: F811 redefinition of unused 'subprocess' from line 10
 services\comfyui_tts.py:215:1: W293 blank line contains whitespace
 services\comfyui_tts.py:219:1: W293 blank line contains whitespace
@@ -551,8 +549,12 @@ services\comfyui_tts.py:304:5: E301 expected 1 blank line, found 0
 services\comfyui_tts.py:306:9: F811 redefinition of unused 'aiohttp' from line 15
 services\comfyui_tts.py:313:101: E501 line too long (111 > 100 characters)
 services\comfyui_tts.py:318:9: F841 local variable 'input_dir' is assigned to but never used
-services\comfyui_video.py:117:101: E501 line too long (116 > 100 characters)
+services\comfyui_video.py:9:1: F401 'subprocess' imported but unused
 services\comfyui_video.py:12:1: F401 'pathlib.Path' imported but unused
+services\comfyui_video.py:20:1: F811 redefinition of unused 'logger' from line 18
+services\comfyui_video.py:56:9: F811 redefinition of unused 'Path' from line 12
+services\comfyui_video.py:60:101: E501 line too long (113 > 100 characters)
+services\comfyui_video.py:117:101: E501 line too long (116 > 100 characters)
 services\comfyui_video.py:120:101: E501 line too long (133 > 100 characters)
 services\comfyui_video.py:127:101: E501 line too long (110 > 100 characters)
 services\comfyui_video.py:130:101: E501 line too long (144 > 100 characters)
@@ -562,7 +564,6 @@ services\comfyui_video.py:148:65: E741 ambiguous variable name 'l'
 services\comfyui_video.py:161:101: E501 line too long (140 > 100 characters)
 services\comfyui_video.py:182:1: W293 blank line contains whitespace
 services\comfyui_video.py:196:1: W293 blank line contains whitespace
-services\comfyui_video.py:20:1: F811 redefinition of unused 'logger' from line 18
 services\comfyui_video.py:201:101: E501 line too long (144 > 100 characters)
 services\comfyui_video.py:215:101: E501 line too long (131 > 100 characters)
 services\comfyui_video.py:230:101: E501 line too long (128 > 100 characters)
@@ -576,8 +577,6 @@ services\comfyui_video.py:426:5: E301 expected 1 blank line, found 0
 services\comfyui_video.py:468:9: F401 'asyncio' imported but unused
 services\comfyui_video.py:469:9: F811 redefinition of unused 'subprocess' from line 9
 services\comfyui_video.py:471:9: F811 redefinition of unused 'Path' from line 12
-services\comfyui_video.py:56:9: F811 redefinition of unused 'Path' from line 12
-services\comfyui_video.py:60:101: E501 line too long (113 > 100 characters)
 services\comfyui_video.py:687:101: E501 line too long (136 > 100 characters)
 services\comfyui_video.py:695:21: F401 'urllib.request as _urlreq' imported but unused
 services\comfyui_video.py:716:101: E501 line too long (104 > 100 characters)
@@ -590,25 +589,24 @@ services\comfyui_video.py:804:101: E501 line too long (180 > 100 characters)
 services\comfyui_video.py:822:101: E501 line too long (106 > 100 characters)
 services\comfyui_video.py:835:101: E501 line too long (129 > 100 characters)
 services\comfyui_video.py:837:101: E501 line too long (105 > 100 characters)
-services\comfyui_video.py:9:1: F401 'subprocess' imported but unused
 services\comfyui_video.py:930:101: E501 line too long (101 > 100 characters)
 services\comfyui_video.py:951:101: E501 line too long (101 > 100 characters)
 services\dag_executor.py:40:1: E402 module level import not at top of file
 services\dag_executor.py:508:13: E741 ambiguous variable name 'l'
-services\gen_task_manager.py:24:1: F401 'uuid' imported but unused
-services\gen_task_manager.py:356:101: E501 line too long (116 > 100 characters)
-services\gen_task_manager.py:365:101: E501 line too long (144 > 100 characters)
-services\gen_task_manager.py:371:101: E501 line too long (146 > 100 characters)
+services\gen_task_manager.py:25:1: F401 'uuid' imported but unused
+services\gen_task_manager.py:357:101: E501 line too long (116 > 100 characters)
+services\gen_task_manager.py:366:101: E501 line too long (144 > 100 characters)
+services\gen_task_manager.py:372:101: E501 line too long (146 > 100 characters)
 services\param_validator.py:41:101: E501 line too long (114 > 100 characters)
 services\param_validator.py:42:101: E501 line too long (107 > 100 characters)
-services\prompt_service.py:285:101: E501 line too long (103 > 100 characters)
-services\prompt_service.py:357:5: E129 visually indented line with same indent as next logical line
-services\prompt_service.py:365:101: E501 line too long (104 > 100 characters)
-services\prompt_service.py:381:5: E129 visually indented line with same indent as next logical line
-services\prompt_service.py:387:5: E129 visually indented line with same indent as next logical line
-services\prompt_service.py:393:5: E129 visually indented line with same indent as next logical line
-services\prompt_service.py:399:5: E129 visually indented line with same indent as next logical line
-services\prompt_service.py:469:101: E501 line too long (106 > 100 characters)
+services\prompt_service.py:286:101: E501 line too long (103 > 100 characters)
+services\prompt_service.py:358:5: E129 visually indented line with same indent as next logical line
+services\prompt_service.py:366:101: E501 line too long (104 > 100 characters)
+services\prompt_service.py:382:5: E129 visually indented line with same indent as next logical line
+services\prompt_service.py:388:5: E129 visually indented line with same indent as next logical line
+services\prompt_service.py:394:5: E129 visually indented line with same indent as next logical line
+services\prompt_service.py:400:5: E129 visually indented line with same indent as next logical line
+services\prompt_service.py:470:101: E501 line too long (106 > 100 characters)
 services\provider_service.py:22:1: F401 'os' imported but unused
 services\provider_service.py:23:1: F401 'time' imported but unused
 services\provider_service.py:34:1: E302 expected 2 blank lines, found 1
@@ -617,46 +615,57 @@ services\provider_service.py:416:101: E501 line too long (102 > 100 characters)
 services\provider_service.py:444:1: E302 expected 2 blank lines, found 1
 services\providers\comfyui_provider.py:10:1: F401 'typing.Any' imported but unused
 services\providers\comfyui_provider.py:164:1: W293 blank line contains whitespace
-services\providers\jimeng_provider.py:107:21: F541 f-string is missing placeholders
 services\providers\jimeng_provider.py:13:1: F401 'typing.Any' imported but unused
 services\providers\jimeng_provider.py:16:1: F401 'services.providers.provider_utils.output_url_for' imported but unused
 services\providers\jimeng_provider.py:97:21: F541 f-string is missing placeholders
+services\providers\jimeng_provider.py:107:21: F541 f-string is missing placeholders
 services\providers\minimax_provider.py:101:10: W292 no newline at end of file
 services\providers\modelscope_provider.py:12:1: F401 'typing.Any' imported but unused
+services\providers\modelscope_provider.py:92:101: E501 line too long (110 > 100 characters)
 services\providers\modelscope_provider.py:141:101: E501 line too long (111 > 100 characters)
 services\providers\modelscope_provider.py:199:101: E501 line too long (110 > 100 characters)
 services\providers\modelscope_provider.py:233:101: E501 line too long (113 > 100 characters)
-services\providers\modelscope_provider.py:92:101: E501 line too long (110 > 100 characters)
 services\providers\openai_provider.py:10:1: F401 'json' imported but unused
+services\providers\openai_provider.py:19:1: F401 'services.providers.provider_utils.parse_size' imported but unused
+services\providers\openai_provider.py:48:101: E501 line too long (112 > 100 characters)
 services\providers\openai_provider.py:111:101: E501 line too long (138 > 100 characters)
 services\providers\openai_provider.py:122:101: E501 line too long (127 > 100 characters)
 services\providers\openai_provider.py:128:101: E501 line too long (103 > 100 characters)
-services\providers\openai_provider.py:19:1: F401 'services.providers.provider_utils.parse_size' imported but unused
-services\providers\openai_provider.py:48:101: E501 line too long (112 > 100 characters)
 services\providers\provider_utils.py:13:1: F401 'time' imported but unused
 services\providers\provider_utils.py:15:1: F401 'typing.List' imported but unused
-services\providers\provider_utils.py:150:101: E501 line too long (119 > 100 characters)
-services\providers\provider_utils.py:208:101: E501 line too long (108 > 100 characters)
-services\providers\provider_utils.py:25:1: E302 expected 2 blank lines, found 1
-services\providers\provider_utils.py:334:101: E501 line too long (102 > 100 characters)
-services\providers\provider_utils.py:377:101: E501 line too long (109 > 100 characters)
-services\providers\provider_utils.py:380:101: E501 line too long (121 > 100 characters)
+services\providers\provider_utils.py:26:1: E302 expected 2 blank lines, found 1
+services\providers\provider_utils.py:151:101: E501 line too long (119 > 100 characters)
+services\providers\provider_utils.py:209:101: E501 line too long (108 > 100 characters)
+services\providers\provider_utils.py:335:101: E501 line too long (102 > 100 characters)
+services\providers\provider_utils.py:378:101: E501 line too long (109 > 100 characters)
+services\providers\provider_utils.py:381:101: E501 line too long (121 > 100 characters)
 services\providers\runninghub_provider.py:12:1: F401 'typing.Any' imported but unused
-services\providers\runninghub_provider.py:158:101: E501 line too long (111 > 100 characters)
 services\providers\runninghub_provider.py:17:1: F401 'services.providers.provider_utils.get_api_key' imported but unused
 services\providers\runninghub_provider.py:17:1: F401 'services.providers.provider_utils.reference_to_data_url' imported but unused
 services\providers\runninghub_provider.py:52:101: E501 line too long (106 > 100 characters)
 services\providers\runninghub_provider.py:82:101: E501 line too long (120 > 100 characters)
+services\providers\runninghub_provider.py:158:101: E501 line too long (111 > 100 characters)
 services\providers\volcengine_provider.py:11:1: F401 're' imported but unused
 services\providers\volcengine_provider.py:18:1: F401 'services.providers.provider_utils.output_file_from_url' imported but unused
 services\providers\volcengine_provider.py:55:101: E501 line too long (102 > 100 characters)
 services\qc\qc_service.py:21:1: F401 'io' imported but unused
-services\qc\qc_service.py:266:101: E501 line too long (102 > 100 characters)
 services\qc\qc_service.py:56:1: E302 expected 2 blank lines, found 1
-services\qc\qc_service.py:592:101: E501 line too long (107 > 100 characters)
 services\qc\qc_service.py:64:1: E305 expected 2 blank lines after class or function definition, found 1
+services\qc\qc_service.py:266:101: E501 line too long (102 > 100 characters)
+services\qc\qc_service.py:592:101: E501 line too long (107 > 100 characters)
 services\qc\qc_service.py:689:34: E127 continuation line over-indented for visual indent
 services\qwen_workflow.py:12:1: F401 'pathlib.Path' imported but unused
+services\qwen_workflow.py:22:1: E302 expected 2 blank lines, found 1
+services\qwen_workflow.py:33:1: W293 blank line contains whitespace
+services\qwen_workflow.py:37:1: W293 blank line contains whitespace
+services\qwen_workflow.py:41:1: W293 blank line contains whitespace
+services\qwen_workflow.py:47:1: W293 blank line contains whitespace
+services\qwen_workflow.py:52:1: W293 blank line contains whitespace
+services\qwen_workflow.py:74:1: F401 'services.comfyui.config.COMFYUI_DIR as _COMFYUI_DIR' imported but unused
+services\qwen_workflow.py:74:1: E402 module level import not at top of file
+services\qwen_workflow.py:74:101: E501 line too long (147 > 100 characters)
+services\qwen_workflow.py:80:1: W293 blank line contains whitespace
+services\qwen_workflow.py:83:1: W293 blank line contains whitespace
 services\qwen_workflow.py:131:1: W293 blank line contains whitespace
 services\qwen_workflow.py:134:1: W293 blank line contains whitespace
 services\qwen_workflow.py:137:1: W293 blank line contains whitespace
@@ -667,34 +676,28 @@ services\qwen_workflow.py:177:1: W293 blank line contains whitespace
 services\qwen_workflow.py:188:1: W293 blank line contains whitespace
 services\qwen_workflow.py:190:1: W293 blank line contains whitespace
 services\qwen_workflow.py:193:1: W293 blank line contains whitespace
-services\qwen_workflow.py:22:1: E302 expected 2 blank lines, found 1
 services\qwen_workflow.py:222:1: W293 blank line contains whitespace
 services\qwen_workflow.py:230:1: W293 blank line contains whitespace
 services\qwen_workflow.py:243:1: W293 blank line contains whitespace
 services\qwen_workflow.py:247:1: W293 blank line contains whitespace
 services\qwen_workflow.py:252:1: W293 blank line contains whitespace
 services\qwen_workflow.py:319:101: E501 line too long (103 > 100 characters)
-services\qwen_workflow.py:33:1: W293 blank line contains whitespace
 services\qwen_workflow.py:348:101: E501 line too long (145 > 100 characters)
 services\qwen_workflow.py:364:101: E501 line too long (145 > 100 characters)
-services\qwen_workflow.py:37:1: W293 blank line contains whitespace
 services\qwen_workflow.py:379:101: E501 line too long (169 > 100 characters)
 services\qwen_workflow.py:394:1: W293 blank line contains whitespace
 services\qwen_workflow.py:403:1: W293 blank line contains whitespace
 services\qwen_workflow.py:408:1: W293 blank line contains whitespace
-services\qwen_workflow.py:41:1: W293 blank line contains whitespace
 services\qwen_workflow.py:430:1: W293 blank line contains whitespace
 services\qwen_workflow.py:439:1: W293 blank line contains whitespace
 services\qwen_workflow.py:444:1: W293 blank line contains whitespace
 services\qwen_workflow.py:460:1: W293 blank line contains whitespace
 services\qwen_workflow.py:469:1: W293 blank line contains whitespace
-services\qwen_workflow.py:47:1: W293 blank line contains whitespace
 services\qwen_workflow.py:478:1: W293 blank line contains whitespace
 services\qwen_workflow.py:486:1: W293 blank line contains whitespace
 services\qwen_workflow.py:488:1: W293 blank line contains whitespace
 services\qwen_workflow.py:497:1: W293 blank line contains whitespace
 services\qwen_workflow.py:513:1: W293 blank line contains whitespace
-services\qwen_workflow.py:52:1: W293 blank line contains whitespace
 services\qwen_workflow.py:523:1: W293 blank line contains whitespace
 services\qwen_workflow.py:535:1: W293 blank line contains whitespace
 services\qwen_workflow.py:538:1: W293 blank line contains whitespace
@@ -713,19 +716,28 @@ services\qwen_workflow.py:679:1: W293 blank line contains whitespace
 services\qwen_workflow.py:685:1: W293 blank line contains whitespace
 services\qwen_workflow.py:710:1: W293 blank line contains whitespace
 services\qwen_workflow.py:723:1: W293 blank line contains whitespace
-services\qwen_workflow.py:74:1: E402 module level import not at top of file
-services\qwen_workflow.py:74:1: F401 'services.comfyui.config.COMFYUI_DIR as _COMFYUI_DIR' imported but unused
-services\qwen_workflow.py:74:101: E501 line too long (147 > 100 characters)
 services\qwen_workflow.py:748:101: E501 line too long (112 > 100 characters)
 services\qwen_workflow.py:765:1: W293 blank line contains whitespace
 services\qwen_workflow.py:770:1: W293 blank line contains whitespace
 services\qwen_workflow.py:774:1: W293 blank line contains whitespace
 services\qwen_workflow.py:780:1: W293 blank line contains whitespace
 services\qwen_workflow.py:789:42: W292 no newline at end of file
-services\qwen_workflow.py:80:1: W293 blank line contains whitespace
-services\qwen_workflow.py:83:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:100:75: W291 trailing whitespace
+services\qwen_workflow_config.py:6:1: F401 'json' imported but unused
 services\qwen_workflow_config.py:11:1: F401 'typing.Union' imported but unused
+services\qwen_workflow_config.py:17:1: E302 expected 2 blank lines, found 1
+services\qwen_workflow_config.py:19:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:22:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:29:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:33:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:41:101: E501 line too long (128 > 100 characters)
+services\qwen_workflow_config.py:43:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:49:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:58:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:63:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:66:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:73:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:84:1: W293 blank line contains whitespace
+services\qwen_workflow_config.py:100:75: W291 trailing whitespace
 services\qwen_workflow_config.py:110:101: E501 line too long (104 > 100 characters)
 services\qwen_workflow_config.py:111:101: E501 line too long (104 > 100 characters)
 services\qwen_workflow_config.py:135:101: E501 line too long (143 > 100 characters)
@@ -733,19 +745,16 @@ services\qwen_workflow_config.py:154:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:158:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:163:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:167:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:17:1: E302 expected 2 blank lines, found 1
 services\qwen_workflow_config.py:170:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:173:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:179:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:186:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:19:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:192:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:195:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:200:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:208:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:213:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:218:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:22:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:223:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:228:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:233:1: W293 blank line contains whitespace
@@ -758,26 +767,15 @@ services\qwen_workflow_config.py:269:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:278:1: W293 blank line contains whitespace
 services\qwen_workflow_config.py:288:1: E305 expected 2 blank lines after class or function definition, found 1
 services\qwen_workflow_config.py:288:35: W292 no newline at end of file
-services\qwen_workflow_config.py:29:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:33:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:41:101: E501 line too long (128 > 100 characters)
-services\qwen_workflow_config.py:43:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:49:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:58:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:6:1: F401 'json' imported but unused
-services\qwen_workflow_config.py:63:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:66:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:73:1: W293 blank line contains whitespace
-services\qwen_workflow_config.py:84:1: W293 blank line contains whitespace
 services\sigma_resampler.py:47:101: E501 line too long (113 > 100 characters)
-services\stage_service.py:210:101: E501 line too long (104 > 100 characters)
 services\stage_service.py:26:1: F401 'services.provider_service.ProviderResult' imported but unused
 services\stage_service.py:31:101: E501 line too long (104 > 100 characters)
 services\stage_service.py:39:1: E302 expected 2 blank lines, found 1
+services\stage_service.py:49:101: E501 line too long (102 > 100 characters)
+services\stage_service.py:210:101: E501 line too long (104 > 100 characters)
 services\stage_service.py:420:101: E501 line too long (111 > 100 characters)
 services\stage_service.py:441:101: E501 line too long (107 > 100 characters)
 services\stage_service.py:449:101: E501 line too long (103 > 100 characters)
-services\stage_service.py:49:101: E501 line too long (102 > 100 characters)
 services\stage_service.py:590:1: E302 expected 2 blank lines, found 1
 services\stage_service.py:667:101: E501 line too long (145 > 100 characters)
 services\stage_service.py:685:101: E501 line too long (102 > 100 characters)
@@ -785,13 +783,14 @@ services\stage_service.py:692:101: E501 line too long (121 > 100 characters)
 services\stage_service.py:694:101: E501 line too long (127 > 100 characters)
 services\stage_service.py:716:101: E501 line too long (119 > 100 characters)
 services\stage_service.py:770:101: E501 line too long (102 > 100 characters)
+services\stages\batch_storyboard_stage.py:17:1: F401 'typing.Optional' imported but unused
+services\stages\batch_storyboard_stage.py:34:21: E261 at least two spaces before inline comment
 services\stages\batch_storyboard_stage.py:150:101: E501 line too long (105 > 100 characters)
 services\stages\batch_storyboard_stage.py:152:101: E501 line too long (104 > 100 characters)
-services\stages\batch_storyboard_stage.py:17:1: F401 'typing.Optional' imported but unused
 services\stages\batch_storyboard_stage.py:193:101: E501 line too long (102 > 100 characters)
-services\stages\batch_storyboard_stage.py:34:21: E261 at least two spaces before inline comment
-services\stages\compose_stage.py:154:101: E501 line too long (102 > 100 characters)
 services\stages\compose_stage.py:23:1: F401 'typing.Optional' imported but unused
+services\stages\compose_stage.py:91:13: F401 'services.providers.provider_utils.output_file_from_url' imported but unused
+services\stages\compose_stage.py:154:101: E501 line too long (102 > 100 characters)
 services\stages\compose_stage.py:252:17: F841 local variable 'last' is assigned to but never used
 services\stages\compose_stage.py:253:101: E501 line too long (110 > 100 characters)
 services\stages\compose_stage.py:263:101: E501 line too long (164 > 100 characters)
@@ -808,7 +807,6 @@ services\stages\compose_stage.py:328:101: E501 line too long (164 > 100 characte
 services\stages\compose_stage.py:331:101: E501 line too long (149 > 100 characters)
 services\stages\compose_stage.py:345:101: E501 line too long (159 > 100 characters)
 services\stages\compose_stage.py:349:101: E501 line too long (150 > 100 characters)
-services\stages\compose_stage.py:91:13: F401 'services.providers.provider_utils.output_file_from_url' imported but unused
 services\stages\concept_stage.py:114:101: E501 line too long (136 > 100 characters)
 services\stages\concept_stage.py:140:101: E501 line too long (220 > 100 characters)
 services\stages\concept_stage.py:193:101: E501 line too long (113 > 100 characters)
@@ -821,14 +819,18 @@ services\stages\edit_stage.py:229:101: E501 line too long (101 > 100 characters)
 services\stages\edit_stage.py:244:101: E501 line too long (107 > 100 characters)
 services\stages\export_stage.py:18:1: F401 'time' imported but unused
 services\stages\export_stage.py:19:1: F401 'typing.Optional' imported but unused
+services\stages\export_stage.py:98:101: E501 line too long (119 > 100 characters)
 services\stages\export_stage.py:203:9: F841 local variable 'ffprobe' is assigned to but never used
 services\stages\export_stage.py:204:9: F401 'services.providers.provider_utils.output_file_from_url' imported but unused
 services\stages\export_stage.py:252:9: F841 local variable 'overlay_inputs' is assigned to but never used
 services\stages\export_stage.py:355:101: E501 line too long (111 > 100 characters)
-services\stages\export_stage.py:98:101: E501 line too long (119 > 100 characters)
 services\stages\extract_all_stage.py:63:101: E501 line too long (101 > 100 characters)
 services\stages\extract_all_stage.py:96:101: E501 line too long (124 > 100 characters)
 services\stages\ffmpeg_utils.py:96:101: E501 line too long (102 > 100 characters)
+services\stages\graphic_stage.py:36:101: E501 line too long (102 > 100 characters)
+services\stages\graphic_stage.py:41:101: E501 line too long (123 > 100 characters)
+services\stages\graphic_stage.py:46:101: E501 line too long (116 > 100 characters)
+services\stages\graphic_stage.py:66:101: E501 line too long (110 > 100 characters)
 services\stages\graphic_stage.py:320:101: E501 line too long (107 > 100 characters)
 services\stages\graphic_stage.py:324:101: E501 line too long (107 > 100 characters)
 services\stages\graphic_stage.py:325:101: E501 line too long (108 > 100 characters)
@@ -840,15 +842,12 @@ services\stages\graphic_stage.py:343:101: E501 line too long (101 > 100 characte
 services\stages\graphic_stage.py:345:101: E501 line too long (107 > 100 characters)
 services\stages\graphic_stage.py:347:101: E501 line too long (137 > 100 characters)
 services\stages\graphic_stage.py:349:101: E501 line too long (129 > 100 characters)
-services\stages\graphic_stage.py:36:101: E501 line too long (102 > 100 characters)
 services\stages\graphic_stage.py:372:101: E501 line too long (145 > 100 characters)
 services\stages\graphic_stage.py:373:101: E501 line too long (146 > 100 characters)
 services\stages\graphic_stage.py:374:101: E501 line too long (143 > 100 characters)
 services\stages\graphic_stage.py:375:101: E501 line too long (143 > 100 characters)
 services\stages\graphic_stage.py:405:101: E501 line too long (114 > 100 characters)
-services\stages\graphic_stage.py:41:101: E501 line too long (123 > 100 characters)
 services\stages\graphic_stage.py:444:101: E501 line too long (121 > 100 characters)
-services\stages\graphic_stage.py:46:101: E501 line too long (116 > 100 characters)
 services\stages\graphic_stage.py:466:101: E501 line too long (145 > 100 characters)
 services\stages\graphic_stage.py:467:101: E501 line too long (142 > 100 characters)
 services\stages\graphic_stage.py:472:101: E501 line too long (105 > 100 characters)
@@ -862,26 +861,25 @@ services\stages\graphic_stage.py:587:101: E501 line too long (101 > 100 characte
 services\stages\graphic_stage.py:612:101: E501 line too long (114 > 100 characters)
 services\stages\graphic_stage.py:616:101: E501 line too long (112 > 100 characters)
 services\stages\graphic_stage.py:620:101: E501 line too long (101 > 100 characters)
-services\stages\graphic_stage.py:66:101: E501 line too long (110 > 100 characters)
 services\stages\graphic_stage.py:684:9: F841 local variable 'right_text_color' is assigned to but never used
 services\stages\hook_overlay_stage.py:134:1: W293 blank line contains whitespace
 services\stages\hook_overlay_stage.py:152:1: W293 blank line contains whitespace
 services\stages\hook_overlay_stage.py:220:18: F841 local variable 'th2' is assigned to but never used
 services\stages\multi_person_stage.py:62:101: E501 line too long (107 > 100 characters)
 services\stages\pano_stage.py:82:101: E501 line too long (107 > 100 characters)
-services\stages\qc_stage.py:17:101: E501 line too long (105 > 100 characters)
+services\stages\qc_stage.py:18:101: E501 line too long (105 > 100 characters)
 services\stages\refine_stage.py:10:1: F401 'time' imported but unused
 services\stages\refine_stage.py:11:1: F401 'typing.Tuple' imported but unused
-services\stages\refine_stage.py:144:101: E501 line too long (126 > 100 characters)
 services\stages\refine_stage.py:65:101: E501 line too long (103 > 100 characters)
-services\stages\screen_record_stage.py:180:28: F821 undefined name 'params'
-services\stages\screen_record_stage.py:217:101: E501 line too long (116 > 100 characters)
+services\stages\refine_stage.py:144:101: E501 line too long (126 > 100 characters)
 services\stages\screen_record_stage.py:22:1: F401 'typing.Optional' imported but unused
 services\stages\screen_record_stage.py:60:101: E501 line too long (102 > 100 characters)
+services\stages\screen_record_stage.py:180:28: F821 undefined name 'params'
+services\stages\screen_record_stage.py:217:101: E501 line too long (116 > 100 characters)
 services\stages\script_stage.py:305:101: E501 line too long (106 > 100 characters)
 services\stages\script_utils.py:34:1: F401 'typing.Tuple' imported but unused
-services\stages\storyboard_stage.py:190:101: E501 line too long (107 > 100 characters)
 services\stages\storyboard_stage.py:89:101: E501 line too long (123 > 100 characters)
+services\stages\storyboard_stage.py:190:101: E501 line too long (107 > 100 characters)
 services\stages\subtitle_stage.py:189:101: E501 line too long (106 > 100 characters)
 services\stages\subtitle_stage.py:210:101: E501 line too long (253 > 100 characters)
 services\stages\subtitle_stage.py:211:101: E501 line too long (209 > 100 characters)
@@ -891,18 +889,18 @@ services\stages\template_batch_extract_stage.py:221:101: E501 line too long (124
 services\stages\template_batch_extract_stage.py:227:9: F811 redefinition of unused 'TEMPLATE_DIR' from line 20
 services\stages\template_batch_extract_stage.py:246:9: F811 redefinition of unused 'TEMPLATE_DIR' from line 20
 services\stages\template_batch_extract_stage.py:291:101: E501 line too long (105 > 100 characters)
+services\stages\template_clean_stage.py:99:5: E129 visually indented line with same indent as next logical line
 services\stages\template_clean_stage.py:173:20: F541 f-string is missing placeholders
 services\stages\template_clean_stage.py:175:21: F841 local variable 'mask_filename' is assigned to but never used
 services\stages\template_clean_stage.py:238:32: F541 f-string is missing placeholders
 services\stages\template_clean_stage.py:385:30: F541 f-string is missing placeholders
 services\stages\template_clean_stage.py:389:32: F541 f-string is missing placeholders
-services\stages\template_clean_stage.py:99:5: E129 visually indented line with same indent as next logical line
 services\stages\template_pose_stage.py:20:1: F401 'services.template_utils.TEMPLATE_DIR' imported but unused
 services\stages\template_pose_stage.py:225:9: F811 redefinition of unused 'TEMPLATE_DIR' from line 20
 services\stages\tts_stage.py:8:1: F401 'time' imported but unused
 services\stages\tts_utils.py:13:1: F401 'typing.Any' imported but unused
-services\stages\video_stage.py:129:101: E501 line too long (106 > 100 characters)
 services\stages\video_stage.py:14:1: F401 'typing.Optional' imported but unused
+services\stages\video_stage.py:129:101: E501 line too long (106 > 100 characters)
 services\stages\video_stage.py:291:101: E501 line too long (119 > 100 characters)
 services\stages\video_stage.py:338:101: E501 line too long (110 > 100 characters)
 services\stages\video_stage.py:403:101: E501 line too long (110 > 100 characters)
@@ -917,125 +915,130 @@ services\stages\video_stage.py:703:101: E501 line too long (104 > 100 characters
 services\stages\video_stage.py:717:101: E501 line too long (122 > 100 characters)
 services\stages\video_stage.py:818:101: E501 line too long (122 > 100 characters)
 services\stages\video_stage.py:823:101: E501 line too long (115 > 100 characters)
-services\structured_logging.py:104:1: W293 blank line contains whitespace
-services\structured_logging.py:108:1: W293 blank line contains whitespace
-services\structured_logging.py:118:1: W293 blank line contains whitespace
-services\structured_logging.py:130:1: W293 blank line contains whitespace
-services\structured_logging.py:14:1: F401 'typing.Any' imported but unused
-services\structured_logging.py:14:1: F401 'typing.Dict' imported but unused
-services\structured_logging.py:14:1: F401 'typing.Union' imported but unused
-services\structured_logging.py:145:1: W293 blank line contains whitespace
-services\structured_logging.py:149:1: W293 blank line contains whitespace
-services\structured_logging.py:15:1: F401 'logging.handlers.RotatingFileHandler' imported but unused
-services\structured_logging.py:151:1: W293 blank line contains whitespace
-services\structured_logging.py:157:1: W293 blank line contains whitespace
-services\structured_logging.py:162:1: W293 blank line contains whitespace
-services\structured_logging.py:167:1: W293 blank line contains whitespace
-services\structured_logging.py:172:1: W293 blank line contains whitespace
-services\structured_logging.py:177:1: W293 blank line contains whitespace
-services\structured_logging.py:180:9: F841 local variable 'log_level' is assigned to but never used
-services\structured_logging.py:181:1: W293 blank line contains whitespace
-services\structured_logging.py:183:13: F541 f-string is missing placeholders
-services\structured_logging.py:19:1: E302 expected 2 blank lines, found 1
-services\structured_logging.py:192:1: W293 blank line contains whitespace
-services\structured_logging.py:213:1: W293 blank line contains whitespace
-services\structured_logging.py:232:1: W293 blank line contains whitespace
-services\structured_logging.py:235:1: W293 blank line contains whitespace
-services\structured_logging.py:240:1: W293 blank line contains whitespace
-services\structured_logging.py:244:1: W293 blank line contains whitespace
-services\structured_logging.py:262:1: W293 blank line contains whitespace
-services\structured_logging.py:27:1: E305 expected 2 blank lines after class or function definition, found 1
-services\structured_logging.py:275:1: W293 blank line contains whitespace
-services\structured_logging.py:282:101: E501 line too long (101 > 100 characters)
-services\structured_logging.py:29:1: E302 expected 2 blank lines, found 1
-services\structured_logging.py:293:1: W293 blank line contains whitespace
-services\structured_logging.py:305:1: W293 blank line contains whitespace
-services\structured_logging.py:311:101: E501 line too long (101 > 100 characters)
-services\structured_logging.py:322:1: E305 expected 2 blank lines after class or function definition, found 1
-services\structured_logging.py:329:1: W293 blank line contains whitespace
-services\structured_logging.py:332:1: W293 blank line contains whitespace
-services\structured_logging.py:336:1: W293 blank line contains whitespace
-services\structured_logging.py:338:96: W292 no newline at end of file
-services\structured_logging.py:37:1: E302 expected 2 blank lines, found 1
-services\structured_logging.py:41:1: E302 expected 2 blank lines, found 1
-services\structured_logging.py:48:1: W293 blank line contains whitespace
-services\structured_logging.py:57:1: W293 blank line contains whitespace
-services\structured_logging.py:63:1: W293 blank line contains whitespace
-services\structured_logging.py:72:1: W293 blank line contains whitespace
-services\structured_logging.py:82:1: W293 blank line contains whitespace
-services\structured_logging.py:88:1: W293 blank line contains whitespace
 services\structured_logging.py:9:1: F401 'os' imported but unused
-services\structured_logging.py:93:1: W293 blank line contains whitespace
-services\structured_logging.py:97:1: W293 blank line contains whitespace
+services\structured_logging.py:14:1: F401 'typing.Dict' imported but unused
+services\structured_logging.py:14:1: F401 'typing.Any' imported but unused
+services\structured_logging.py:14:1: F401 'typing.Union' imported but unused
+services\structured_logging.py:15:1: F401 'logging.handlers.RotatingFileHandler' imported but unused
+services\structured_logging.py:20:1: E302 expected 2 blank lines, found 1
+services\structured_logging.py:28:1: E305 expected 2 blank lines after class or function definition, found 1
+services\structured_logging.py:30:1: E302 expected 2 blank lines, found 1
+services\structured_logging.py:38:1: E302 expected 2 blank lines, found 1
+services\structured_logging.py:42:1: E302 expected 2 blank lines, found 1
+services\structured_logging.py:49:1: W293 blank line contains whitespace
+services\structured_logging.py:58:1: W293 blank line contains whitespace
+services\structured_logging.py:64:1: W293 blank line contains whitespace
+services\structured_logging.py:73:1: W293 blank line contains whitespace
+services\structured_logging.py:83:1: W293 blank line contains whitespace
+services\structured_logging.py:89:1: W293 blank line contains whitespace
+services\structured_logging.py:94:1: W293 blank line contains whitespace
+services\structured_logging.py:98:1: W293 blank line contains whitespace
+services\structured_logging.py:105:1: W293 blank line contains whitespace
+services\structured_logging.py:109:1: W293 blank line contains whitespace
+services\structured_logging.py:119:1: W293 blank line contains whitespace
+services\structured_logging.py:131:1: W293 blank line contains whitespace
+services\structured_logging.py:146:1: W293 blank line contains whitespace
+services\structured_logging.py:150:1: W293 blank line contains whitespace
+services\structured_logging.py:152:1: W293 blank line contains whitespace
+services\structured_logging.py:158:1: W293 blank line contains whitespace
+services\structured_logging.py:163:1: W293 blank line contains whitespace
+services\structured_logging.py:168:1: W293 blank line contains whitespace
+services\structured_logging.py:173:1: W293 blank line contains whitespace
+services\structured_logging.py:178:1: W293 blank line contains whitespace
+services\structured_logging.py:181:9: F841 local variable 'log_level' is assigned to but never used
+services\structured_logging.py:182:1: W293 blank line contains whitespace
+services\structured_logging.py:184:13: F541 f-string is missing placeholders
+services\structured_logging.py:193:1: W293 blank line contains whitespace
+services\structured_logging.py:214:1: W293 blank line contains whitespace
+services\structured_logging.py:233:1: W293 blank line contains whitespace
+services\structured_logging.py:236:1: W293 blank line contains whitespace
+services\structured_logging.py:241:1: W293 blank line contains whitespace
+services\structured_logging.py:245:1: W293 blank line contains whitespace
+services\structured_logging.py:263:1: W293 blank line contains whitespace
+services\structured_logging.py:276:1: W293 blank line contains whitespace
+services\structured_logging.py:283:101: E501 line too long (101 > 100 characters)
+services\structured_logging.py:294:1: W293 blank line contains whitespace
+services\structured_logging.py:306:1: W293 blank line contains whitespace
+services\structured_logging.py:312:101: E501 line too long (101 > 100 characters)
+services\structured_logging.py:323:1: E305 expected 2 blank lines after class or function definition, found 1
+services\structured_logging.py:330:1: W293 blank line contains whitespace
+services\structured_logging.py:333:1: W293 blank line contains whitespace
+services\structured_logging.py:337:1: W293 blank line contains whitespace
+services\structured_logging.py:339:96: W292 no newline at end of file
 services\task_status.py:72:101: E501 line too long (104 > 100 characters)
 services\template_utils.py:207:101: E501 line too long (106 > 100 characters)
 services\template_utils.py:406:5: E129 visually indented line with same indent as next logical line
 services\template_utils.py:409:1: W391 blank line at end of file
+services\workflow_builder.py:14:1: F401 'services.workflow_helpers.QWEN_WORKFLOW_FILE' imported but unused
+services\workflow_builder.py:14:1: F401 'services.workflow_helpers._EXTRACTION_TEMPLATES' imported but unused
+services\workflow_builder.py:14:1: F401 'services.workflow_helpers._REFINE_LORA_STRENGTH' imported but unused
+services\workflow_builder.py:14:1: F401 'services.workflow_helpers._REFINE_SCALE_LENGTH' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._build_character_fusion_step' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._detect_age_in_prompt' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._detect_fusion_type' imported but unused
-services\workflow_builder.py:14:1: F401 'services.workflow_helpers._EXTRACTION_TEMPLATES' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._get_denoise_sequence' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._infer_saveimage_type' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._load_workflow' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._load_workflow_template' imported but unused
-services\workflow_builder.py:14:1: F401 'services.workflow_helpers._REFINE_LORA_STRENGTH' imported but unused
-services\workflow_builder.py:14:1: F401 'services.workflow_helpers._REFINE_SCALE_LENGTH' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._resolve_comfyui_image' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._resolve_template_asset' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._set_clip_text' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._set_filename_prefix' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._set_ksampler_params' imported but unused
 services\workflow_builder.py:14:1: F401 'services.workflow_helpers._set_reference_image' imported but unused
-services\workflow_builder.py:14:1: F401 'services.workflow_helpers.QWEN_WORKFLOW_FILE' imported but unused
 services\workflow_builder.py:49:1: F401 'services.workflow_core._build_fallback_workflow' imported but unused
-services\workflow_character.py:104:1: E302 expected 2 blank lines, found 0
 services\workflow_character.py:17:1: F401 'copy' imported but unused
 services\workflow_character.py:18:1: F401 'json' imported but unused
-services\workflow_character.py:183:101: E501 line too long (122 > 100 characters)
-services\workflow_character.py:185:1: E302 expected 2 blank lines, found 0
 services\workflow_character.py:20:1: F401 'os' imported but unused
 services\workflow_character.py:21:1: F401 're' imported but unused
+services\workflow_character.py:24:1: F401 'shutil' imported but unused
+services\workflow_character.py:25:1: F401 'pathlib.Path' imported but unused
+services\workflow_character.py:27:1: F401 'urllib.parse.urlparse' imported but unused
+services\workflow_character.py:27:1: F401 'urllib.parse.parse_qs' imported but unused
+services\workflow_character.py:31:1: E302 expected 2 blank lines, found 1
+services\workflow_character.py:83:32: E127 continuation line over-indented for visual indent
+services\workflow_character.py:104:1: E302 expected 2 blank lines, found 0
+services\workflow_character.py:183:101: E501 line too long (122 > 100 characters)
+services\workflow_character.py:185:1: E302 expected 2 blank lines, found 0
 services\workflow_character.py:229:101: E501 line too long (113 > 100 characters)
 services\workflow_character.py:238:101: E501 line too long (132 > 100 characters)
-services\workflow_character.py:24:1: F401 'shutil' imported but unused
 services\workflow_character.py:240:1: E302 expected 2 blank lines, found 0
-services\workflow_character.py:25:1: F401 'pathlib.Path' imported but unused
-services\workflow_character.py:27:1: F401 'urllib.parse.parse_qs' imported but unused
-services\workflow_character.py:27:1: F401 'urllib.parse.urlparse' imported but unused
 services\workflow_character.py:300:22: F821 undefined name '_resolve_template_asset'
 services\workflow_character.py:307:23: F821 undefined name '_resolve_template_asset'
-services\workflow_character.py:31:1: E302 expected 2 blank lines, found 1
 services\workflow_character.py:314:22: F821 undefined name '_resolve_template_asset'
 services\workflow_character.py:337:21: F541 f-string is missing placeholders
 services\workflow_character.py:344:21: F541 f-string is missing placeholders
 services\workflow_character.py:351:21: F541 f-string is missing placeholders
-services\workflow_character.py:83:32: E127 continuation line over-indented for visual indent
-services\workflow_core.py:174:101: E501 line too long (126 > 100 characters)
-services\workflow_core.py:174:102: E231 missing whitespace after ','
-services\workflow_core.py:174:116: E231 missing whitespace after ','
+services\workflow_core.py:25:1: F401 'os' imported but unused
+services\workflow_core.py:26:1: F401 're' imported but unused
+services\workflow_core.py:29:1: F401 'shutil' imported but unused
+services\workflow_core.py:32:1: F401 'urllib.parse.urlparse' imported but unused
+services\workflow_core.py:32:1: F401 'urllib.parse.parse_qs' imported but unused
+services\workflow_core.py:36:1: E302 expected 2 blank lines, found 1
+services\workflow_core.py:51:1: W293 blank line contains whitespace
+services\workflow_core.py:56:1: W293 blank line contains whitespace
+services\workflow_core.py:67:1: W293 blank line contains whitespace
+services\workflow_core.py:85:28: F541 f-string is missing placeholders
+services\workflow_core.py:86:101: E501 line too long (102 > 100 characters)
 services\workflow_core.py:174:28: E231 missing whitespace after ','
 services\workflow_core.py:174:42: E231 missing whitespace after ','
 services\workflow_core.py:174:56: E231 missing whitespace after ','
 services\workflow_core.py:174:73: E231 missing whitespace after ','
 services\workflow_core.py:174:88: E231 missing whitespace after ','
+services\workflow_core.py:174:101: E501 line too long (126 > 100 characters)
+services\workflow_core.py:174:102: E231 missing whitespace after ','
+services\workflow_core.py:174:116: E231 missing whitespace after ','
 services\workflow_core.py:186:101: E501 line too long (122 > 100 characters)
 services\workflow_core.py:240:101: E501 line too long (108 > 100 characters)
 services\workflow_core.py:243:101: E501 line too long (137 > 100 characters)
-services\workflow_core.py:25:1: F401 'os' imported but unused
 services\workflow_core.py:254:101: E501 line too long (145 > 100 characters)
-services\workflow_core.py:26:1: F401 're' imported but unused
 services\workflow_core.py:262:101: E501 line too long (101 > 100 characters)
 services\workflow_core.py:263:101: E501 line too long (145 > 100 characters)
 services\workflow_core.py:280:1: W293 blank line contains whitespace
 services\workflow_core.py:284:1: W293 blank line contains whitespace
-services\workflow_core.py:29:1: F401 'shutil' imported but unused
 services\workflow_core.py:292:1: W293 blank line contains whitespace
-services\workflow_core.py:32:1: F401 'urllib.parse.parse_qs' imported but unused
-services\workflow_core.py:32:1: F401 'urllib.parse.urlparse' imported but unused
 services\workflow_core.py:324:101: E501 line too long (129 > 100 characters)
 services\workflow_core.py:334:101: E501 line too long (106 > 100 characters)
-services\workflow_core.py:36:1: E302 expected 2 blank lines, found 1
 services\workflow_core.py:403:101: E501 line too long (103 > 100 characters)
 services\workflow_core.py:410:101: E501 line too long (111 > 100 characters)
 services\workflow_core.py:421:101: E501 line too long (128 > 100 characters)
@@ -1052,18 +1055,15 @@ services\workflow_core.py:487:1: W293 blank line contains whitespace
 services\workflow_core.py:492:1: W293 blank line contains whitespace
 services\workflow_core.py:497:1: W293 blank line contains whitespace
 services\workflow_core.py:509:1: W293 blank line contains whitespace
-services\workflow_core.py:51:1: W293 blank line contains whitespace
 services\workflow_core.py:510:101: E501 line too long (117 > 100 characters)
 services\workflow_core.py:528:1: W293 blank line contains whitespace
 services\workflow_core.py:531:1: W293 blank line contains whitespace
 services\workflow_core.py:547:9: F841 local variable '_t0' is assigned to but never used
 services\workflow_core.py:549:1: W293 blank line contains whitespace
-services\workflow_core.py:56:1: W293 blank line contains whitespace
 services\workflow_core.py:565:101: E501 line too long (101 > 100 characters)
 services\workflow_core.py:577:101: E501 line too long (108 > 100 characters)
 services\workflow_core.py:579:1: E302 expected 2 blank lines, found 0
 services\workflow_core.py:664:101: E501 line too long (128 > 100 characters)
-services\workflow_core.py:67:1: W293 blank line contains whitespace
 services\workflow_core.py:674:25: F541 f-string is missing placeholders
 services\workflow_core.py:676:101: E501 line too long (152 > 100 characters)
 services\workflow_core.py:685:101: E501 line too long (116 > 100 characters)
@@ -1073,16 +1073,16 @@ services\workflow_core.py:785:101: E501 line too long (135 > 100 characters)
 services\workflow_core.py:794:101: E501 line too long (131 > 100 characters)
 services\workflow_core.py:806:28: F541 f-string is missing placeholders
 services\workflow_core.py:808:21: F541 f-string is missing placeholders
-services\workflow_core.py:85:28: F541 f-string is missing placeholders
 services\workflow_core.py:853:21: F541 f-string is missing placeholders
 services\workflow_core.py:857:9: F841 local variable 'lora' is assigned to but never used
-services\workflow_core.py:86:101: E501 line too long (102 > 100 characters)
 services\workflow_core.py:885:101: E501 line too long (102 > 100 characters)
+services\workflow_helpers.py:7:1: F401 'copy' imported but unused
+services\workflow_helpers.py:12:1: F401 'time' imported but unused
+services\workflow_helpers.py:13:1: F401 'random' imported but unused
+services\workflow_helpers.py:21:1: E302 expected 2 blank lines, found 1
 services\workflow_helpers.py:105:1: E305 expected 2 blank lines after class or function definition, found 0
 services\workflow_helpers.py:112:1: E302 expected 2 blank lines, found 1
-services\workflow_helpers.py:12:1: F401 'time' imported but unused
 services\workflow_helpers.py:127:1: E305 expected 2 blank lines after class or function definition, found 1
-services\workflow_helpers.py:13:1: F401 'random' imported but unused
 services\workflow_helpers.py:141:101: E501 line too long (117 > 100 characters)
 services\workflow_helpers.py:142:1: E302 expected 2 blank lines, found 0
 services\workflow_helpers.py:151:1: W293 blank line contains whitespace
@@ -1095,7 +1095,6 @@ services\workflow_helpers.py:176:1: E302 expected 2 blank lines, found 0
 services\workflow_helpers.py:179:1: W293 blank line contains whitespace
 services\workflow_helpers.py:185:1: W293 blank line contains whitespace
 services\workflow_helpers.py:188:1: W293 blank line contains whitespace
-services\workflow_helpers.py:21:1: E302 expected 2 blank lines, found 1
 services\workflow_helpers.py:235:5: F841 local variable 'fname' is assigned to but never used
 services\workflow_helpers.py:244:1: W293 blank line contains whitespace
 services\workflow_helpers.py:248:1: W293 blank line contains whitespace
@@ -1115,15 +1114,14 @@ services\workflow_helpers.py:550:5: E301 expected 1 blank line, found 0
 services\workflow_helpers.py:553:5: E301 expected 1 blank line, found 0
 services\workflow_helpers.py:575:101: E501 line too long (104 > 100 characters)
 services\workflow_helpers.py:585:21: F541 f-string is missing placeholders
-services\workflow_helpers.py:619:101: E501 line too long (133 > 100 characters)
 services\workflow_helpers.py:619:76: E231 missing whitespace after ','
+services\workflow_helpers.py:619:101: E501 line too long (133 > 100 characters)
 services\workflow_helpers.py:638:1: E305 expected 2 blank lines after class or function definition, found 0
 services\workflow_helpers.py:650:1: E302 expected 2 blank lines, found 0
-services\workflow_helpers.py:7:1: F401 'copy' imported but unused
+services\workflow_minimax.py:26:1: E305 expected 2 blank lines after class or function definition, found 1
 services\workflow_minimax.py:128:101: E501 line too long (108 > 100 characters)
 services\workflow_minimax.py:129:101: E501 line too long (121 > 100 characters)
 services\workflow_minimax.py:192:93: W292 no newline at end of file
-services\workflow_minimax.py:26:1: E305 expected 2 blank lines after class or function definition, found 1
 services\workflow_params.py:284:101: E501 line too long (108 > 100 characters)
 services\workflow_params.py:303:101: E501 line too long (108 > 100 characters)
 services\workflow_params.py:310:101: E501 line too long (115 > 100 characters)
@@ -1131,49 +1129,49 @@ services\workflow_params.py:311:101: E501 line too long (110 > 100 characters)
 services\workflow_params.py:315:101: E501 line too long (105 > 100 characters)
 services\workflow_params.py:319:101: E501 line too long (108 > 100 characters)
 services\workflow_params.py:340:101: E501 line too long (105 > 100 characters)
+services\workflow_scene.py:20:1: F401 'copy' imported but unused
+services\workflow_scene.py:24:1: F401 're' imported but unused
+services\workflow_scene.py:27:1: F401 'shutil' imported but unused
+services\workflow_scene.py:28:1: F401 'pathlib.Path' imported but unused
+services\workflow_scene.py:30:1: F401 'urllib.parse.urlparse' imported but unused
+services\workflow_scene.py:30:1: F401 'urllib.parse.parse_qs' imported but unused
+services\workflow_scene.py:34:1: E302 expected 2 blank lines, found 1
 services\workflow_scene.py:103:1: E302 expected 2 blank lines, found 0
 services\workflow_scene.py:152:32: E127 continuation line over-indented for visual indent
 services\workflow_scene.py:173:1: E302 expected 2 blank lines, found 0
-services\workflow_scene.py:20:1: F401 'copy' imported but unused
 services\workflow_scene.py:202:33: F821 undefined name '_COMFYUI_OUTPUT_DIR'
-services\workflow_scene.py:24:1: F401 're' imported but unused
 services\workflow_scene.py:241:1: E302 expected 2 blank lines, found 0
-services\workflow_scene.py:27:1: F401 'shutil' imported but unused
-services\workflow_scene.py:28:1: F401 'pathlib.Path' imported but unused
 services\workflow_scene.py:290:1: E302 expected 2 blank lines, found 0
-services\workflow_scene.py:30:1: F401 'urllib.parse.parse_qs' imported but unused
-services\workflow_scene.py:30:1: F401 'urllib.parse.urlparse' imported but unused
 services\workflow_scene.py:333:5: F811 redefinition of unused 'copy' from line 20
-services\workflow_scene.py:34:1: E302 expected 2 blank lines, found 1
 services\workflow_scene.py:440:1: E302 expected 2 blank lines, found 0
 services\workflow_scene.py:478:1: E302 expected 2 blank lines, found 0
-services\workflow_storyboard.py:160:101: E501 line too long (104 > 100 characters)
-services\workflow_storyboard.py:250:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:260:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:270:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:280:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:292:9: F541 f-string is missing placeholders
 services\workflow_storyboard.py:32:1: F401 'copy' imported but unused
 services\workflow_storyboard.py:33:1: F401 'json' imported but unused
 services\workflow_storyboard.py:35:1: F401 'os' imported but unused
 services\workflow_storyboard.py:36:1: F401 're' imported but unused
 services\workflow_storyboard.py:39:1: F401 'shutil' imported but unused
 services\workflow_storyboard.py:40:1: F401 'pathlib.Path' imported but unused
-services\workflow_storyboard.py:42:1: F401 'urllib.parse.parse_qs' imported but unused
 services\workflow_storyboard.py:42:1: F401 'urllib.parse.urlparse' imported but unused
+services\workflow_storyboard.py:42:1: F401 'urllib.parse.parse_qs' imported but unused
 services\workflow_storyboard.py:46:1: E302 expected 2 blank lines, found 1
 services\workflow_storyboard.py:87:5: F841 local variable '_t0' is assigned to but never used
+services\workflow_storyboard.py:160:101: E501 line too long (104 > 100 characters)
+services\workflow_storyboard.py:250:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:260:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:270:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:280:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:292:9: F541 f-string is missing placeholders
+services\workflow_storyboard_custom.py:15:1: F401 'time' imported but unused
+services\workflow_storyboard_custom.py:35:101: E501 line too long (119 > 100 characters)
 services\workflow_storyboard_custom.py:129:101: E501 line too long (105 > 100 characters)
 services\workflow_storyboard_custom.py:130:1: W293 blank line contains whitespace
 services\workflow_storyboard_custom.py:143:101: E501 line too long (120 > 100 characters)
-services\workflow_storyboard_custom.py:15:1: F401 'time' imported but unused
 services\workflow_storyboard_custom.py:173:20: F541 f-string is missing placeholders
 services\workflow_storyboard_custom.py:216:101: E501 line too long (102 > 100 characters)
-services\workflow_storyboard_custom.py:35:101: E501 line too long (119 > 100 characters)
-services\workflow_template_service.py:151:101: E501 line too long (105 > 100 characters)
-services\workflow_template_service.py:232:101: E501 line too long (109 > 100 characters)
-services\workflow_template_service.py:261:101: E501 line too long (105 > 100 characters)
-services\ws_service.py:246:101: E501 line too long (106 > 100 characters)
-services\ws_service.py:254:101: E501 line too long (109 > 100 characters)
+services\workflow_template_service.py:152:101: E501 line too long (105 > 100 characters)
+services\workflow_template_service.py:233:101: E501 line too long (109 > 100 characters)
+services\workflow_template_service.py:262:101: E501 line too long (105 > 100 characters)
 services\ws_service.py:28:1: F401 'typing.List' imported but unused
 services\ws_service.py:28:1: F401 'typing.Optional' imported but unused
+services\ws_service.py:246:101: E501 line too long (106 > 100 characters)
+services\ws_service.py:254:101: E501 line too long (109 > 100 characters)

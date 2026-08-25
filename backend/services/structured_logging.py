@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from contextvars import ContextVar
+from services.paths import LOGS_DIR
 
 # 日志级别定义
 class LogLevel:
@@ -103,7 +104,7 @@ class StructuredLogger:
         self.logger.addHandler(console_handler)
         
         # 文件处理器（按时间轮转）— 文件用 UTF-8 编码，中文可读
-        log_dir = Path(__file__).parent.parent / 'logs'
+        log_dir = Path(LOGS_DIR)
         log_dir.mkdir(exist_ok=True)
         
         file_handler = TimedRotatingFileHandler(
@@ -239,7 +240,7 @@ def _configure_root_logger():
     root_logger.addHandler(console_handler)
     
     # 文件 handler — 文件用 UTF-8 编码，中文可读
-    log_dir = Path(__file__).parent.parent / 'logs'
+    log_dir = Path(LOGS_DIR)
     log_dir.mkdir(exist_ok=True)
     
     file_handler = TimedRotatingFileHandler(
@@ -331,7 +332,7 @@ def init_logging(level: int = LogLevel.INFO):
     _configure_root_logger()
     
     # 确保日志目录存在
-    log_dir = Path(__file__).parent.parent / 'logs'
+    log_dir = Path(LOGS_DIR)
     log_dir.mkdir(exist_ok=True)
     
     # 使用标准 logging 打印初始化消息（此时根 logger 已配置为 JSON 格式）

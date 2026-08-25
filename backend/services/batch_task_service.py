@@ -18,6 +18,7 @@
     ├── step_2: storyboard 生成（输入：step_1.concept_asset → 输出：storyboard_asset）
     └── step_3: video 生成（输入：step_2.storyboard_asset → 输出：video_asset）
 """
+from services.paths import BATCHES_DIR
 
 import asyncio
 import json
@@ -35,7 +36,7 @@ from services.asset_service import get_asset_service
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_BATCH_DIR = "data/batches"
+_DEFAULT_BATCH_DIR = BATCHES_DIR
 
 
 @dataclass

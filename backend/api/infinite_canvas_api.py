@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from services.canvas_service import get_canvas_service
 from services.gen_task_manager import get_gen_task_manager
+from services.paths import GENERATED_DIR, UPLOADS_DIR, LIBRARIES_DIR, QC_DIR
 from services.task_status import to_frontend_status, TaskStatus
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/api", tags=["infinite-canvas"])
 
 _BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 _PROJECT_DIR = os.path.dirname(_BASE_DIR)  # 项目根目录
-_UPLOAD_DIR = os.path.join(_BASE_DIR, "data", "uploads")
+_UPLOAD_DIR = UPLOADS_DIR
 _WF_DIR = os.path.join(_PROJECT_DIR, "workflows")
 
 
@@ -891,7 +892,7 @@ async def generate(request: Request):
                             shutil.copy2(src, img_path)
                             logger.info(f"[InfiniteCanvas] 复制图片 {img_name} → ComfyUI input")
                         else:
-                            asset_upload_dir = os.path.join(_BASE_DIR, "data", "uploads")
+                            asset_upload_dir = UPLOADS_DIR
                             src2 = os.path.join(asset_upload_dir, img_name)
                             if os.path.isfile(src2):
                                 os.makedirs(input_dir, exist_ok=True)
@@ -939,7 +940,7 @@ async def generate(request: Request):
             img_in_input = os.path.isfile(os.path.join(input_dir, img_name)) if input_dir else False
             img_in_upload = os.path.isfile(os.path.join(_UPLOAD_DIR, img_name))
             img_in_output = os.path.isfile(os.path.join(output_dir, img_name)) if output_dir else False
-            asset_upload_dir = os.path.join(_BASE_DIR, "data", "uploads")
+            asset_upload_dir = UPLOADS_DIR
             img_in_asset_upload = os.path.isfile(os.path.join(asset_upload_dir, img_name))
             if img_in_input:
                 logger.info(f"[InfiniteCanvas] LoadImage node={nid} image={img_name} ✓ (input)")
@@ -992,7 +993,7 @@ async def _execute_generate_task(comfyui_svc, wf_data, prompt_text: str, gen_typ
             filenames = await comfyui_svc._wait_for_completion(prompt_id, task_type="generate")
             all_filenames = filenames or []
             logger.info(f"[InfiniteCanvas] 生成完成 | prompt_id={prompt_id[:8]} | filenames={all_filenames}")
-            _generated_dir = os.path.join(_BASE_DIR, "data", "generated")
+            _generated_dir = GENERATED_DIR
             for fn in all_filenames:
                 from services.comfyui_service import COMFYUI_DIR
                 fpath = os.path.join(COMFYUI_DIR or "", "output", fn) if COMFYUI_DIR else ""
@@ -1411,7 +1412,7 @@ async def query_image_task(request: Request):
 # ============================================================
 
 # 持久化目录
-_LIB_PERSIST_DIR = os.path.join(_BASE_DIR, "data", "libraries")
+_LIB_PERSIST_DIR = LIBRARIES_DIR
 _LIB_PERSIST_FILE = os.path.join(_LIB_PERSIST_DIR, "library_state.json")
 
 _asset_libraries: dict = {}
@@ -1844,7 +1845,7 @@ async def check_canvas_assets(request: Request):
             continue
         # 检查文件是否存在
         found = False
-        for d in [os.path.join(_BASE_DIR, "data", "generated"), _UPLOAD_DIR]:
+        for d in [GENERATED_DIR, _UPLOAD_DIR]:
             fpath = os.path.join(d, fname)
             if os.path.isfile(fpath):
                 found = True
@@ -2363,7 +2364,7 @@ def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
             return meta.get("qc")
     # 2) 按视频资产 id 在落盘目录找 qc_report_{asset_id}.json
     import os
-    qc_dir = os.path.join("data", "generated", "qc")
+    qc_dir = QC_DIR
     cand = os.path.join(qc_dir, f"qc_report_{asset_id}.json")
     if os.path.exists(cand):
         with open(cand, "r", encoding="utf-8") as f:
@@ -2422,7 +2423,7 @@ async def qc_force_publish(request: Request):
     gate["note"] = f"已强制发布（操作者:{operator}）。原因:{reason}"
 
     # 回写落盘 gate 文件
-    qc_dir = os.path.join("data", "generated", "qc")
+    qc_dir = QC_DIR
     gate_path = os.path.join(qc_dir, f"qc_gate_{asset_id}.json")
     try:
         with open(gate_path, "w", encoding="utf-8") as f:
@@ -2460,7 +2461,7 @@ async def get_qc_history(asset_id: str):
     以及基于首末两次的对比结论（趋势、维度变化、是否从拦截→通过等）。
     """
     import os
-    qc_dir = os.path.join("data", "generated", "qc")
+    qc_dir = QC_DIR
     history_path = os.path.join(qc_dir, f"qc_history_{asset_id}.json")
     if not os.path.exists(history_path):
         return {"success": False, "error": "该资产暂无质检历史", "asset_id": asset_id}

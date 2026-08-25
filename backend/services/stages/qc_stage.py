@@ -13,6 +13,7 @@ import json
 import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from services.paths import QC_DIR
 
 from services.stage_service import StagePlugin, StageDef, AssetRef, AssetProduceResult, get_asset_service
 from services.qc.qc_service import run_qc_async, QcResult
@@ -75,7 +76,7 @@ class QcStage(StagePlugin):
         # 把报告落盘为 json 资产
         asset_svc = get_asset_service()
         report_name = f"qc_report_{video_asset.asset_id}.json"
-        report_dir = os.path.join("data", "generated", "qc")
+        report_dir = QC_DIR
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, report_name)
         with open(report_path, "w", encoding="utf-8") as f:

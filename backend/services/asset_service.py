@@ -8,6 +8,7 @@
 - 版本化（非破坏性迭代）
 - WebSocket 广播（资产变更通知）
 """
+from services.paths import ASSETS_DIR
 
 import json
 import logging
@@ -104,9 +105,7 @@ class AssetService:
     """资产注册表服务"""
 
     def __init__(self, storage_dir: str = ""):
-        self.storage_dir = storage_dir or os.path.join(
-            os.path.dirname(__file__), "..", "assets"
-        )
+        self.storage_dir = storage_dir or ASSETS_DIR
         self._assets: Dict[str, AssetRef] = {}
         self._ws_callbacks: List = []  # WebSocket 广播回调
         self._lock = asyncio.Lock()    # 并发写入锁

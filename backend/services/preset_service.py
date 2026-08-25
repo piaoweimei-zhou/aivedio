@@ -25,6 +25,7 @@ Preset 模型：
 - is_default: 是否为项目的默认预设
 - created_at / updated_at
 """
+from services.paths import PRESETS_DIR
 
 import json
 import logging
@@ -36,7 +37,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-_PRESET_DIR = "data/presets"
+_PRESET_DIR = PRESETS_DIR
 
 
 @dataclass

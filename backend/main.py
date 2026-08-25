@@ -4,6 +4,7 @@
 
 独立部署版本。仅包含导演工作台所需的路由和服务。
 """
+from services.paths import GENERATED_DIR, UPLOADS_DIR, PIPELINES_DIR
 
 import asyncio
 import os
@@ -199,7 +200,7 @@ for r in _routers:
 # ComfyUI 图片代理端点
 # ============================================================
 # 持久化生成图片目录（不受 ComfyUI output 清理影响）
-GENERATED_DIR = os.path.join(os.path.dirname(__file__), "data", "generated")
+# GENERATED_DIR 由 services.paths 提供（T7 收敛）
 os.makedirs(GENERATED_DIR, exist_ok=True)
 logger.info(f"[Director] 持久化图片目录: {GENERATED_DIR}")
 
@@ -227,14 +228,14 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
             raise HTTPException(status_code=400, detail="非法子目录")
     # 搜索路径（按优先级）
     from services.comfyui_service import COMFYUI_DIR
-    _upload_dir = os.path.join(os.path.dirname(__file__), "data", "uploads")
+    _upload_dir = UPLOADS_DIR
     search_dirs = [
         os.path.join(GENERATED_DIR, safe_sub) if safe_sub else GENERATED_DIR,  # 1. 持久化目录（优先）
         _upload_dir,                                        # 2. 上传目录（含 canvas 上传）
         os.path.join(COMFYUI_DIR, "output") if COMFYUI_DIR else "",  # 3. ComfyUI output
     ]
     if pipeline_id:
-        search_dirs.append(os.path.join(os.path.dirname(__file__), "data", "pipelines", pipeline_id))
+        search_dirs.append(os.path.join(PIPELINES_DIR, pipeline_id))
     for d in search_dirs:
         if not d:
             continue
@@ -297,7 +298,7 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
 # ============================================================
 
 # 上传文件静态服务（更具体的路径必须先挂载，否则被 /static/director 拦截）
-_upload_dir = os.path.join(os.path.dirname(__file__), "data", "uploads")
+_upload_dir = UPLOADS_DIR
 os.makedirs(_upload_dir, exist_ok=True)
 app.mount("/static/director/uploads", StaticFiles(directory=_upload_dir), name="uploads_static")
 logger.info(f"[Director] 上传目录: {_upload_dir}")
@@ -314,12 +315,12 @@ app.mount("/static", StaticFiles(directory=_static_root), name="static_root")
 logger.info(f"[Director] 静态根目录: {_static_root}")
 
 # canvas.js 引用 /assets/uploads 路径，映射到上传目录
-_upload_dir_for_assets = os.path.join(os.path.dirname(__file__), "data", "uploads")
+_upload_dir_for_assets = UPLOADS_DIR
 os.makedirs(_upload_dir_for_assets, exist_ok=True)
 app.mount("/assets/uploads", StaticFiles(directory=_upload_dir_for_assets), name="assets_uploads")
 
 # 生成产物静态服务（/output/ → backend/output/）
-from services.providers.provider_utils import OUTPUT_DIR as _GEN_OUTPUT_DIR
+from services.paths import OUTPUT_DIR as _GEN_OUTPUT_DIR
 for _cat in ("output", "script", "graphic", "temp"):
     _cat_dir = os.path.join(_GEN_OUTPUT_DIR, _cat)
     os.makedirs(_cat_dir, exist_ok=True)

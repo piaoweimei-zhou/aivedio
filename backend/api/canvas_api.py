@@ -29,6 +29,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from services.canvas_service import get_canvas_service
+from services.paths import GENERATED_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +441,7 @@ async def submit_msr_video(request: MsrVideoRequest):
             prompt_id = result
             filenames = await comfyui_svc._wait_for_completion(prompt_id, task_type="generate")
             # 确保视频文件持久化到 GENERATED_DIR（_persist_output_files 可能因路径不匹配没复制）
-            generated_dir = os.path.join(_BASE_DIR, "data", "generated")
+            generated_dir = GENERATED_DIR
             os.makedirs(generated_dir, exist_ok=True)
             actual_urls = []
             for fn in (filenames or []):

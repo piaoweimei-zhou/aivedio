@@ -4,6 +4,7 @@ ComfyUI 服务 — 共享工具与常量
 模块级常量、内存/显存监控、参考图分析、视觉缓存、
 工作流输入处理工具函数与数据类（ComfyUIConfig / ComfyUIGenResult / StoryboardStepResult）。
 """
+from services.paths import GENERATED_DIR  # noqa: F401（再导出兼容）
 
 
 
@@ -474,7 +475,7 @@ MAX_CACHE_SIZE = int(os.environ.get("COMFYUI_CACHE_SIZE", 10))  # 最大缓存�
 DISABLE_PROCESS_MANAGEMENT = os.environ.get("DISABLE_PROCESS_MANAGEMENT", "false").lower() in ("true", "1", "yes")
 
 # 持久化生成图片目录（不受 ComfyUI output 清理影响）
-GENERATED_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "generated")
+# GENERATED_DIR 由 services.paths 提供（T7 收敛）
 
 
 def _mem_log(label: str, context: str = "") -> float:

@@ -15,6 +15,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from services.paths import GENERATED_DIR, OUTPUT_DIR, UPLOADS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def parse_size(size: str) -> Tuple[int, int]:
 # 图片保存
 # ============================================================
 
-OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "output")
+# OUTPUT_DIR 由 services.paths 提供（T7 收敛）
 
 
 def output_path_for(filename: str, category: str = "output") -> str:
@@ -247,7 +248,7 @@ def output_file_from_url(url: str) -> Optional[str]:
         if not filename:
             return None
         fname = os.path.basename(filename)
-        _gen_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+        _gen_dir = GENERATED_DIR
         # 1) 持久化目录（含 subfolder 结构）
         if subfolder:
             cand = os.path.join(_gen_dir, subfolder, fname)
@@ -280,19 +281,19 @@ def output_file_from_url(url: str) -> Optional[str]:
     # 3. /static/director/uploads/xxx
     if clean.startswith("/static/director/uploads/"):
         rel = clean[len("/static/director/uploads/"):]
-        _upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "uploads")
+        _upload_dir = UPLOADS_DIR
         return os.path.join(_upload_dir, rel)
 
     # 4. /data/generated/xxx
     if clean.startswith("/data/generated/"):
         rel = clean[len("/data/generated/"):]
-        _gen_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+        _gen_dir = GENERATED_DIR
         return os.path.join(_gen_dir, rel)
 
     # 5. /data/uploads/xxx
     if clean.startswith("/data/uploads/"):
         rel = clean[len("/data/uploads/"):]
-        _upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "uploads")
+        _upload_dir = UPLOADS_DIR
         return os.path.join(_upload_dir, rel)
     return None
 

@@ -159,7 +159,7 @@ def organize_asset_files(
     Returns:
         (organized_urls, skipped): 整理后的 URL 列表 + 未能整理的源列表
     """
-    from services.comfyui_helpers import GENERATED_DIR as _DEF_GEN
+    from services.paths import GENERATED_DIR as _DEF_GEN
     from services.comfyui.config import COMFYUI_DIR as _DEF_COMFYUI
 
     generated_dir = generated_dir or _DEF_GEN

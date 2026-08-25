@@ -7,6 +7,7 @@
 - 视口状态（缩放、平移）
 - 按项目/场景保存和恢复
 """
+from services.paths import CANVAS_DIR
 
 import json
 import logging
@@ -19,7 +20,7 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # 画布数据存储路径
-CANVAS_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "canvas")
+CANVAS_DATA_DIR = CANVAS_DIR  # T7: 收敛
 
 # CanvasNode 允许的字段名
 _NODE_FIELDS = {"node_id", "asset_id", "node_type", "x", "y", "width", "height", "label", "metadata"}

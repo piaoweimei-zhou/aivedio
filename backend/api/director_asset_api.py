@@ -14,6 +14,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from services.asset_service import get_asset_service, ASSET_TYPES, STAGE_TYPES, CONTENT_TYPES
+from services.paths import GENERATED_DIR as PATHS_GENERATED_DIR, UPLOADS_DIR as PATHS_UPLOADS_DIR
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/director/assets", tags=["导演工作台-资产"])
@@ -69,7 +70,7 @@ async def list_content_types():
 
 # ==================== Upload Endpoint ====================
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "uploads")
+UPLOAD_DIR = PATHS_UPLOADS_DIR
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm", ".mov"}
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50MB 上传大小限制
 
@@ -299,7 +300,7 @@ async def cleanup_orphaned_assets(
             from services.comfyui_helpers import GENERATED_DIR
             generated_dir = GENERATED_DIR
         except Exception:
-            generated_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+            generated_dir = PATHS_GENERATED_DIR
     if not comfyui_output_dir:
         try:
             from services.comfyui.config import COMFYUI_OUTPUT_DIR
@@ -393,7 +394,7 @@ async def cleanup_orphan_files(dry_run: bool = Query(True, description="仅统�
     try:
         from services.comfyui_helpers import GENERATED_DIR
     except Exception:
-        GENERATED_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "generated")
+        GENERATED_DIR = PATHS_GENERATED_DIR
 
     # 收集所有被 asset 引用的文件名
     referenced: set = set()
