@@ -35,6 +35,11 @@ backend/output/
 backend/assets/
 backend/static/director/comfyui_output/
 
+# 历史中间产物归档（P3 治理约定）：output/ 与 data/ 下的 _archive_<日期>/ 目录，
+# 用于集中存放历史中间产物/调试脚本/旧报告，移动优先、可逆、不入库；可随时删除释放空间
+backend/output/_archive_*/
+backend/data/_archive_*/
+
 # Runtime input（运行时输入，不入库）
 input/
 

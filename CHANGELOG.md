@@ -5,6 +5,10 @@
 ## [Unreleased]
 
 ### Added
+### P3 中间产物/临时文件治理
+- **output/ 归类**：12 个历史中间产物目录（quick_video_test/script/quality_test/real_video_gen_v2/video_gen/video_v3/proto_gen/graphic/full_gen/batch_gen_2026/pipeline_gen/pipeline_scripts）+ qc_smoke_test.mp4 归档至 ackend/output/_archive_20260825/（42.3MB），output/ 根仅保留当前产物 output/、temp/
+- **data/ 清理**：12 个调试脚本（_whisper/_vad/_tts 系列）+ 33 个历史 oneclick_baseline 报告 + baseline log/selftest_result/_tmp_cur 归档至 ackend/data/_archive_20260825/，保留 8-25 当前回归报告
+- 归档目录带 _archive_<日期> 前缀，位于已被 .gitignore 覆盖的 output/、data/ 下，不入库；**移动优先、可逆**（非删除）
 - G0-G6 门禁体系一键执行脚本 `backend/scripts/gates.py`（P2）
 - 覆盖率门禁（coverage ≥ 65%，G1 子项）
 
