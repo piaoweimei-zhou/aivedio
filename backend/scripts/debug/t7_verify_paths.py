@@ -5,7 +5,8 @@ import os
 import re
 
 BACKEND = r"D:\1\2\director\backend"
-SKIP = ("\\.venv-test", "\\scripts\\debug\\p1_consolidate_paths.py")
+SKIP = ("\\.venv-test", "\\scripts\\debug\\p1_consolidate_paths.py",
+        "t7_verify_paths.py", "verify_mounts.py")
 
 # 残留目录根定义模式（不应再出现，除 paths.py）
 ROOT_DEFS = [
@@ -68,6 +69,8 @@ for root, dirs, files in os.walk(BACKEND):
             continue
         fp = os.path.join(root, fn)
         if any(s in fp for s in SKIP):
+            continue
+        if "services\\paths.py" in fp or "services/paths.py" in fp:
             continue
         with io.open(fp, encoding="utf-8") as f:
             txt = f.read()

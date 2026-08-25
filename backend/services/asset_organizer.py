@@ -160,13 +160,14 @@ def organize_asset_files(
         (organized_urls, skipped): 整理后的 URL 列表 + 未能整理的源列表
     """
     from services.paths import GENERATED_DIR as _DEF_GEN
+    from services.paths import OUTPUT_DIR as _DEF_OUTPUT
     from services.comfyui.config import COMFYUI_DIR as _DEF_COMFYUI
 
     generated_dir = generated_dir or _DEF_GEN
     comfyui_output_dir = comfyui_output_dir or (
         os.path.join(_DEF_COMFYUI, "output") if _DEF_COMFYUI else ""
     )
-    output_dir = output_dir or os.path.join(os.path.dirname(__file__), "..", "output")
+    output_dir = output_dir or _DEF_OUTPUT
 
     project = sanitize_keyword(project_id, FALLBACK_PROJECT)
     stage = sanitize_keyword(stage_id, "asset")
