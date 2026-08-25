@@ -282,6 +282,12 @@ class GenTaskManager:
 
     async def _execute_with_semaphore(self, task_id: str):
         """带并发控制的任务执行"""
+        # ⭐ 修复：已取消任务不占并发槽位（否则 max_concurrent=N 时
+        # N 个已取消任务即可阻塞所有后续任务）
+        task = self._tasks.get(task_id)
+        if task is not None and task.status == "cancelled":
+            logger.info(f"[GenTask] 任务已取消，跳过执行（不占用并发槽位）| id={task_id}")
+            return
         async with self._semaphore:
             await self._execute_task(task_id)
 

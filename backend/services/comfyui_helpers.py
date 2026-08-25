@@ -127,6 +127,22 @@ def _crop_turnaround_to_front_view(
         return None
 
 
+def _vision_service_available() -> bool:
+    """检查视觉分析服务是否可用。
+
+    当前 vision_service 模块从未实现（git 历史亦无），describe 能力不存在，
+    此处显式探测以快速降级：不可用时跳过视觉分析，避免 import 崩溃
+    依赖外层 except 兜底、以及无谓地停止 ComfyUI 释放显存。
+    """
+    try:
+        from services.vision_service import get_vision_service
+
+        vsvc = get_vision_service()
+        return vsvc is not None and hasattr(vsvc, "describe")
+    except Exception:
+        return False
+
+
 async def _analyze_reference_images(
     all_ref_items: List[Dict[str, Any]],
     backend_port: int = 18080,
@@ -142,6 +158,13 @@ async def _analyze_reference_images(
         progress_callback: 进度回调，签名 cb(pct_or_msg, elapsed_sec)
     """
     if not all_ref_items:
+        return
+
+    if not _vision_service_available():
+        logger.warning(
+            "[VisionAnalyze] 视觉分析服务不可用（services/vision_service 未实现），"
+            "跳过参考图视觉描述，模型将无参考图描述生成"
+        )
         return
 
     _analyze_start = time.time()

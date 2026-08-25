@@ -256,10 +256,12 @@ class ComfyUILifecycleProcessMixin:
                     pass
             self._process = None
 
-    def _kill_process_on_port(port: int):
+    def _kill_process_on_port(self, port: int):
         """强制释放指定端口（Windows），防止端口占用导致重启失败
 
         ⭐ Fix 8 配套: 使用 taskkill /F /T /PID 杀进程树，避免孤儿进程残留。
+        ⭐ 修复: 拆分自 process_manager 时遗漏 self 参数，导致
+          self._kill_process_on_port(8188) 调用 TypeError（启动/停止均崩溃）。
         """
         import subprocess as sp  # 避免与 aiohttp 的 subprocess 混淆
 

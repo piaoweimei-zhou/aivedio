@@ -560,39 +560,43 @@ def run_technical_qc(video_path: str) -> Dict[str, Any]:
 # 2. llama-server 按需启停
 # ----------------------------------------------------------------------------
 
+# 模块级 server 进程句柄：并发语义 QC 时多个请求可能同时进出，
+# 用 threading.Lock 保护读写，避免双开抢端口 / 互相误杀。
 _SERVER_PROC: Optional[subprocess.Popen] = None
+_SERVER_LOCK = __import__("threading").Lock()
 
 
 def _start_server() -> bool:
     global _SERVER_PROC
-    if not os.path.exists(LLAMA_SERVER):
-        raise FileNotFoundError(f"未找到 llama-server: {LLAMA_SERVER}")
-    if not os.path.exists(MAIN_MODEL):
-        raise FileNotFoundError(f"未找到主模型: {MAIN_MODEL}")
-    if not os.path.exists(MMPROJ):
-        raise FileNotFoundError(f"未找到 mmproj: {MMPROJ}")
+    with _SERVER_LOCK:
+        if not os.path.exists(LLAMA_SERVER):
+            raise FileNotFoundError(f"未找到 llama-server: {LLAMA_SERVER}")
+        if not os.path.exists(MAIN_MODEL):
+            raise FileNotFoundError(f"未找到主模型: {MAIN_MODEL}")
+        if not os.path.exists(MMPROJ):
+            raise FileNotFoundError(f"未找到 mmproj: {MMPROJ}")
 
-    if _SERVER_PROC is not None and _SERVER_PROC.poll() is None:
-        return True  # 已在运行
+        if _SERVER_PROC is not None and _SERVER_PROC.poll() is None:
+            return True  # 已在运行
 
-    _SERVER_PROC = subprocess.Popen(
-        [
-            LLAMA_SERVER,
-            "-m",
-            MAIN_MODEL,
-            "--mmproj",
-            MMPROJ,
-            "--port",
-            str(QC_PORT),
-            "-ngl",
-            "99",
-            "--host",
-            QC_HOST,
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    # 等就绪
+        _SERVER_PROC = subprocess.Popen(
+            [
+                LLAMA_SERVER,
+                "-m",
+                MAIN_MODEL,
+                "--mmproj",
+                MMPROJ,
+                "--port",
+                str(QC_PORT),
+                "-ngl",
+                "99",
+                "--host",
+                QC_HOST,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    # 等就绪（锁外等待，避免长时间持有锁）
     for _ in range(60):
         try:
             r = httpx.get(f"http://{QC_HOST}:{QC_PORT}/health", timeout=2)
@@ -604,18 +608,66 @@ def _start_server() -> bool:
     return False
 
 
+async def _start_server_async() -> bool:
+    """异步版 _start_server：Popen 后 await asyncio.sleep 等待就绪，
+    避免同步 time.sleep 循环最长 120 秒阻塞整个事件循环。
+
+    ⭐ 供 run_semantic_qc_async 使用（语义 QC 是 async 流程）。
+    """
+    global _SERVER_PROC
+    with _SERVER_LOCK:
+        if not os.path.exists(LLAMA_SERVER):
+            raise FileNotFoundError(f"未找到 llama-server: {LLAMA_SERVER}")
+        if not os.path.exists(MAIN_MODEL):
+            raise FileNotFoundError(f"未找到主模型: {MAIN_MODEL}")
+        if not os.path.exists(MMPROJ):
+            raise FileNotFoundError(f"未找到 mmproj: {MMPROJ}")
+
+        if _SERVER_PROC is not None and _SERVER_PROC.poll() is None:
+            return True  # 已在运行
+
+        _SERVER_PROC = subprocess.Popen(
+            [
+                LLAMA_SERVER,
+                "-m",
+                MAIN_MODEL,
+                "--mmproj",
+                MMPROJ,
+                "--port",
+                str(QC_PORT),
+                "-ngl",
+                "99",
+                "--host",
+                QC_HOST,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    # 等就绪（不阻塞事件循环；锁外等待）
+    for _ in range(60):
+        try:
+            r = httpx.get(f"http://{QC_HOST}:{QC_PORT}/health", timeout=2)
+            if r.status_code == 200:
+                return True
+        except Exception:
+            pass
+        await asyncio.sleep(2)
+    return False
+
+
 def _stop_server() -> None:
     global _SERVER_PROC
-    if _SERVER_PROC is not None:
-        try:
-            _SERVER_PROC.terminate()
-            _SERVER_PROC.wait(timeout=10)
-        except Exception:
+    with _SERVER_LOCK:
+        if _SERVER_PROC is not None:
             try:
-                _SERVER_PROC.kill()
+                _SERVER_PROC.terminate()
+                _SERVER_PROC.wait(timeout=10)
             except Exception:
-                pass
-        _SERVER_PROC = None
+                try:
+                    _SERVER_PROC.kill()
+                except Exception:
+                    pass
+            _SERVER_PROC = None
 
 
 # ----------------------------------------------------------------------------
@@ -804,7 +856,7 @@ async def run_semantic_qc_async(
         msgs = await asyncio.to_thread(_build_messages, video_path, caption)
         return (await _call_qwen_async(msgs)) or {}
     if not _server_healthy():
-        if not _start_server():
+        if not await _start_server_async():
             raise RuntimeError("llama-server 启动失败")
         own = True
     else:
@@ -814,7 +866,7 @@ async def run_semantic_qc_async(
         return (await _call_qwen_async(msgs)) or {}
     finally:
         if own:
-            _stop_server()
+            await asyncio.to_thread(_stop_server)
 
 
 # ----------------------------------------------------------------------------

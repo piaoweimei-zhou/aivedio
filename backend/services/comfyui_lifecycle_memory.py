@@ -56,11 +56,15 @@ class ComfyUILifecycleMemoryMixin:
         except Exception as e:
             logger.warning(f"[VRAM] 释放显存时出错: {e}")
 
-    def _release_vram_for_llama(self):
+    async def _release_vram_for_llama(self):
         """
         ⭐ 为 llama.cpp VL 模型释放显存：停止 ComfyUI
         16GB 显存无法同时运行 llama + ComfyUI，必须交替。
         在视觉分析前调用，确保 Qwen3VL-8B 有足够显存。
+
+        注：本方法改为 async（唯一调用方 _pre_analyze_references 即 async），
+        从而可先 await _close_http_session() 干净关闭共享 session 再停止进程，
+        修复原同步版本直接丢弃 session 无法关闭连接池的问题。
         """
         if self._process is not None and self._process.poll() is None:
             _ram = _get_ram_pct_safe()
@@ -68,8 +72,7 @@ class ComfyUILifecycleMemoryMixin:
                 f"[VRAM] 停止 ComfyUI → 为 llama.cpp (Qwen3VL-8B) 释放显存"
                 f" | RAM_before={_ram:.1f}% | ComfyUI_PID={self._process.pid}"
             )
-            # ⭐ 标记 session 需要重建（同步方法无法 await close）
-            self._http_session = None
+            await self._close_http_session()
             self.stop()
             _ram_after = _get_ram_pct_safe()
             logger.info(
@@ -138,6 +141,20 @@ class ComfyUILifecycleMemoryMixin:
             return True
 
         # ═══════════════════════════════════════════════════════════════
+        # Step 1.5: 视觉分析服务可用性探测（快速降级）
+        # vision_service 未实现 → 跳过停止 ComfyUI + 跳过分析，
+        # 避免无谓的引擎启停（停止后分析必然失败再重启，浪费数分钟）。
+        # ═══════════════════════════════════════════════════════════════
+        from services.comfyui_helpers import _vision_service_available
+
+        if not _vision_service_available():
+            logger.warning(
+                "[VisionPreAnalyze] 视觉分析服务不可用（vision_service 未实现），"
+                "跳过预分析（不停止 ComfyUI，不写入缓存）"
+            )
+            return True
+
+        # ═══════════════════════════════════════════════════════════════
         # Step 2: 停止 ComfyUI，释放显存给 llama.cpp VL
         # ═══════════════════════════════════════════════════════════════
         if progress_callback:
@@ -145,7 +162,7 @@ class ComfyUILifecycleMemoryMixin:
                 progress_callback("🧹 停止生成引擎，准备视觉分析...", 0)
             except Exception:
                 pass
-        self._release_vram_for_llama()
+        await self._release_vram_for_llama()
 
         # ═══════════════════════════════════════════════════════════════
         # Step 3: 并行视觉分析（仅分析未缓存条目）
