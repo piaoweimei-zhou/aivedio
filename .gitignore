@@ -73,3 +73,9 @@ backend/*_out.txt
 
 # 临时中间产物
 backend/_*.txt
+
+# Python cache（全仓）
+.pytest_cache/
+
+# 工业化目录（node_modules + 无关文档，不入库）
+工业化/

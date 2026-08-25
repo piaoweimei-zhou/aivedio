@@ -1,6 +1,6 @@
 # 导演工作台 — AI 视频生产系统全景
 
-> ⚠️ **规划文档**：本文为 2026-06 的全景规划，其中引用的 `video_service.py` 在磁盘上已不存在（视频生成已由 `video_stage` + `gen_task_manager` 承担）。仅供参考，现状以 `README.md` / `docs/系统功能.md` 为准。
+> ⚠️ **规划文档**：本文为 2026-06 的全景规划，其中引用的 `video_service.py` 在磁盘上已不存在（视频生成已由 `video_stage` + `gen_task_manager` 承担）。仅供参考，现状以 `README.md` / `docs/03_操作/系统功能.md` 为准。
 
 > 版本：v2.0 | 2026-06-27  
 > 定位：面向短剧/视频创作者的 AI 辅助全栈生产平台  

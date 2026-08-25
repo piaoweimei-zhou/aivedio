@@ -1,6 +1,6 @@
 """Seedance 视频模型真实端到端验证脚本（非 CI，需 ARK_API_KEY）
 
-用法: .venv-test\\Scripts\\python.exe tests\\test_seedance_live.py
+用法: backend/.venv-test/Scripts/python.exe scripts/debug/seedance_live_check.py
 """
 
 import asyncio

@@ -103,6 +103,6 @@ Provider API Key 统一由**后端 .env 管理**（前端「供应商设置」�
 
 | 类型 | 文档 | 说明 |
 |------|------|------|
-| 现状 | `README.md`、`docs/系统功能.md` | 反映当前实现 |
+| 现状 | `README.md`、`docs/03_操作/系统功能.md` | 反映当前实现 |
 | 规划 | `docs/01_规划/plan.md`、`docs/01_规划/导演工作台架构方案.md`、`docs/01_规划/优化集成.md`、`工业化/` | 目标规划，部分引用已过时的 `pipeline_executor / video_service`，仅供参考 |
-| 分析 | `docs/02_分析/项目分析报告.html`、`docs/comfyui对接诊断报告.md` | 历史诊断与治理建议 |
+| 分析 | `docs/02_分析/项目分析报告.html`、`docs/02_分析/comfyui对接诊断报告.md` | 历史诊断与治理建议 |
