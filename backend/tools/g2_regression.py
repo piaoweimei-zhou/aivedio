@@ -28,6 +28,13 @@ def _check_preconditions() -> list:
     """真实回归前置条件：后端 / ComfyUI / provider key"""
     import urllib.request
 
+    from dotenv import load_dotenv
+
+    # 加载 backend/.env（若存在），保证 provider key 进入环境
+    _env_file = os.path.join(BACKEND, ".env")
+    if os.path.exists(_env_file):
+        load_dotenv(_env_file)
+
     missing = []
     for name, url in [
         ("后端 127.0.0.1:8000", "http://127.0.0.1:8000/health"),
@@ -37,12 +44,11 @@ def _check_preconditions() -> list:
             urllib.request.urlopen(url, timeout=3).close()
         except Exception:
             missing.append(name)
+    # 放宽：只要存在任意含 KEY/TOKEN 的 env 变量即视为已配置 provider key。
+    # （不要求 PROVIDER/MINIMAX/VOLC 交集，避免 ARK_API_KEY 单独配置时误报缺 key）
     keys = [k for k in os.environ if "KEY" in k.upper() or "TOKEN" in k.upper()]
-    has_provider = any(
-        "PROVIDER" in k.upper() or "MINIMAX" in k.upper() or "VOLC" in k.upper() for k in keys
-    )
-    if not has_provider:
-        missing.append("视频 provider key（env 未见 MINIMAX/VOLC/PROVIDER 密钥）")
+    if not keys:
+        missing.append("provider key（backend/.env 或环境变量未见 KEY/TOKEN 密钥）")
     return missing
 
 
@@ -108,7 +114,8 @@ def full(runs: int, host: str):
     import asyncio
 
     sys.argv = ["g2_regression", "--runs", str(runs), "--host", host]
-    return asyncio.run(main_async())
+    args = parse_args()
+    return asyncio.run(main_async(args))
 
 
 def main():
