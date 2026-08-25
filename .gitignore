@@ -64,6 +64,7 @@ docs/99_归档/
 
 # coverage
 backend/.coverage
+.coverage
 backend/htmlcov/
 backend/coverage.xml
 
