@@ -14,6 +14,7 @@
     python tools/g2_regression.py                 # 契约冒烟
     python tools/g2_regression.py --full --runs 3 # 真实回归 3 轮
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,16 +27,20 @@ BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def _check_preconditions() -> list:
     """真实回归前置条件：后端 / ComfyUI / provider key"""
     import urllib.request
+
     missing = []
-    for name, url in [("后端 127.0.0.1:8000", "http://127.0.0.1:8000/health"),
-                      ("ComfyUI 127.0.0.1:8188", "http://127.0.0.1:8188/system_stats")]:
+    for name, url in [
+        ("后端 127.0.0.1:8000", "http://127.0.0.1:8000/health"),
+        ("ComfyUI 127.0.0.1:8188", "http://127.0.0.1:8188/system_stats"),
+    ]:
         try:
             urllib.request.urlopen(url, timeout=3).close()
         except Exception:
             missing.append(name)
     keys = [k for k in os.environ if "KEY" in k.upper() or "TOKEN" in k.upper()]
-    has_provider = any("PROVIDER" in k.upper() or "MINIMAX" in k.upper()
-                       or "VOLC" in k.upper() for k in keys)
+    has_provider = any(
+        "PROVIDER" in k.upper() or "MINIMAX" in k.upper() or "VOLC" in k.upper() for k in keys
+    )
     if not has_provider:
         missing.append("视频 provider key（env 未见 MINIMAX/VOLC/PROVIDER 密钥）")
     return missing
@@ -44,6 +49,7 @@ def _check_preconditions() -> list:
 def smoke():
     """契约冒烟：steps 构造 → 后端接受 → DAG 生成"""
     import logging
+
     # Windows 下 RotatingFileHandler 滚动偶发文件锁，吞掉 logging 内部异常避免污染 stderr
     logging.raiseExceptions = False
     sys.path.insert(0, BACKEND)
@@ -52,6 +58,7 @@ def smoke():
     from tools.baseline_oneclick import build_oneclick_steps
 
     import main
+
     steps = build_oneclick_steps(provider="comfyui", topic="一只会做饭的橘猫在厨房里做番茄炒蛋")
     assert len(steps) >= 6, f"steps 应含全链路(≥6), 实际 {len(steps)}"
     stage_ids = [s["stage_id"] for s in steps]
@@ -59,11 +66,14 @@ def smoke():
 
     with TestClient(main.app) as client:
         # 创建 batch
-        r = client.post("/api/director/batches", json={
-            "name": f"G2契约冒烟-{os.getpid()}",
-            "steps": steps,
-            "stop_on_failure": True,
-        })
+        r = client.post(
+            "/api/director/batches",
+            json={
+                "name": f"G2契约冒烟-{os.getpid()}",
+                "steps": steps,
+                "stop_on_failure": True,
+            },
+        )
         assert r.status_code == 200, f"创建 batch 失败: {r.status_code} {r.text[:200]}"
         batch_id = r.json()["batch"]["batch_id"]
         print(f"[smoke] 创建 batch: {batch_id}")

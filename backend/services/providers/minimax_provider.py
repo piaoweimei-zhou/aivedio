@@ -8,6 +8,7 @@ MiniMax H3 是音视频统一模型，通过本地 ComfyUI 节点（MiniMaxH3Aud
 能力：
 - video：文本→视频（native 模式，含环境音）
 """
+
 import time
 
 from services.provider_service import ProviderPlugin, ProviderResult
@@ -27,8 +28,9 @@ class MinimaxProvider(ProviderPlugin):
     def is_available(self) -> bool:
         return True  # 本地 ComfyUI 服务，由 ComfyUI 生命周期统一管理
 
-    async def generate_image(self, prompt, size="1024x1024", model="",
-                             reference_images=None, **kwargs) -> ProviderResult:
+    async def generate_image(
+        self, prompt, size="1024x1024", model="", reference_images=None, **kwargs
+    ) -> ProviderResult:
         raise NotImplementedError("MiniMax H3 目前仅支持视频生成（文本→视频）")
 
     async def generate_video(
@@ -54,8 +56,13 @@ class MinimaxProvider(ProviderPlugin):
         start = time.time()
 
         if (not width or not height) and aspect_ratio:
-            _map = {"9:16": (480, 864), "16:9": (864, 486), "1:1": (648, 648),
-                    "4:3": (720, 540), "3:4": (540, 720)}
+            _map = {
+                "9:16": (480, 864),
+                "16:9": (864, 486),
+                "1:1": (648, 648),
+                "4:3": (720, 540),
+                "3:4": (540, 720),
+            }
             w, h = _map.get(aspect_ratio, (480, 864))
             width = width or w
             height = height or h
@@ -69,7 +76,7 @@ class MinimaxProvider(ProviderPlugin):
         tts_texts = kwargs.get("tts_texts") or []
         narration = "。".join(t.strip() for t in tts_texts if t and t.strip())
         if narration:
-            prompt = f"{prompt}。台词/旁白：\"{narration}\""
+            prompt = f'{prompt}。台词/旁白："{narration}"'
             logger.info(f"[MiniMaxH3] 人声注入 prompt | 台词={narration[:60]}...")
 
         result = await service.generate_minimax_h3(

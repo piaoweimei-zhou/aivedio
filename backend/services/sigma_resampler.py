@@ -9,6 +9,7 @@ ComfyUI 的 ManualSigmas 节点用逗号分隔的 sigma 列表控制步数，
 - 保留端点：首尾 sigma 值不变，中间线性插值
 - 兼容原格式：输出逗号分隔的字符串
 """
+
 from typing import List
 
 
@@ -44,7 +45,9 @@ def resample_sigmas(original_sigmas: str, target_steps: int) -> str:
         new_sigmas.append(sigma_max + t * (sigma_min - sigma_max))
 
     # 格式化为字符串（保留 6 位小数，去除末尾 0）
-    return ", ".join(f"{s:.6f}".rstrip("0").rstrip(".") if "." in f"{s:.6f}" else f"{s:.6f}" for s in new_sigmas)
+    return ", ".join(
+        f"{s:.6f}".rstrip("0").rstrip(".") if "." in f"{s:.6f}" else f"{s:.6f}" for s in new_sigmas
+    )  # noqa: E501
 
 
 def get_sigma_steps(sigmas_str: str) -> int:

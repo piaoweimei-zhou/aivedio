@@ -60,7 +60,9 @@ class ExtractAllStage(StagePlugin):
             provider = ComfyUIProvider()
             result = await provider.generate_image(
                 prompt="提取三图",
-                reference_images=[{"url": source.urls[0], "role": "reference", "type": "reference"}],
+                reference_images=[
+                    {"url": source.urls[0], "role": "reference", "type": "reference"}
+                ],  # noqa: E501
                 template="extract_all",
             )
 
@@ -93,7 +95,9 @@ class ExtractAllStage(StagePlugin):
                 )
                 if new_asset:
                     created_assets.append(new_asset)
-                    logger.info(f"[ExtractAllStage] 创建资产 | type={asset_type} name={new_asset.name} id={new_asset.asset_id}")
+                    logger.info(
+                        f"[ExtractAllStage] 创建资产 | type={asset_type} name={new_asset.name} id={new_asset.asset_id}"  # noqa: E501
+                    )  # noqa: E501
 
             if not created_assets:
                 return self._error_result("未能创建任何提取结果")

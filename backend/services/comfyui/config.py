@@ -6,6 +6,7 @@
 使用方式：
     from services.comfyui.config import COMFYUI_DIR, COMFYUI_OUTPUT_DIR, COMFYUI_INPUT_DIR
 """
+
 import os
 import logging
 from pathlib import Path
@@ -37,10 +38,12 @@ def _detect_comfyui_dir() -> str:
     search_paths = []
     if custom_paths:
         search_paths.extend([p.strip() for p in custom_paths.split(";") if p.strip()])
-    search_paths.extend([
-        os.path.join(os.path.expanduser("~"), ".codebuddy", "comfyui"),
-        os.path.join(os.path.expanduser("~"), "ComfyUI"),
-    ])
+    search_paths.extend(
+        [
+            os.path.join(os.path.expanduser("~"), ".codebuddy", "comfyui"),
+            os.path.join(os.path.expanduser("~"), "ComfyUI"),
+        ]
+    )
     for path in search_paths:
         if os.path.isdir(path) and os.path.isdir(os.path.join(path, "output")):
             return path

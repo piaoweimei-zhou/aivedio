@@ -1,4 +1,5 @@
 """结尾钩子引导框阶段单元测试"""
+
 import os
 import sys
 
@@ -6,7 +7,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.stages.hook_overlay_stage import HookOverlayStage
+from services.stages.hook_overlay_stage import HookOverlayStage  # noqa: E402
 
 
 @pytest.fixture

@@ -7,14 +7,14 @@
 4. 路径遍历防护（filename / subfolder 注入）
 """
 
-import os
-import sys
+import os  # noqa: E402
+import sys  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
-import main  # noqa: F401
+import main  # noqa: E402
 
 client = TestClient(main.app)
 
@@ -48,7 +48,9 @@ print(f"测试文件: subfolder={real_sub} filename={real_name}")
 print("\n[1] 新格式 URL（带 subfolder）")
 r = client.get(f"/api/comfyui/image?filename={real_name}&subfolder={real_sub}")
 check("新格式返回 200", r.status_code == 200, f"status={r.status_code}")
-check("内容类型正确", "image" in (r.headers.get("content-type") or ""), r.headers.get("content-type"))
+check(
+    "内容类型正确", "image" in (r.headers.get("content-type") or ""), r.headers.get("content-type")
+)
 check("内容非空", len(r.content) > 0, f"len={len(r.content)}")
 
 print("\n[2] 旧格式 URL（不带 subfolder，递归回退）")

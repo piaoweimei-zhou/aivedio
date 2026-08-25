@@ -8,7 +8,6 @@
 import asyncio
 import logging
 import os
-import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -18,7 +17,6 @@ from services.provider_service import ProviderPlugin, ProviderResult
 from services.providers.provider_utils import (
     bearer_auth,
     extract_image_from_response,
-    output_file_from_url,
     parse_size,
     reference_to_data_url,
     save_image_to_output,
@@ -52,7 +50,7 @@ class VolcEngineProvider(ProviderPlugin):
         return os.getenv("VOLCENGINE_IMAGE_MODEL", "doubao-seedream-4-5").strip()
 
     def _get_video_model(self) -> str:
-        # 免费额度模型：doubao-seedance-1-0-pro-fast / doubao-seedance-1-0-pro / doubao-seedance-1-0-lite-i2v
+        # 免费额度模型：doubao-seedance-1-0-pro-fast / doubao-seedance-1-0-pro / doubao-seedance-1-0-lite-i2v  # noqa: E501
         # 注意：doubao-seedance-1-5-pro 已下线，勿再使用
         return os.getenv("VOLCENGINE_VIDEO_MODEL", "doubao-seedance-1-0-pro-fast").strip()
 
@@ -68,14 +66,14 @@ class VolcEngineProvider(ProviderPlugin):
         ratio = w / h
         # Seedream 4.x 2K 推荐尺寸（官方文档，均满足最小像素要求）
         supported = [
-            (2048, 2048, 1.0),        # 1:1
-            (2304, 1728, 4 / 3),      # 4:3
-            (1728, 2304, 3 / 4),      # 3:4
-            (2848, 1600, 16 / 9),     # 16:9
-            (1600, 2848, 9 / 16),     # 9:16
-            (2496, 1664, 3 / 2),      # 3:2
-            (1664, 2496, 2 / 3),      # 2:3
-            (3136, 1344, 21 / 9),     # 21:9
+            (2048, 2048, 1.0),  # 1:1
+            (2304, 1728, 4 / 3),  # 4:3
+            (1728, 2304, 3 / 4),  # 3:4
+            (2848, 1600, 16 / 9),  # 16:9
+            (1600, 2848, 9 / 16),  # 9:16
+            (2496, 1664, 3 / 2),  # 3:2
+            (1664, 2496, 2 / 3),  # 2:3
+            (3136, 1344, 21 / 9),  # 21:9
         ]
         best = min(supported, key=lambda s: abs(s[2] - ratio))
         return f"{best[0]}x{best[1]}"
@@ -86,7 +84,7 @@ class VolcEngineProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         api_key = self._get_api_key()
@@ -151,7 +149,7 @@ class VolcEngineProvider(ProviderPlugin):
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         api_key = self._get_api_key()
@@ -258,7 +256,7 @@ class VolcEngineProvider(ProviderPlugin):
         max_tokens: int = 4096,
         response_format: Optional[Dict[str, Any]] = None,
         history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """文本生成 — 方舟 OpenAI 兼容 /chat/completions（豆包系列）"""
         start = time.time()

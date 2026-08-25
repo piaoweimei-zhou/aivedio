@@ -11,8 +11,7 @@ Script 感知：当输入的 video 资产携带 sibling_asset_ids（来自 scrip
 import asyncio
 import logging
 import os
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin, collect_content_type
@@ -75,8 +74,7 @@ class EditStage(StagePlugin):
 
         # 自动判断：如果有多个片段且 mode=concat，自动拼接
         has_siblings = any(
-            a.metadata.get("sibling_asset_ids")
-            or a.metadata.get("script_asset_id")
+            a.metadata.get("sibling_asset_ids") or a.metadata.get("script_asset_id")
             for a in input_assets
         )
         if has_siblings and mode == "concat" and len(video_urls) > 1:
@@ -133,7 +131,9 @@ class EditStage(StagePlugin):
             )
 
     def _collect_video_clips(
-        self, input_assets: List[AssetRef], asset_svc,
+        self,
+        input_assets: List[AssetRef],
+        asset_svc,
     ) -> List[AssetRef]:
         """收集所有视频片段（input 主资产 + sibling_asset_ids 展开）
 
@@ -163,19 +163,20 @@ class EditStage(StagePlugin):
                 return int(a.metadata.get("act_index", 999))
             except Exception:
                 return 999
+
         clips.sort(key=_act_index)
         return clips
 
     async def _concat_videos(self, video_urls: List[str]) -> str:
         """使用 ffmpeg 拼接视频"""
-        import tempfile
         import uuid
 
         # 检查 ffmpeg（FFMPEG_PATH 可能指向 bin 目录，需解析出 ffmpeg.exe）
         ffmpeg = _ffmpeg_bin()
         try:
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-version",
+                ffmpeg,
+                "-version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -187,11 +188,15 @@ class EditStage(StagePlugin):
 
         # 下载远程视频到临时文件
         from services.providers.provider_utils import output_path_for, output_url_for
+
         temp_files = []
         for url in video_urls:
             if url.startswith(("http://", "https://")):
                 import httpx
-                async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=300.0)) as client:
+
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(connect=20.0, read=300.0)
+                ) as client:  # noqa: E501
                     resp = await client.get(url)
                     resp.raise_for_status()
                     temp_path = output_path_for(f"temp_{uuid.uuid4().hex[:8]}.mp4", "temp")
@@ -201,6 +206,7 @@ class EditStage(StagePlugin):
             else:
                 # 本地路径
                 from services.providers.provider_utils import output_file_from_url
+
                 local = output_file_from_url(url)
                 if local and os.path.exists(local):
                     temp_files.append(local)
@@ -219,14 +225,25 @@ class EditStage(StagePlugin):
 
         output_file = output_path_for(f"edit_{uuid.uuid4().hex[:8]}.mp4", "output")
         proc = await asyncio.create_subprocess_exec(
-            ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concat_file,
-            "-c", "copy", output_file,
+            ffmpeg,
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            concat_file,
+            "-c",
+            "copy",
+            output_file,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"ffmpeg concat 失败: {stderr.decode('utf-8', errors='replace')[:500]}")
+            raise RuntimeError(
+                f"ffmpeg concat 失败: {stderr.decode('utf-8', errors='replace')[:500]}"
+            )  # noqa: E501
 
         # 清理临时文件
         try:
@@ -241,7 +258,11 @@ class EditStage(StagePlugin):
         import uuid
 
         ffmpeg = _ffmpeg_bin()
-        from services.providers.provider_utils import output_file_from_url, output_path_for, output_url_for
+        from services.providers.provider_utils import (
+            output_file_from_url,
+            output_path_for,
+            output_url_for,
+        )  # noqa: E501
 
         local = output_file_from_url(video_url)
         if not local or not os.path.exists(local):
@@ -262,7 +283,9 @@ class EditStage(StagePlugin):
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"ffmpeg trim 失败: {stderr.decode('utf-8', errors='replace')[:500]}")
+            raise RuntimeError(
+                f"ffmpeg trim 失败: {stderr.decode('utf-8', errors='replace')[:500]}"
+            )
 
         return output_url_for(os.path.basename(output_file), "output")
 
@@ -288,9 +311,7 @@ class EditStage(StagePlugin):
         total_duration = n_segments * seg_dur - (n_segments - 1) * transition_dur
         return seg_dur, n_segments, transition_dur, total_duration
 
-    async def _beat_sync_videos(
-        self, video_urls: List[str], params: Dict[str, Any]
-    ) -> str:
+    async def _beat_sync_videos(self, video_urls: List[str], params: Dict[str, Any]) -> str:
         """卡点剪辑：按 BGM 节拍切段 + xfade 转场 + 合成 BGM 混音"""
         import uuid
 
@@ -323,9 +344,7 @@ class EditStage(StagePlugin):
         seg_sources = [local_paths[i % len(local_paths)] for i in range(n_segments)]
 
         # xfade 转场链（视频）
-        video_path = await self._xfade_chain(
-            seg_sources, transition, seg_dur, transition_dur
-        )
+        video_path = await self._xfade_chain(seg_sources, transition, seg_dur, transition_dur)
 
         # 合成 BGM 音轨
         bgm_path = output_path_for(f"beat_bgm_{uuid.uuid4().hex[:8]}.wav", "temp")
@@ -333,11 +352,23 @@ class EditStage(StagePlugin):
 
         # 混音（视频 + BGM）
         final_path = output_path_for(f"beat_{uuid.uuid4().hex[:8]}.mp4", "output")
-        await run_ffmpeg([
-            "-y", "-i", video_path, "-i", bgm_path,
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest",
-            final_path,
-        ])
+        await run_ffmpeg(
+            [
+                "-y",
+                "-i",
+                video_path,
+                "-i",
+                bgm_path,
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                final_path,
+            ]
+        )
 
         # 清理临时文件
         for p in [video_path, bgm_path]:
@@ -349,8 +380,11 @@ class EditStage(StagePlugin):
         return output_url_for(os.path.basename(final_path), "output")
 
     async def _xfade_chain(
-        self, seg_sources: List[str], transition: str,
-        seg_dur: float, transition_dur: float,
+        self,
+        seg_sources: List[str],
+        transition: str,
+        seg_dur: float,
+        transition_dur: float,
     ) -> str:
         """用 xfade 把多段视频串成转场链（每段裁剪到 seg_dur）"""
         import uuid
@@ -365,9 +399,7 @@ class EditStage(StagePlugin):
 
         filters = []
         for i in range(len(seg_sources)):
-            filters.append(
-                f"[{i}:v]trim=duration={seg_dur:.3f},setpts=PTS-STARTPTS[v{i}]"
-            )
+            filters.append(f"[{i}:v]trim=duration={seg_dur:.3f},setpts=PTS-STARTPTS[v{i}]")
 
         prev = "v0"
         for i in range(1, len(seg_sources)):
@@ -382,18 +414,32 @@ class EditStage(StagePlugin):
         filters.append(f"[{prev}]format=yuv420p[vout]")
 
         output_file = output_path_for(f"beat_video_{uuid.uuid4().hex[:8]}.mp4", "temp")
-        await run_ffmpeg([
-            "-y"] + inputs + [
-            "-filter_complex", ";".join(filters),
-            "-map", "[vout]", "-an",
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-            output_file,
-        ])
+        await run_ffmpeg(
+            ["-y"]
+            + inputs
+            + [
+                "-filter_complex",
+                ";".join(filters),
+                "-map",
+                "[vout]",
+                "-an",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "20",
+                output_file,
+            ]
+        )
         return output_file
 
     @staticmethod
     def _synthesize_beat_track(
-        bpm: float, duration: float, sfx: str, output_path: str,
+        bpm: float,
+        duration: float,
+        sfx: str,
+        output_path: str,
         sample_rate: int = 44100,
     ) -> None:
         """用 numpy 合成卡点 BGM 音轨（kick + hihat + bass + 转场音效）"""

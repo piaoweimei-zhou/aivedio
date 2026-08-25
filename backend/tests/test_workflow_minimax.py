@@ -1,10 +1,11 @@
 """MiniMax H3 视频工作流构建器单元测试（不依赖 ComfyUI/GPU）"""
+
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.workflow_minimax import (
+from services.workflow_minimax import (  # noqa: E402
     build_minimax_h3_video_workflow,
     frames_for_duration,
     resolve_minimax_size,
@@ -38,8 +39,13 @@ def test_resolve_minimax_size_align32():
 
 def test_build_workflow_prompt_injected():
     wf = build_minimax_h3_video_workflow(
-        prompt="一只橘猫趴在窗台晒太阳", width=480, height=864, duration_seconds=5, seed=42,
-        audio_mode="native", filename_prefix="mmh3_test",
+        prompt="一只橘猫趴在窗台晒太阳",
+        width=480,
+        height=864,
+        duration_seconds=5,
+        seed=42,
+        audio_mode="native",
+        filename_prefix="mmh3_test",
     )
     assert wf["cond"]["class_type"] == "MiniMaxH3AudioConditioningT8"
     assert "橘猫趴在窗台" in wf["cond"]["inputs"]["prompt"]

@@ -24,12 +24,12 @@ class SingleExtractionStage(StagePlugin):
     output_type: str = ""
     template: str = ""
     asset_type: str = ""
-    name_suffix: str = ""               # 资产名后缀，如 "姿态" / "深度图" / "线稿"
-    prompt_text: str = ""               # 传给 provider 的 prompt
+    name_suffix: str = ""  # 资产名后缀，如 "姿态" / "深度图" / "线稿"
+    prompt_text: str = ""  # 传给 provider 的 prompt
     description: str = ""
-    default_method: Optional[str] = None   # None 表示不传 method（如 pose 固定 openpose）
+    default_method: Optional[str] = None  # None 表示不传 method（如 pose 固定 openpose）
     fixed_extraction_type: Optional[str] = None  # 若设置，extraction_type 用此值而非 method
-    input_content_types: List[str] = []     # 空列表表示不限 content_type
+    input_content_types: List[str] = []  # 空列表表示不限 content_type
 
     @classmethod
     def _build_stage_def(cls) -> StageDef:
@@ -90,11 +90,13 @@ class SingleExtractionStage(StagePlugin):
             # 资产名：有 method 时附加，否则只显示后缀
             asset_name = (
                 f"{source.name} {self.name_suffix}({method})"
-                if method else f"{source.name} {self.name_suffix}"
+                if method
+                else f"{source.name} {self.name_suffix}"
             )
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type=self.asset_type,
                 name=asset_name,
                 parent_id=source.asset_id,
@@ -105,9 +107,7 @@ class SingleExtractionStage(StagePlugin):
                 content_type=source.content_type,
             )
 
-            return AssetProduceResult(
-                asset=new_asset, success=True, elapsed_ms=result.elapsed_ms
-            )
+            return AssetProduceResult(asset=new_asset, success=True, elapsed_ms=result.elapsed_ms)
 
         except Exception as e:
             logger.error(f"[{log_tag}] {self.stage_name}失败: {e}")

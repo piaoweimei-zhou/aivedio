@@ -20,7 +20,7 @@ import logging
 import os
 import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
@@ -89,7 +89,8 @@ class ComposeStage(StagePlugin):
 
         try:
             from services.providers.provider_utils import (
-                output_path_for, output_url_for, output_file_from_url
+                output_path_for,
+                output_url_for,
             )
 
             ffmpeg = _ffmpeg_bin()
@@ -101,7 +102,7 @@ class ComposeStage(StagePlugin):
                 return self._error_result("下载素材失败，至少需要 2 个本地文件")
 
             # ── 判断输出是视频还是图片 ──────────────────────────
-            has_video = any(t == "video" for t in asset_types[:len(local_files)])
+            has_video = any(t == "video" for t in asset_types[: len(local_files)])
             output_type = "video" if has_video else "image"
             ext = ".mp4" if output_type == "video" else ".png"
 
@@ -135,23 +136,34 @@ class ComposeStage(StagePlugin):
 
             if output_type == "video":
                 args += [
-                    "-filter_complex", filter_complex,
-                    "-map", "[out]",
-                    "-c:v", "libx264",
-                    "-preset", "medium",
-                    "-crf", "23",
-                    "-pix_fmt", "yuv420p",
+                    "-filter_complex",
+                    filter_complex,
+                    "-map",
+                    "[out]",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "medium",
+                    "-crf",
+                    "23",
+                    "-pix_fmt",
+                    "yuv420p",
                     output_file,
                 ]
             else:
                 args += [
-                    "-filter_complex", filter_complex,
-                    "-map", "[out]",
-                    "-frames:v", "1",
+                    "-filter_complex",
+                    filter_complex,
+                    "-map",
+                    "[out]",
+                    "-frames:v",
+                    "1",
                     output_file,
                 ]
 
-            logger.info(f"[ComposeStage] ffmpeg 命令: {' '.join(args[:8])}... (total {len(args)} args)")
+            logger.info(
+                f"[ComposeStage] ffmpeg 命令: {' '.join(args[:8])}... (total {len(args)} args)"
+            )  # noqa: E501
 
             proc = await asyncio.create_subprocess_exec(
                 *args,
@@ -169,7 +181,7 @@ class ComposeStage(StagePlugin):
             result_url = output_url_for(os.path.basename(output_file), "output")
             elapsed = int((time.time() - start) * 1000)
 
-            source_ids = [a.asset_id for a in input_assets[:len(local_files)]]
+            source_ids = [a.asset_id for a in input_assets[: len(local_files)]]
             new_asset = await self._register_asset_direct(
                 asset_svc,
                 asset_type=output_type,
@@ -184,7 +196,7 @@ class ComposeStage(StagePlugin):
                     "labels": labels,
                     "source_asset_ids": source_ids,
                     "video_url": result_url if output_type == "video" else "",
-                    "source_types": asset_types[:len(local_files)],
+                    "source_types": asset_types[: len(local_files)],
                     "elapsed_ms": elapsed,
                 },
                 content_type="",
@@ -245,12 +257,11 @@ class ComposeStage(StagePlugin):
             # 图片转视频循环（如果整体输出是视频且该路是图片）
             if output_type == "video" and asset_types[i] == "image":
                 # loop image to video, 5s default
-                parts.append(
-                    f"[{i}:v]loop=loop=750:size=1,trim=duration={target_duration or 5}"
-                )
+                parts.append(f"[{i}:v]loop=loop=750:size=1,trim=duration={target_duration or 5}")
                 # loop 后重标号
-                last = parts[-1].split("[")[0]
-                parts[-1] = f"[{i}:v]loop=loop=750:size=1,trim=duration={target_duration or 5},setsar=1[v{i}]"
+                parts[-1] = (
+                    f"[{i}:v]loop=loop=750:size=1,trim=duration={target_duration or 5},setsar=1[v{i}]"  # noqa: E501
+                )
             else:
                 parts.append(f"[{i}:v]setsar=1[v{i}]")
 
@@ -260,12 +271,16 @@ class ComposeStage(StagePlugin):
             tile_w = max(100, (tw - gap * (n - 1)) // n)
             tile_h = th
             for i in range(n):
-                parts.append(f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]")
+                parts.append(
+                    f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]"  # noqa: E501
+                )  # noqa: E501
             # 加标签
             for i in range(n):
                 label = labels[i] if i < len(labels) else ""
                 if label:
-                    parts.append(f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5[t{i}]")
+                    parts.append(
+                        f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5[t{i}]"  # noqa: E501
+                    )  # noqa: E501
                 else:
                     parts.append(f"[s{i}]null[t{i}]")
             # hstack
@@ -277,23 +292,31 @@ class ComposeStage(StagePlugin):
             else:
                 parts.append(f"{inputs}hstack=inputs={n}[stacked]")
             # 拉伸到目标尺寸
-            parts.append(f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]")
+            parts.append(
+                f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]"  # noqa: E501
+            )  # noqa: E501
 
         elif layout == "vertical":
             # 竖向：每路宽=tw，高=(th-gap*(n-1))/n
             tile_w = tw
             tile_h = max(100, (th - gap * (n - 1)) // n)
             for i in range(n):
-                parts.append(f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]")
+                parts.append(
+                    f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]"  # noqa: E501
+                )  # noqa: E501
             for i in range(n):
                 label = labels[i] if i < len(labels) else ""
                 if label:
-                    parts.append(f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5[t{i}]")
+                    parts.append(
+                        f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5[t{i}]"  # noqa: E501
+                    )  # noqa: E501
                 else:
                     parts.append(f"[s{i}]null[t{i}]")
             inputs = "".join(f"[t{i}]" for i in range(n))
             parts.append(f"{inputs}vstack=inputs={n}[stacked]")
-            parts.append(f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]")
+            parts.append(
+                f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]"  # noqa: E501
+            )  # noqa: E501
 
         elif layout == "split_compare":
             # 对比模式：左右 2 路 + 中间 ×/✓
@@ -307,17 +330,21 @@ class ComposeStage(StagePlugin):
                 mark = "×" if i == 0 else "✓"
                 mark_color = "red" if i == 0 else "green"
                 # 缩放
-                parts.append(f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]")
+                parts.append(
+                    f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]"  # noqa: E501
+                )  # noqa: E501
                 # 中央画大字 × 或 ✓
                 parts.append(
-                    f"[s{i}]drawtext=text='{mark}':x=(w-text_w)/2:y=(h-text_h)/2:fontcolor={mark_color}@0.8:fontsize=200:box=1:boxcolor=black@0.3[mk{i}]"
+                    f"[s{i}]drawtext=text='{mark}':x=(w-text_w)/2:y=(h-text_h)/2:fontcolor={mark_color}@0.8:fontsize=200:box=1:boxcolor=black@0.3[mk{i}]"  # noqa: E501
                 )
                 # 左上角小标签
                 if label:
-                    parts.append(f"[mk{i}]drawtext=text='{self._escape(label)}':x=20:y=20:fontcolor=white:fontsize=48:box=1:boxcolor=black@0.6[t{i}]")
+                    parts.append(
+                        f"[mk{i}]drawtext=text='{self._escape(label)}':x=20:y=20:fontcolor=white:fontsize=48:box=1:boxcolor=black@0.6[t{i}]"  # noqa: E501
+                    )  # noqa: E501
                 else:
                     parts.append(f"[mk{i}]null[t{i}]")
-            parts.append(f"[t0][t1]hstack=inputs=2[out]")
+            parts.append("[t0][t1]hstack=inputs=2[out]")
 
         elif layout == "grid":
             # 网格：每路 = (tw-gap*(cols-1))/cols × (th-gap*(rows-1))/rows
@@ -325,10 +352,14 @@ class ComposeStage(StagePlugin):
             tile_w = max(100, (tw - gap * (columns - 1)) // columns)
             tile_h = max(100, (th - gap * (rows - 1)) // rows)
             for i in range(n):
-                parts.append(f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]")
+                parts.append(
+                    f"[v{i}]scale={tile_w}:{tile_h}:force_original_aspect_ratio=decrease,pad={tile_w}:{tile_h}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[s{i}]"  # noqa: E501
+                )  # noqa: E501
                 label = labels[i] if i < len(labels) else ""
                 if label:
-                    parts.append(f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=24:box=1:boxcolor=black@0.5[t{i}]")
+                    parts.append(
+                        f"[s{i}]drawtext=text='{self._escape(label)}':x=10:y=10:fontcolor=white:fontsize=24:box=1:boxcolor=black@0.5[t{i}]"  # noqa: E501
+                    )  # noqa: E501
                 else:
                     parts.append(f"[s{i}]null[t{i}]")
             # 按 row 拼接，再 vstack
@@ -342,11 +373,15 @@ class ComposeStage(StagePlugin):
                 row_outputs.append(row_name)
                 parts.append(f"{inputs}hstack=inputs={len(row_indices)}[{row_name}]")
             if len(row_outputs) == 1:
-                parts.append(f"[{row_outputs[0]}]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]")
+                parts.append(
+                    f"[{row_outputs[0]}]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]"  # noqa: E501
+                )  # noqa: E501
             else:
                 inputs = "".join(f"[{r}]" for r in row_outputs)
                 parts.append(f"{inputs}vstack=inputs={len(row_outputs)}[stacked]")
-                parts.append(f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]")
+                parts.append(
+                    f"[stacked]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:color={bg_color}[out]"  # noqa: E501
+                )  # noqa: E501
 
         else:
             raise ValueError(f"不支持的 layout: {layout}")
@@ -409,7 +444,8 @@ class ComposeStage(StagePlugin):
         """检查 ffmpeg 是否可用"""
         try:
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-version",
+                ffmpeg,
+                "-version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

@@ -1,4 +1,5 @@
 """pytest 全局配置：确保 services 包可导入"""
+
 import sys
 from pathlib import Path
 

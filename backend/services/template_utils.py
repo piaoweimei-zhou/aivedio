@@ -64,25 +64,26 @@ def safe_filename_prefix(template_id: str) -> str:
     资产注册和 manifest 中仍使用原始 template_id。
     """
     import re
+
     # 提取编号部分（如 T01, T02）
-    m = re.match(r'(T\d+)', template_id)
+    m = re.match(r"(T\d+)", template_id)
     prefix = m.group(1) if m else "TPL"
 
     # 将非 ASCII 字符替换为下划线，然后压缩连续下划线
-    ascii_part = re.sub(r'[^\w]', '_', template_id, flags=re.ASCII)
-    ascii_part = re.sub(r'_+', '_', ascii_part).strip('_')
+    ascii_part = re.sub(r"[^\w]", "_", template_id, flags=re.ASCII)
+    ascii_part = re.sub(r"_+", "_", ascii_part).strip("_")
 
     # 如果 ASCII 部分只剩编号（如 T01），直接用
     # 否则用编号 + 简短后缀
     if ascii_part == prefix or not ascii_part:
         return prefix
     # 取编号 + 下划线后的第一个英文段（如 depth）
-    parts = ascii_part.split('_')
+    parts = ascii_part.split("_")
     segments = [prefix]
     for p in parts[1:]:
-        if p and re.match(r'^[a-zA-Z]', p):
+        if p and re.match(r"^[a-zA-Z]", p):
             segments.append(p)
-    return '_'.join(segments) if len(segments) > 1 else prefix
+    return "_".join(segments) if len(segments) > 1 else prefix
 
 
 def read_manifest() -> Optional[Dict[str, Any]]:
@@ -108,6 +109,7 @@ def read_manifest() -> Optional[Dict[str, Any]]:
         # 备份损坏的文件，防止数据丢失
         try:
             import time as _time
+
             backup_path = str(MANIFEST_PATH) + f".corrupted.{int(_time.time())}"
             os.replace(str(MANIFEST_PATH), backup_path)
             logger.info(f"[TemplateUtils] 损坏文件已备份到: {backup_path}")
@@ -195,16 +197,16 @@ async def update_manifest_entry(template_id: str, updates: Dict[str, Any]) -> bo
                 break
         else:
             # template_id 不存在，不追加（应由 batch_extract 创建）
-            logger.warning(
-                f"[TemplateUtils] manifest 中未找到 template_id={template_id}，跳过更新"
-            )
+            logger.warning(f"[TemplateUtils] manifest 中未找到 template_id={template_id}，跳过更新")
             return False
 
         manifest["templates"] = templates
         return write_manifest(manifest)
 
 
-async def atomic_manifest_update(update_fn: Callable[[Dict[str, Any]], Optional[Dict[str, Any]]]) -> bool:
+async def atomic_manifest_update(
+    update_fn: Callable[[Dict[str, Any]], Optional[Dict[str, Any]]],
+) -> bool:  # noqa: E501
     """原子更新 manifest：在异步互斥锁保护下执行 read-modify-write
 
     用法：
@@ -400,10 +402,11 @@ def match_asset_type_by_filename(
         return None
 
     for prefix, (asset_type, label) in type_map.items():
-        if (f"_{prefix}_" in fname_lower
+        if (
+            f"_{prefix}_" in fname_lower
             or f"_{prefix}." in fname_lower
             or fname_lower.startswith(f"{prefix}_")
-            or fname_lower.startswith(f"{prefix}.")):
+            or fname_lower.startswith(f"{prefix}.")
+        ):
             return (asset_type, label)
     return None
-

@@ -27,10 +27,10 @@ from services.providers.provider_utils import output_file_from_url, output_path_
 logger = logging.getLogger(__name__)
 
 _FONT_CANDIDATES = [
-    "C:/Windows/Fonts/msyhbd.ttc",   # 微软雅黑粗体
-    "C:/Windows/Fonts/msyh.ttc",     # 微软雅黑
-    "C:/Windows/Fonts/simhei.ttf",   # 黑体
-    "C:/Windows/Fonts/simsun.ttc",   # 宋体
+    "C:/Windows/Fonts/msyhbd.ttc",  # 微软雅黑粗体
+    "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+    "C:/Windows/Fonts/simhei.ttf",  # 黑体
+    "C:/Windows/Fonts/simsun.ttc",  # 宋体
     # Linux/CI 常见字体
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -97,13 +97,20 @@ class HookOverlayStage(StagePlugin):
             static_xy = f"x=(W-w)/2:y={y_expr}"
             final_xy = overlay_xy if animate else f"{static_xy}:enable=gte(t\\,{start:.2f})"
             output_file = output_path_for(f"hook_{uuid.uuid4().hex[:8]}.mp4", "output")
-            await ffmpeg_utils.run_ffmpeg([
-                "-y", "-i", local_video, "-i", overlay_file,
-                "-filter_complex",
-                f"[0:v][1:v]overlay={final_xy}",
-                "-c:a", "copy",
-                output_file,
-            ])
+            await ffmpeg_utils.run_ffmpeg(
+                [
+                    "-y",
+                    "-i",
+                    local_video,
+                    "-i",
+                    overlay_file,
+                    "-filter_complex",
+                    f"[0:v][1:v]overlay={final_xy}",
+                    "-c:a",
+                    "copy",
+                    output_file,
+                ]
+            )
 
             out_url = output_url_for(os.path.basename(output_file), "output")
             new_asset = await self._register_asset_direct(
@@ -131,7 +138,7 @@ class HookOverlayStage(StagePlugin):
 
     def _resolve_margin(self, params: Dict[str, Any], height: int) -> int:
         """计算 overlay 的底部安全边距
-        
+
         默认按视频高度 10% 留白，确保引导框不贴底、避开平台底部 UI 遮挡区；
         用户显式传入 margin 时优先使用用户值。
         """
@@ -149,7 +156,7 @@ class HookOverlayStage(StagePlugin):
 
     def _build_overlay_xy(self, base_y: str, start: float, animate: bool) -> str:
         """构造 overlay 的 x/y 表达式
-        
+
         - 静态：x 居中 + y 固定到最终位
         - 动画（弹跳入场）：x 居中 + y 从最终位下方弹入，阻尼振荡约 1s 稳定。
           以 (t-start) 为时钟：首拍 sin 为正 → y 增大(下移 90px) → 指数衰减振荡回最终位。
@@ -159,14 +166,14 @@ class HookOverlayStage(StagePlugin):
         x = "(W-w)/2"
         if not animate:
             return f"x={x}:y={base_y}"
-        bounce = f"{base_y}+" \
-                 f"(90*exp(-1.6*(t-{start}))*sin((t-{start})*13))"
+        bounce = f"{base_y}+" f"(90*exp(-1.6*(t-{start}))*sin((t-{start})*13))"
         return f"x={x}:y={bounce}:enable=gte(t\\,{start:.2f})"
 
     async def _resolve_overlay_image(self, url: str, video_width: int) -> str:
         """解析自定义钩子图片为本地路径（远程则下载）"""
         if url.startswith(("http://", "https://")):
             import httpx
+
             temp_path = output_path_for(f"hook_{uuid.uuid4().hex[:8]}.png", "temp")
             async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0)) as client:
                 resp = await client.get(url)
@@ -217,7 +224,7 @@ class HookOverlayStage(StagePlugin):
         if sub_font and sub_text:
             sub_color = (255, 255, 255, 255)
             bbox2 = draw.textbbox((0, 0), sub_text, font=sub_font)
-            tw2, th2 = bbox2[2] - bbox2[0], bbox2[3] - bbox2[1]
+            tw2, _ = bbox2[2] - bbox2[0], bbox2[3] - bbox2[1]
             y2 = y + th + int(height * 0.06)
             x2 = (width - tw2) / 2 - bbox2[0]
             draw.text((x2, y2), sub_text, font=sub_font, fill=sub_color)

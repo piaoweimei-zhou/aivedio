@@ -15,12 +15,11 @@
 import asyncio
 import logging
 import os
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
-from services.stages.ffmpeg_utils import _ffmpeg_bin, _ffprobe_bin
+from services.stages.ffmpeg_utils import _ffmpeg_bin
 
 logger = logging.getLogger(__name__)
 
@@ -95,21 +94,30 @@ class ExportStage(StagePlugin):
 
         logger.info(
             f"[ExportStage] 导出 | format={format_} | codec={codec} | source={source.asset_id} "
-            f"| subtitle={'是' if subtitle_url else '否'} | watermark={'是' if watermark_url or text_watermark else '否'} "
+            f"| subtitle={'是' if subtitle_url else '否'} | watermark={'是' if watermark_url or text_watermark else '否'} "  # noqa: E501
             f"| cover={'是' if extract_cover else '否'}"
         )
 
         try:
             # 1. 主视频导出
             result_url = await self._export_video(
-                video_url, format_=format_, codec=codec,
-                resolution=resolution, bitrate=bitrate, fps=fps,
-                subtitle_url=subtitle_url, subtitle_force_style=subtitle_force_style,
-                watermark_url=watermark_url, watermark_position=watermark_position,
-                watermark_opacity=watermark_opacity, watermark_scale=watermark_scale,
+                video_url,
+                format_=format_,
+                codec=codec,
+                resolution=resolution,
+                bitrate=bitrate,
+                fps=fps,
+                subtitle_url=subtitle_url,
+                subtitle_force_style=subtitle_force_style,
+                watermark_url=watermark_url,
+                watermark_position=watermark_position,
+                watermark_opacity=watermark_opacity,
+                watermark_scale=watermark_scale,
                 text_watermark=text_watermark,
-                normalize_audio=normalize_audio, mute=mute,
-                trim_start=trim_start, trim_end=trim_end,
+                normalize_audio=normalize_audio,
+                mute=mute,
+                trim_start=trim_start,
+                trim_end=trim_end,
             )
 
             new_asset = await self._register_asset_direct(
@@ -145,7 +153,7 @@ class ExportStage(StagePlugin):
                             asset_type="image",
                             name=f"{output_name} - 封面",
                             urls=[cover_url],
-                            input_assets=[new_asset] if hasattr(new_asset, 'asset_id') else None,
+                            input_assets=[new_asset] if hasattr(new_asset, "asset_id") else None,
                             extra_metadata={
                                 "source_asset_id": source.asset_id,
                                 "video_asset_id": new_asset.asset_id,
@@ -155,11 +163,16 @@ class ExportStage(StagePlugin):
                             },
                         )
                         # 在视频资产上记录封面资产 ID
-                        await asset_svc.update(new_asset.asset_id, metadata={
-                            "cover_asset_id": cover_asset.asset_id,
-                            "cover_url": cover_url,
-                        })
-                        logger.info(f"[ExportStage] 封面已提取 | cover_asset={cover_asset.asset_id}")
+                        await asset_svc.update(
+                            new_asset.asset_id,
+                            metadata={
+                                "cover_asset_id": cover_asset.asset_id,
+                                "cover_url": cover_url,
+                            },
+                        )
+                        logger.info(
+                            f"[ExportStage] 封面已提取 | cover_asset={cover_asset.asset_id}"
+                        )
                 except Exception as e:
                     logger.warning(f"[ExportStage] 封面提取失败（不影响主流程）: {e}")
 
@@ -200,9 +213,9 @@ class ExportStage(StagePlugin):
         import uuid
 
         ffmpeg = _ffmpeg_bin()
-        ffprobe = _ffprobe_bin()
         from services.providers.provider_utils import (
-            output_file_from_url, output_path_for, output_url_for,
+            output_path_for,
+            output_url_for,
         )
 
         # 检查 ffmpeg
@@ -249,7 +262,6 @@ class ExportStage(StagePlugin):
         # 构建 filter_complex
         filters = []
         audio_filter_str = ""  # 音频滤镜串（并入 filter_complex）
-        overlay_inputs = 0  # 额外输入数量（watermark）
 
         # 分辨率
         if resolution and "x" in resolution:
@@ -310,7 +322,7 @@ class ExportStage(StagePlugin):
         if not mute:
             audio_filters = [
                 "alimiter=limit=0.85:level=false",  # 限幅，防残余满幅爆点
-                "afade=in:st=0:d=0.2",              # 淡入，消除开头突兀
+                "afade=in:st=0:d=0.2",  # 淡入，消除开头突兀
             ]
             if normalize_audio:
                 audio_filters.append("loudnorm=I=-16:TP=-1.5:LRA=11")
@@ -352,7 +364,14 @@ class ExportStage(StagePlugin):
 
         # GIF 特殊处理
         if format_ == "gif":
-            args.extend(["-vf", f"fps={fps or 15},scale={resolution or '480:-1'}:flags=lanczos", "-loop", "0"])
+            args.extend(
+                [
+                    "-vf",
+                    f"fps={fps or 15},scale={resolution or '480:-1'}:flags=lanczos",
+                    "-loop",
+                    "0",
+                ]
+            )  # noqa: E501
 
         # faststart（仅 mp4）
         if format_ == "mp4":
@@ -369,7 +388,7 @@ class ExportStage(StagePlugin):
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode != 0:
-            err_msg = stderr.decode('utf-8', errors='replace')[-800:]
+            err_msg = stderr.decode("utf-8", errors="replace")[-800:]
             raise RuntimeError(f"ffmpeg 导出失败: {err_msg}")
 
         return output_url_for(os.path.basename(output_file), "output")
@@ -382,22 +401,29 @@ class ExportStage(StagePlugin):
         中途停顿（>0.35s）不会被误判。
         """
         import re
+
         try:
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-hide_banner", "-i", local,
-                "-af", "silencedetect=noise=-45dB:d=0.05",
-                "-f", "null", "-",
+                ffmpeg,
+                "-hide_banner",
+                "-i",
+                local,
+                "-af",
+                "silencedetect=noise=-45dB:d=0.05",
+                "-f",
+                "null",
+                "-",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
             _, stderr = await proc.communicate()
-            out = stderr.decode('utf-8', errors='replace')
+            out = stderr.decode("utf-8", errors="replace")
 
             m_start = re.search(r"silence_start:\s*(-?[\d.]+)", out)
             if not m_start:
                 return 0.0
             s = float(m_start.group(1))
-            m_end = re.search(r"silence_end:\s*([\d.]+)", out[m_start.end():])
+            m_end = re.search(r"silence_end:\s*([\d.]+)", out[m_start.end() :])
             if not m_end:
                 return 0.0
             e = float(m_end.group(1))
@@ -413,6 +439,7 @@ class ExportStage(StagePlugin):
     async def _extract_cover(self, video_url: str, time_sec: float) -> str:
         """从视频提取封面图"""
         import uuid
+
         ffmpeg = _ffmpeg_bin()
         from services.providers.provider_utils import output_path_for, output_url_for
 
@@ -421,11 +448,16 @@ class ExportStage(StagePlugin):
 
         cover_file = output_path_for(f"cover_{uuid.uuid4().hex[:8]}.jpg", "output")
         args = [
-            ffmpeg, "-y",
-            "-ss", str(time_sec),
-            "-i", local,
-            "-frames:v", "1",
-            "-q:v", "2",
+            ffmpeg,
+            "-y",
+            "-ss",
+            str(time_sec),
+            "-i",
+            local,
+            "-frames:v",
+            "1",
+            "-q:v",
+            "2",
             cover_file,
         ]
         proc = await asyncio.create_subprocess_exec(
@@ -442,7 +474,8 @@ class ExportStage(StagePlugin):
         """检查 ffmpeg 可用性"""
         try:
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-version",
+                ffmpeg,
+                "-version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -473,6 +506,7 @@ class ExportStage(StagePlugin):
         if url.startswith(("http://", "https://")):
             import httpx
             import uuid
+
             ext = ".mp4"
             if category == "watermark":
                 ext = ".png"

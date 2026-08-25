@@ -13,6 +13,7 @@
 - 不破坏现有 AssetService 接口
 - 轻量级，无数据库依赖
 """
+
 from services.paths import PROJECTS_DIR
 
 import json
@@ -33,10 +34,11 @@ _DEFAULT_PROJECTS_DIR = PROJECTS_DIR
 @dataclass
 class Project:
     """项目数据模型"""
+
     project_id: str
     name: str
     description: str = ""
-    status: str = "active"          # active / archived / completed
+    status: str = "active"  # active / archived / completed
     metadata: Dict[str, Any] = field(default_factory=dict)
     created_at: float = 0.0
     updated_at: float = 0.0
@@ -69,9 +71,9 @@ class ProjectService:
     """项目服务"""
 
     def __init__(self, projects_dir: str = ""):
-        self._projects_dir = Path(projects_dir or os.path.join(
-            os.path.dirname(__file__), "..", _DEFAULT_PROJECTS_DIR
-        ))
+        self._projects_dir = Path(
+            projects_dir or os.path.join(os.path.dirname(__file__), "..", _DEFAULT_PROJECTS_DIR)
+        )
         self._projects: Dict[str, Project] = {}
         self._projects_dir.mkdir(parents=True, exist_ok=True)
         self._load()
@@ -86,8 +88,7 @@ class ProjectService:
         try:
             path = self._project_file(project.project_id)
             path.write_text(
-                json.dumps(project.to_dict(), ensure_ascii=False, indent=2),
-                encoding="utf-8"
+                json.dumps(project.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
             )
         except Exception as e:
             logger.warning(f"[ProjectService] 持久化失败 | id={project.project_id} | error={e}")
@@ -190,6 +191,7 @@ class ProjectService:
 
         # 延迟导入避免循环依赖
         from services.asset_service import get_asset_service
+
         asset_svc = get_asset_service()
         assets = asset_svc.list_assets(project_id=project_id)
 

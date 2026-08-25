@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api/director/assets", tags=["导演工作台-资产"
 
 # ==================== Request Models ====================
 
+
 class CreateAssetRequest(BaseModel):
     asset_type: str
     content_type: str = ""
@@ -45,10 +46,12 @@ class BatchDeleteRequest(BaseModel):
 
 class DeleteChainRequest(BaseModel):
     """一键删除一次成片：从根资产/任一层级删整条生产链（含所有衍生资产+文件）"""
+
     purge_files: bool = True
 
 
 # ==================== Type Endpoints ====================
+
 
 @router.get("/types")
 async def list_asset_types():
@@ -178,6 +181,7 @@ async def proxy_image(url: str = Query(..., description="要代理的图片URL")
 
 # ==================== CRUD Endpoints ====================
 
+
 @router.post("")
 async def create_asset(request: CreateAssetRequest):
     """创建资产"""
@@ -246,7 +250,9 @@ async def update_asset(asset_id: str, request: UpdateAssetRequest):
 
 
 @router.delete("/{asset_id}")
-async def delete_asset(asset_id: str, purge_files: bool = Query(False, description="连带删除磁盘文件")):
+async def delete_asset(
+    asset_id: str, purge_files: bool = Query(False, description="连带删除磁盘文件")
+):
     """删除资产（可选连带删除磁盘文件以释放空间）"""
     svc = get_asset_service()
     ok = await svc.delete(asset_id, purge_files=purge_files)
@@ -256,6 +262,7 @@ async def delete_asset(asset_id: str, purge_files: bool = Query(False, descripti
 
 
 # ==================== Lineage Endpoints ====================
+
 
 @router.get("/{asset_id}/lineage")
 async def get_asset_lineage(asset_id: str):
@@ -274,6 +281,7 @@ async def get_asset_children(asset_id: str):
 
 
 # ==================== Stats Endpoint ====================
+
 
 @router.get("/stats/overview")
 async def get_stats():
@@ -298,12 +306,14 @@ async def cleanup_orphaned_assets(
     if not generated_dir:
         try:
             from services.comfyui_helpers import GENERATED_DIR
+
             generated_dir = GENERATED_DIR
         except Exception:
             generated_dir = PATHS_GENERATED_DIR
     if not comfyui_output_dir:
         try:
             from services.comfyui.config import COMFYUI_OUTPUT_DIR
+
             comfyui_output_dir = COMFYUI_OUTPUT_DIR
         except Exception:
             comfyui_output_dir = ""
@@ -316,6 +326,7 @@ async def cleanup_orphaned_assets(
 
 
 # ==================== 批量 / 链路 / 孤儿清理 ====================
+
 
 @router.post("/batch-delete")
 async def batch_delete_assets(req: BatchDeleteRequest):
@@ -348,7 +359,7 @@ async def delete_asset_chain(asset_id: str, req: Optional[DeleteChainRequest] = 
     以 asset_id 为根，递归收集其所有后代（children 的 children…），
     连同根资产一起删除；purge_files 时连带清理磁盘文件。
     """
-    purge = (req.purge_files if req else True)
+    purge = req.purge_files if req else True
     svc = get_asset_service()
     root = svc.get(asset_id)
     if not root:
@@ -399,6 +410,7 @@ async def cleanup_orphan_files(dry_run: bool = Query(True, description="仅统�
     # 收集所有被 asset 引用的文件名
     referenced: set = set()
     from urllib.parse import urlparse, parse_qs
+
     for a in svc._assets.values():
         for u in a.urls or []:
             p = urlparse(u)
@@ -413,7 +425,9 @@ async def cleanup_orphan_files(dry_run: bool = Query(True, description="仅统�
     if os.path.isdir(GENERATED_DIR):
         for root, _dirs, files in os.walk(GENERATED_DIR):
             for f in files:
-                if not f.lower().endswith((".png", ".jpg", ".jpeg", ".mp4", ".webp", ".flac", ".m4a", ".wav")):
+                if not f.lower().endswith(
+                    (".png", ".jpg", ".jpeg", ".mp4", ".webp", ".flac", ".m4a", ".wav")
+                ):  # noqa: E501
                     continue
                 if f in referenced:
                     continue
@@ -442,6 +456,7 @@ async def cleanup_orphan_files(dry_run: bool = Query(True, description="仅统�
 
 # ==================== Template Manifest Endpoint ====================
 
+
 @router.post("/templates/manifest/{template_id}")
 async def update_template_manifest(template_id: str, updates: Dict[str, Any]):
     """更新模板 manifest 中指定 template_id 的条目
@@ -454,7 +469,10 @@ async def update_template_manifest(template_id: str, updates: Dict[str, Any]):
     - pose_corrected: Pose 修正标记
     - pose_simplified: 简化 Pose 标记
     """
-    from services.template_utils import validate_template_id, update_manifest_entry, TEMPLATE_DIR
+    from services.template_utils import (
+        validate_template_id,
+        update_manifest_entry,
+    )
 
     if not validate_template_id(template_id):
         raise HTTPException(status_code=400, detail=f"template_id 格式不合法: {template_id}")
@@ -488,10 +506,12 @@ async def update_template_manifest(template_id: str, updates: Dict[str, Any]):
             # 从资产表中查找最近上传的修正 Pose 资产
             svc = get_asset_service()
             for a in reversed(svc.list_assets()):
-                if (a.asset_type == "pose"
+                if (
+                    a.asset_type == "pose"
                     and a.metadata
                     and a.metadata.get("template_id") == template_id
-                    and a.metadata.get("extraction_type") == "template_pose_corrected"):
+                    and a.metadata.get("extraction_type") == "template_pose_corrected"
+                ):
                     # 找到修正图资产，将其文件复制到 templates/ 目录
                     src_url = next((u for u in (a.urls or []) if u), "")
                     if src_url:
@@ -506,6 +526,7 @@ async def update_template_manifest(template_id: str, updates: Dict[str, Any]):
 
 
 # ==================== Helper ====================
+
 
 def _asset_dict(asset) -> Dict[str, Any]:
     return {

@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # 重试配置（可通过环境变量覆盖）
 # ============================================================
-import os
+import os  # noqa: E402
+
 RETRY_DELAY_SECS = float(os.environ.get("DAG_RETRY_DELAY_SECS", "1.0"))
 
 
@@ -45,24 +46,24 @@ RETRY_DELAY_SECS = float(os.environ.get("DAG_RETRY_DELAY_SECS", "1.0"))
 # 超时配置（按 stage_id 分类）
 # ============================================================
 STAGE_TIMEOUTS: Dict[str, int] = {
-    "concept":              600,   # 文生图 10分钟（ComfyUI 本地串行，留足时间）
-    "refine":               600,   # 精修图
-    "angle":                600,   # 三视图
-    "pano":                 900,   # 全景图（拼接耗时）
-    "storyboard":           600,   # 分镜
-    "batch_storyboard":     900,   # 批量分镜
-    "multi_person":         600,   # 多人分镜
-    "video":                5400,  # 视频生成 90分钟（LTX-2.3 长视频4×15s分段+拼接≈50分钟）
-    "edit":                 300,   # 视频剪辑 5分钟
-    "export":               120,   # 导出
-    "depth_map":            300,
-    "lineart_extraction":   300,
-    "pose_extraction":      300,
-    "layered_render":       600,
-    "extract_all":          600,
+    "concept": 600,  # 文生图 10分钟（ComfyUI 本地串行，留足时间）
+    "refine": 600,  # 精修图
+    "angle": 600,  # 三视图
+    "pano": 900,  # 全景图（拼接耗时）
+    "storyboard": 600,  # 分镜
+    "batch_storyboard": 900,  # 批量分镜
+    "multi_person": 600,  # 多人分镜
+    "video": 5400,  # 视频生成 90分钟（LTX-2.3 长视频4×15s分段+拼接≈50分钟）
+    "edit": 300,  # 视频剪辑 5分钟
+    "export": 120,  # 导出
+    "depth_map": 300,
+    "lineart_extraction": 300,
+    "pose_extraction": 300,
+    "layered_render": 600,
+    "extract_all": 600,
     "template_batch_extract": 600,
-    "template_clean":       300,
-    "template_pose":        300,
+    "template_clean": 300,
+    "template_pose": 300,
 }
 DEFAULT_TIMEOUT = 600  # 默认 10 分钟
 
@@ -86,6 +87,7 @@ def get_stage_timeout(stage_id: str, params: Dict[str, Any]) -> int:
 @dataclass
 class DagLayer:
     """DAG 的一层（同层步骤互相独立，可并行）"""
+
     layer_index: int
     step_ids: List[str] = field(default_factory=list)
 
@@ -126,15 +128,11 @@ def topological_sort(steps: List[Any]) -> List[DagLayer]:
     layer_index = 0
     while remaining:
         # 找出所有依赖已满足的步骤
-        ready = [
-            sid for sid in remaining
-            if dependencies[sid].issubset(completed)
-        ]
+        ready = [sid for sid in remaining if dependencies[sid].issubset(completed)]
         if not ready:
             # 循环依赖检测
             raise ValueError(
-                f"检测到循环依赖，涉及步骤: {remaining}。"
-                f"请检查 input_from_steps 配置。"
+                f"检测到循环依赖，涉及步骤: {remaining}。" f"请检查 input_from_steps 配置。"
             )
 
         layers.append(DagLayer(layer_index=layer_index, step_ids=sorted(ready)))
@@ -151,6 +149,7 @@ def topological_sort(steps: List[Any]) -> List[DagLayer]:
 @dataclass
 class DagExecutionResult:
     """DAG 执行结果"""
+
     success: bool
     completed_steps: int
     failed_steps: int
@@ -198,20 +197,18 @@ class DagExecutor:
         except ValueError as e:
             logger.error(f"[DagExecutor] 拓扑排序失败: {e}")
             return DagExecutionResult(
-                success=False, completed_steps=0, failed_steps=0,
-                skipped_steps=0, total_steps=len(steps),
+                success=False,
+                completed_steps=0,
+                failed_steps=0,
+                skipped_steps=0,
+                total_steps=len(steps),
                 elapsed_ms=int((time.time() - start_time) * 1000),
                 error=str(e),
             )
 
-        logger.info(
-            f"[DagExecutor] 拓扑排序完成 | {len(layers)} 层 | "
-            f"{len(steps)} 步骤"
-        )
+        logger.info(f"[DagExecutor] 拓扑排序完成 | {len(layers)} 层 | " f"{len(steps)} 步骤")
         for layer in layers:
-            logger.info(
-                f"[DagExecutor]   层 {layer.layer_index}: {layer.step_ids}"
-            )
+            logger.info(f"[DagExecutor]   层 {layer.layer_index}: {layer.step_ids}")
 
         # 2. 收集已完成步骤（断点续跑）
         completed_set: Set[str] = set()
@@ -238,15 +235,10 @@ class DagExecutor:
                 break
 
             # 过滤出本层需要执行的步骤（跳过已完成的）
-            to_run = [
-                step_map[sid] for sid in layer.step_ids
-                if sid not in completed_set
-            ]
+            to_run = [step_map[sid] for sid in layer.step_ids if sid not in completed_set]
 
             if not to_run:
-                logger.info(
-                    f"[DagExecutor] 层 {layer.layer_index} 全部已完成，跳过"
-                )
+                logger.info(f"[DagExecutor] 层 {layer.layer_index} 全部已完成，跳过")
                 continue
 
             logger.info(
@@ -282,8 +274,7 @@ class DagExecutor:
                         failed_step_id = step.step_id
                         error_msg = step.error
                     logger.error(
-                        f"[DagExecutor] 步骤异常 | step={step.step_id} | "
-                        f"error={result}"
+                        f"[DagExecutor] 步骤异常 | step={step.step_id} | " f"error={result}"
                     )
                 elif not result:
                     # 返回 False 视为失败
@@ -291,8 +282,7 @@ class DagExecutor:
                         failed_step_id = step.step_id
                         error_msg = step.error or "步骤执行失败"
                     logger.warning(
-                        f"[DagExecutor] 步骤失败 | step={step.step_id} | "
-                        f"error={step.error}"
+                        f"[DagExecutor] 步骤失败 | step={step.step_id} | " f"error={step.error}"
                     )
                 else:
                     completed_set.add(step.step_id)
@@ -369,9 +359,7 @@ class DagExecutor:
 
                 if success:
                     step.completed_at = time.time()
-                    step.elapsed_ms = int(
-                        (step.completed_at - step.started_at) * 1000
-                    )
+                    step.elapsed_ms = int((step.completed_at - step.started_at) * 1000)
                     step.status = "completed"
                     step.error = ""
                     logger.info(
@@ -503,10 +491,7 @@ def get_dag_structure(steps: List[Any]) -> Dict[str, Any]:
                 edges.append({"from": ref, "to": s.step_id})
 
     # 层
-    layer_info = [
-        {"layer": l.layer_index, "steps": l.step_ids}
-        for l in layers
-    ]
+    layer_info = [{"layer": layer.layer_index, "steps": layer.step_ids} for layer in layers]
 
     return {
         "layers": layer_info,

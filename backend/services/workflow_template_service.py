@@ -16,6 +16,7 @@
 - character_pipeline: 概念图 → 三视图 → 分镜 → 视频
 - refine_pipeline: 精修/超分流水线
 """
+
 from services.paths import WORKFLOW_TEMPLATES_DIR
 
 import json
@@ -36,18 +37,19 @@ _DEFAULT_TEMPLATE_DIR = WORKFLOW_TEMPLATES_DIR
 @dataclass
 class WorkflowStepTemplate:
     """工作流模板中的步骤定义"""
-    stage_id: str                                   # Stage ID
-    name: str = ""                                  # 步骤名称
+
+    stage_id: str  # Stage ID
+    name: str = ""  # 步骤名称
     input_from_steps: List[str] = field(default_factory=list)  # 引用前序步骤
-    input_mode: str = "auto"                        # auto / fixed / user_select
+    input_mode: str = "auto"  # auto / fixed / user_select
     # auto: 自动引用前序步骤输出
     # fixed: 使用固定 input_asset_ids（模板预设）
     # user_select: 用户创建时选择输入资产
-    input_asset_ids: List[str] = field(default_factory=list)   # 固定输入（input_mode=fixed时）
-    provider_id: str = ""                           # 供应商（空=默认）
-    params: Dict[str, Any] = field(default_factory=dict)       # 默认参数
-    max_retries: int = 0                            # 最大重试次数
-    description: str = ""                           # 步骤说明
+    input_asset_ids: List[str] = field(default_factory=list)  # 固定输入（input_mode=fixed时）
+    provider_id: str = ""  # 供应商（空=默认）
+    params: Dict[str, Any] = field(default_factory=dict)  # 默认参数
+    max_retries: int = 0  # 最大重试次数
+    description: str = ""  # 步骤说明
     # 质检门禁（仅 qc 步骤使用，可选）：若设置，qc 不达标且非强制发布时阻断后续发布
     # {"enabled": true, "threshold": 60.0, "block_on_redline": true,
     #  "allow_force_publish": true, "note": "未达标可强制发布但留痕"}
@@ -64,10 +66,11 @@ class WorkflowStepTemplate:
 @dataclass
 class WorkflowTemplate:
     """工作流模板"""
+
     template_id: str
     name: str
     description: str = ""
-    category: str = "custom"                        # preset / custom
+    category: str = "custom"  # preset / custom
     steps: List[WorkflowStepTemplate] = field(default_factory=list)
     # 模板需要的输入资产描述（用于前端提示用户选择）
     required_inputs: List[Dict[str, Any]] = field(default_factory=list)
@@ -100,431 +103,480 @@ class WorkflowTemplate:
 # 预置工作流模板
 # ============================================================
 
+
 def _build_preset_templates() -> List[WorkflowTemplate]:
     """构建预置工作流模板"""
     now = time.time()
     templates = []
 
     # 1. 概念图 → 分镜 → 视频 → 导出（完整流水线）
-    templates.append(WorkflowTemplate(
-        template_id="preset_concept_to_video",
-        name="概念图到视频完整流水线",
-        description="从概念图生成分镜，再生成视频并导出成片。适合单角色单场景的完整制作。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="storyboard",
-                name="生成分镜",
-                input_mode="user_select",
-                input_from_steps=[],
-                # ⭐ 修复 P0 #2：补充分镜默认参数（避免英文硬编码 "Storyboard scene composition"）
-                params={
-                    "size": "1365x768",       # 分镜帧尺寸（16:9 适配视频）
-                    "steps": 4,                # Fish 融合步数（速度/质量平衡）
-                    "cfg": 1.5,
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_concept_to_video",
+            name="概念图到视频完整流水线",
+            description="从概念图生成分镜，再生成视频并导出成片。适合单角色单场景的完整制作。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="storyboard",
+                    name="生成分镜",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    # ⭐ 修复 P0 #2：补充分镜默认参数（避免英文硬编码 "Storyboard scene composition"）
+                    params={
+                        "size": "1365x768",  # 分镜帧尺寸（16:9 适配视频）
+                        "steps": 4,  # Fish 融合步数（速度/质量平衡）
+                        "cfg": 1.5,
+                    },
+                    description="从角色和场景概念图生成分镜帧",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    # ⭐ 修复 P0 #1：补充视频默认参数（避免默认 480p 低清）
+                    params={
+                        "resolution": "720p",  # 视频分辨率（高于默认 480p）
+                        "duration": 5,  # 单段时长（秒）
+                        "fps": 24,
+                        "cfg": 3.0,
+                        "steps": 8,  # LTX 蒸馏 8 步
+                    },
+                    description="从分镜帧生成视频",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_2"],
+                    description="导出最终成片",
+                ),
+            ],
+            required_inputs=[
+                {
+                    "key": "character",
+                    "label": "角色概念图",
+                    "asset_type": "concept",
+                    "content_type": "character",
+                },  # noqa: E501
+                {
+                    "key": "scene",
+                    "label": "场景概念图",
+                    "asset_type": "concept",
+                    "content_type": "scene",
                 },
-                description="从角色和场景概念图生成分镜帧",
-            ),
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                # ⭐ 修复 P0 #1：补充视频默认参数（避免默认 480p 低清）
-                params={
-                    "resolution": "720p",     # 视频分辨率（高于默认 480p）
-                    "duration": 5,             # 单段时长（秒）
-                    "fps": 24,
-                    "cfg": 3.0,
-                    "steps": 8,                # LTX 蒸馏 8 步
-                },
-                description="从分镜帧生成视频",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_2"],
-                description="导出最终成片",
-            ),
-        ],
-        required_inputs=[
-            {"key": "character", "label": "角色概念图", "asset_type": "concept", "content_type": "character"},
-            {"key": "scene", "label": "场景概念图", "asset_type": "concept", "content_type": "scene"},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 2. 分镜 → 视频 → 导出（已有分镜的快速流水线）
-    templates.append(WorkflowTemplate(
-        template_id="preset_storyboard_to_video",
-        name="分镜到视频流水线",
-        description="从已有分镜帧生成视频并导出。适合分镜已完成的场景。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="user_select",
-                input_from_steps=[],
-                # ⭐ 修复 P0 #1：补充视频默认参数
-                params={
-                    "resolution": "720p",
-                    "duration": 5,
-                    "fps": 24,
-                    "cfg": 3.0,
-                    "steps": 8,
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_storyboard_to_video",
+            name="分镜到视频流水线",
+            description="从已有分镜帧生成视频并导出。适合分镜已完成的场景。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    # ⭐ 修复 P0 #1：补充视频默认参数
+                    params={
+                        "resolution": "720p",
+                        "duration": 5,
+                        "fps": 24,
+                        "cfg": 3.0,
+                        "steps": 8,
+                    },
+                    description="从分镜帧生成视频",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    description="导出最终成片",
+                ),
+            ],
+            required_inputs=[
+                {
+                    "key": "storyboard",
+                    "label": "分镜帧",
+                    "asset_type": "storyboard",
+                    "content_type": "",
                 },
-                description="从分镜帧生成视频",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                description="导出最终成片",
-            ),
-        ],
-        required_inputs=[
-            {"key": "storyboard", "label": "分镜帧", "asset_type": "storyboard", "content_type": ""},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 3. CSV批量分镜 → 视频（批量制作流水线）
-    templates.append(WorkflowTemplate(
-        template_id="preset_batch_storyboard_to_video",
-        name="CSV批量分镜到视频",
-        description="从CSV分镜脚本批量生成分镜，再逐个生成视频。适合批量制作。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="batch_storyboard",
-                name="CSV批量分镜",
-                input_mode="user_select",
-                input_from_steps=[],
-                params={
-                    "csv_data": "",
-                    "size": "1365x768",
-                    "steps": 4,
-                    "cfg": 1.5,
-                },
-                description="从CSV脚本批量生成分镜",
-            ),
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                # ⭐ 修复 P0 #1：补充视频默认参数
-                params={
-                    "resolution": "720p",
-                    "duration": 5,
-                    "fps": 24,
-                    "cfg": 3.0,
-                    "steps": 8,
-                },
-                description="从分镜帧生成视频",
-            ),
-        ],
-        required_inputs=[
-            {"key": "characters", "label": "角色资产（可选）", "asset_type": "concept", "content_type": "character"},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_batch_storyboard_to_video",
+            name="CSV批量分镜到视频",
+            description="从CSV分镜脚本批量生成分镜，再逐个生成视频。适合批量制作。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="batch_storyboard",
+                    name="CSV批量分镜",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    params={
+                        "csv_data": "",
+                        "size": "1365x768",
+                        "steps": 4,
+                        "cfg": 1.5,
+                    },
+                    description="从CSV脚本批量生成分镜",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    # ⭐ 修复 P0 #1：补充视频默认参数
+                    params={
+                        "resolution": "720p",
+                        "duration": 5,
+                        "fps": 24,
+                        "cfg": 3.0,
+                        "steps": 8,
+                    },
+                    description="从分镜帧生成视频",
+                ),
+            ],
+            required_inputs=[
+                {
+                    "key": "characters",
+                    "label": "角色资产（可选）",
+                    "asset_type": "concept",
+                    "content_type": "character",
+                },  # noqa: E501
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 4. 角色制作流水线：概念图 → 三视图 → 分镜
-    templates.append(WorkflowTemplate(
-        template_id="preset_character_pipeline",
-        name="角色制作流水线",
-        description="从概念图生成三视图，再生成分镜。适合角色资产的标准化制作。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="angle",
-                name="生成三视图",
-                input_mode="user_select",
-                input_from_steps=[],
-                description="从角色概念图生成三视图",
-            ),
-            WorkflowStepTemplate(
-                stage_id="storyboard",
-                name="生成分镜",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                description="使用三视图生成分镜",
-            ),
-        ],
-        required_inputs=[
-            {"key": "character", "label": "角色概念图", "asset_type": "concept", "content_type": "character"},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_character_pipeline",
+            name="角色制作流水线",
+            description="从概念图生成三视图，再生成分镜。适合角色资产的标准化制作。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="angle",
+                    name="生成三视图",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    description="从角色概念图生成三视图",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="storyboard",
+                    name="生成分镜",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    description="使用三视图生成分镜",
+                ),
+            ],
+            required_inputs=[
+                {
+                    "key": "character",
+                    "label": "角色概念图",
+                    "asset_type": "concept",
+                    "content_type": "character",
+                },  # noqa: E501
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 5. 精修流水线：精修/超分
-    templates.append(WorkflowTemplate(
-        template_id="preset_refine_pipeline",
-        name="精修超分流水线",
-        description="对图像进行精修或超分辨率放大。适合后期质量提升。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="refine",
-                name="精修/超分",
-                input_mode="user_select",
-                input_from_steps=[],
-                params={"mode": "refine"},
-                description="精修或超分图像",
-            ),
-        ],
-        required_inputs=[
-            {"key": "image", "label": "待精修图像", "asset_type": "", "content_type": ""},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_refine_pipeline",
+            name="精修超分流水线",
+            description="对图像进行精修或超分辨率放大。适合后期质量提升。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="refine",
+                    name="精修/超分",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    params={"mode": "refine"},
+                    description="精修或超分图像",
+                ),
+            ],
+            required_inputs=[
+                {"key": "image", "label": "待精修图像", "asset_type": "", "content_type": ""},
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 6. 视频剪辑流水线
-    templates.append(WorkflowTemplate(
-        template_id="preset_video_edit_pipeline",
-        name="视频剪辑导出流水线",
-        description="多个视频片段剪辑拼接后导出成片。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="edit",
-                name="视频剪辑",
-                input_mode="user_select",
-                input_from_steps=[],
-                params={"mode": "concat"},
-                description="拼接多个视频片段",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                description="导出最终成片",
-            ),
-        ],
-        required_inputs=[
-            {"key": "videos", "label": "视频片段（多个）", "asset_type": "video", "content_type": ""},
-        ],
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_video_edit_pipeline",
+            name="视频剪辑导出流水线",
+            description="多个视频片段剪辑拼接后导出成片。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="edit",
+                    name="视频剪辑",
+                    input_mode="user_select",
+                    input_from_steps=[],
+                    params={"mode": "concat"},
+                    description="拼接多个视频片段",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    description="导出最终成片",
+                ),
+            ],
+            required_inputs=[
+                {
+                    "key": "videos",
+                    "label": "视频片段（多个）",
+                    "asset_type": "video",
+                    "content_type": "",
+                },
+            ],
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 7. 穿越剧流水线：剧本 → 概念图 → 分镜 → 视频 → 剪辑 → 导出
-    templates.append(WorkflowTemplate(
-        template_id="preset_time_travel_drama",
-        name="穿越剧完整流水线",
-        description="AI 生成穿越剧剧本，再到角色概念图、分镜、视频、剪辑、导出。适合古今穿越题材的剧情短视频。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="script",
-                name="AI 剧本生成",
-                input_mode="fixed",
-                input_from_steps=[],
-                params={
-                    "topic": "现代工具人穿越古代当军师，用 Office 解决军务",
-                    "video_type": "full_ai_short",
-                    "acts": 4,
-                    "duration_seconds": 60,
-                    "characters": ["主角-现代人", "皇帝", "大臣"],
-                    "tone_extra": "古今冲突+冷幽默，节奏明快",
-                    "hook_style": "comment_1",
-                },
-                description="生成穿越剧剧本（full_ai_short）",
-            ),
-            WorkflowStepTemplate(
-                stage_id="concept",
-                name="生成角色概念图",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                params={"concept_type": "character"},
-                description="根据剧本角色生成概念图",
-            ),
-            WorkflowStepTemplate(
-                stage_id="storyboard",
-                name="生成分镜",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_2"],
-                description="根据剧本和概念图生成分镜",
-            ),
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_3"],
-                description="根据分镜生成视频",
-            ),
-            WorkflowStepTemplate(
-                stage_id="edit",
-                name="视频剪辑",
-                input_mode="auto",
-                input_from_steps=["step_4"],
-                params={"mode": "concat"},
-                description="拼接所有视频片段",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_5"],
-                description="导出最终穿越剧成片",
-            ),
-        ],
-        required_inputs=[],
-        metadata={"video_type": "full_ai_short", "genre": "穿越剧"},
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_time_travel_drama",
+            name="穿越剧完整流水线",
+            description="AI 生成穿越剧剧本，再到角色概念图、分镜、视频、剪辑、导出。适合古今穿越题材的剧情短视频。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="script",
+                    name="AI 剧本生成",
+                    input_mode="fixed",
+                    input_from_steps=[],
+                    params={
+                        "topic": "现代工具人穿越古代当军师，用 Office 解决军务",
+                        "video_type": "full_ai_short",
+                        "acts": 4,
+                        "duration_seconds": 60,
+                        "characters": ["主角-现代人", "皇帝", "大臣"],
+                        "tone_extra": "古今冲突+冷幽默，节奏明快",
+                        "hook_style": "comment_1",
+                    },
+                    description="生成穿越剧剧本（full_ai_short）",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="concept",
+                    name="生成角色概念图",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    params={"concept_type": "character"},
+                    description="根据剧本角色生成概念图",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="storyboard",
+                    name="生成分镜",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_2"],
+                    description="根据剧本和概念图生成分镜",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_3"],
+                    description="根据分镜生成视频",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="edit",
+                    name="视频剪辑",
+                    input_mode="auto",
+                    input_from_steps=["step_4"],
+                    params={"mode": "concat"},
+                    description="拼接所有视频片段",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_5"],
+                    description="导出最终穿越剧成片",
+                ),
+            ],
+            required_inputs=[],
+            metadata={"video_type": "full_ai_short", "genre": "穿越剧"},
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 8. 职场剧流水线：剧本 → 概念图 → 分镜 → 视频 → 剪辑 → 导出
-    templates.append(WorkflowTemplate(
-        template_id="preset_office_drama",
-        name="职场剧完整流水线",
-        description="AI 生成职场剧剧本，再到概念图、分镜、视频、剪辑、导出。适合办公场景的痛点剧情短视频。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="script",
-                name="AI 剧本生成",
-                input_mode="fixed",
-                input_from_steps=[],
-                params={
-                    "topic": "用批量处理工具解决周报重复劳动的痛点",
-                    "video_type": "problem_solving",
-                    "acts": 3,
-                    "duration_seconds": 30,
-                    "characters": ["打工人A", "老板B"],
-                    "tone_extra": "职场真实场景+反转，直击周报痛点",
-                    "hook_style": "main_page",
-                },
-                description="生成职场剧剧本（problem_solving）",
-            ),
-            WorkflowStepTemplate(
-                stage_id="concept",
-                name="生成场景概念图",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                params={"concept_type": "scene"},
-                description="根据剧本生成办公场景概念图",
-            ),
-            WorkflowStepTemplate(
-                stage_id="storyboard",
-                name="生成分镜",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_2"],
-                description="根据剧本和场景生成分镜",
-            ),
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_3"],
-                description="根据分镜生成视频",
-            ),
-            WorkflowStepTemplate(
-                stage_id="edit",
-                name="视频剪辑",
-                input_mode="auto",
-                input_from_steps=["step_4"],
-                params={"mode": "concat"},
-                description="拼接所有视频片段",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_5"],
-                description="导出最终职场剧成片",
-            ),
-        ],
-        required_inputs=[],
-        metadata={"video_type": "problem_solving", "genre": "职场剧"},
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_office_drama",
+            name="职场剧完整流水线",
+            description="AI 生成职场剧剧本，再到概念图、分镜、视频、剪辑、导出。适合办公场景的痛点剧情短视频。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="script",
+                    name="AI 剧本生成",
+                    input_mode="fixed",
+                    input_from_steps=[],
+                    params={
+                        "topic": "用批量处理工具解决周报重复劳动的痛点",
+                        "video_type": "problem_solving",
+                        "acts": 3,
+                        "duration_seconds": 30,
+                        "characters": ["打工人A", "老板B"],
+                        "tone_extra": "职场真实场景+反转，直击周报痛点",
+                        "hook_style": "main_page",
+                    },
+                    description="生成职场剧剧本（problem_solving）",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="concept",
+                    name="生成场景概念图",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    params={"concept_type": "scene"},
+                    description="根据剧本生成办公场景概念图",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="storyboard",
+                    name="生成分镜",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_2"],
+                    description="根据剧本和场景生成分镜",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_3"],
+                    description="根据分镜生成视频",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="edit",
+                    name="视频剪辑",
+                    input_mode="auto",
+                    input_from_steps=["step_4"],
+                    params={"mode": "concat"},
+                    description="拼接所有视频片段",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_5"],
+                    description="导出最终职场剧成片",
+                ),
+            ],
+            required_inputs=[],
+            metadata={"video_type": "problem_solving", "genre": "职场剧"},
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 9. 图文叙事流水线：剧本 → 概念图 → 分镜 → 视频 → 分屏合成 → 导出
-    templates.append(WorkflowTemplate(
-        template_id="preset_image_narrative",
-        name="图文叙事完整流水线",
-        description="AI 生成图文叙事剧本，再到概念图、分镜、视频、分屏合成、导出。适合图片+文字+配音的叙事短视频。",
-        category="preset",
-        steps=[
-            WorkflowStepTemplate(
-                stage_id="script",
-                name="AI 剧本生成",
-                input_mode="fixed",
-                input_from_steps=[],
-                params={
-                    "topic": "用图文叙事讲清楚一个工具的核心价值",
-                    "video_type": "image_story",
-                    "acts": 4,
-                    "duration_seconds": 45,
-                    "characters": [],
-                    "tone_extra": "图文配合，画面节奏感强，配音有感染力",
-                    "hook_style": "dm",
-                },
-                description="生成图文叙事剧本（image_story）",
-            ),
-            WorkflowStepTemplate(
-                stage_id="concept",
-                name="生成关键画面",
-                input_mode="auto",
-                input_from_steps=["step_1"],
-                params={"concept_type": "scene"},
-                description="根据剧本生成关键画面概念图",
-            ),
-            WorkflowStepTemplate(
-                stage_id="storyboard",
-                name="生成分镜",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_2"],
-                description="根据剧本和画面生成分镜",
-            ),
-            WorkflowStepTemplate(
-                stage_id="video",
-                name="生成视频",
-                input_mode="auto",
-                input_from_steps=["step_1", "step_3"],
-                description="根据分镜生成视频",
-            ),
-            WorkflowStepTemplate(
-                stage_id="compose",
-                name="分屏合成",
-                input_mode="auto",
-                input_from_steps=["step_4"],
-                params={
-                    "layout": "split_compare",
-                    "gap": 20,
-                    "labels": ["原始", "精修"],
-                    "size": "1920x1080",
-                    "duration": 45,
-                    "bg_color": "0x000000",
-                },
-                description="左右对比合成（图文叙事常用）",
-            ),
-            WorkflowStepTemplate(
-                stage_id="export",
-                name="导出成片",
-                input_mode="auto",
-                input_from_steps=["step_5"],
-                description="导出最终图文叙事成片",
-            ),
-        ],
-        required_inputs=[],
-        metadata={"video_type": "image_story", "genre": "图文叙事"},
-        created_at=now,
-        updated_at=now,
-    ))
+    templates.append(
+        WorkflowTemplate(
+            template_id="preset_image_narrative",
+            name="图文叙事完整流水线",
+            description="AI 生成图文叙事剧本，再到概念图、分镜、视频、分屏合成、导出。适合图片+文字+配音的叙事短视频。",
+            category="preset",
+            steps=[
+                WorkflowStepTemplate(
+                    stage_id="script",
+                    name="AI 剧本生成",
+                    input_mode="fixed",
+                    input_from_steps=[],
+                    params={
+                        "topic": "用图文叙事讲清楚一个工具的核心价值",
+                        "video_type": "image_story",
+                        "acts": 4,
+                        "duration_seconds": 45,
+                        "characters": [],
+                        "tone_extra": "图文配合，画面节奏感强，配音有感染力",
+                        "hook_style": "dm",
+                    },
+                    description="生成图文叙事剧本（image_story）",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="concept",
+                    name="生成关键画面",
+                    input_mode="auto",
+                    input_from_steps=["step_1"],
+                    params={"concept_type": "scene"},
+                    description="根据剧本生成关键画面概念图",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="storyboard",
+                    name="生成分镜",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_2"],
+                    description="根据剧本和画面生成分镜",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="video",
+                    name="生成视频",
+                    input_mode="auto",
+                    input_from_steps=["step_1", "step_3"],
+                    description="根据分镜生成视频",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="compose",
+                    name="分屏合成",
+                    input_mode="auto",
+                    input_from_steps=["step_4"],
+                    params={
+                        "layout": "split_compare",
+                        "gap": 20,
+                        "labels": ["原始", "精修"],
+                        "size": "1920x1080",
+                        "duration": 45,
+                        "bg_color": "0x000000",
+                    },
+                    description="左右对比合成（图文叙事常用）",
+                ),
+                WorkflowStepTemplate(
+                    stage_id="export",
+                    name="导出成片",
+                    input_mode="auto",
+                    input_from_steps=["step_5"],
+                    description="导出最终图文叙事成片",
+                ),
+            ],
+            required_inputs=[],
+            metadata={"video_type": "image_story", "genre": "图文叙事"},
+            created_at=now,
+            updated_at=now,
+        )
+    )
 
     # 为所有含 export 步骤的预置模板统一挂载 qc 质检步骤（export 之后），
     # 使"端到端质量验证"默认串进一键成片链路。qc 仅质检+门禁提示，不强制阻断。
@@ -742,17 +794,21 @@ class WorkflowTemplateService:
             if step_id in step_params:
                 params.update(step_params[step_id])
 
-            batch_steps.append({
-                "step_id": step_id,
-                "stage_id": step_tpl.stage_id,
-                "name": step_tpl.name,
-                "input_asset_ids": input_asset_ids,
-                "input_from_steps": [f"step_{int(s.split('_')[1])}" if s.startswith("step_") else s
-                                     for s in step_tpl.input_from_steps],
-                "provider_id": step_tpl.provider_id,
-                "params": params,
-                "max_retries": step_tpl.max_retries,
-            })
+            batch_steps.append(
+                {
+                    "step_id": step_id,
+                    "stage_id": step_tpl.stage_id,
+                    "name": step_tpl.name,
+                    "input_asset_ids": input_asset_ids,
+                    "input_from_steps": [
+                        f"step_{int(s.split('_')[1])}" if s.startswith("step_") else s
+                        for s in step_tpl.input_from_steps
+                    ],
+                    "provider_id": step_tpl.provider_id,
+                    "params": params,
+                    "max_retries": step_tpl.max_retries,
+                }
+            )
 
         # 创建批量任务
         batch_svc = get_batch_task_service()

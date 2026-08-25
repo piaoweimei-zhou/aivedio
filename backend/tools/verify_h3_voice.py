@@ -32,46 +32,50 @@ def build_steps() -> List[Dict[str, Any]]:
     steps: List[Dict[str, Any]] = []
 
     s_concept = "s1_concept_character1"
-    steps.append({
-        "step_id": s_concept,
-        "stage_id": "concept",
-        "name": "概念图-角色",
-        "provider_id": "comfyui",
-        "params": {
-            "prompt": f"{TOPIC} 的主要角色设计，精致卡通风格",
-            "negative_prompt": "low quality, blurry, deformed, ugly",
-            "content_type": "character",
-            "width": 768,
-            "height": 1024,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [],
-    })
+    steps.append(
+        {
+            "step_id": s_concept,
+            "stage_id": "concept",
+            "name": "概念图-角色",
+            "provider_id": "comfyui",
+            "params": {
+                "prompt": f"{TOPIC} 的主要角色设计，精致卡通风格",
+                "negative_prompt": "low quality, blurry, deformed, ugly",
+                "content_type": "character",
+                "width": 768,
+                "height": 1024,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [],
+        }
+    )
 
     s_video = "s2_video"
-    steps.append({
-        "step_id": s_video,
-        "stage_id": "video",
-        "name": "视频生成（H3 I2VA + 人声）",
-        "provider_id": "minimax_h3",
-        "params": {
-            "prompt": TOPIC,
-            "duration": 8,
-            "aspect_ratio": "9:16",
-            "resolution": "720p",
-            "frame_rate": 24,
-            "width": 480,
-            "height": 864,
-            "segment_seconds": 4,
-            "segment_prompts": [TOPIC, "橘猫把番茄炒蛋装盘"],
-            "tts_enabled": True,
-            "tts_texts": [NARRATION, "一盘香喷喷的番茄炒蛋就做好了。"],
-            "tts_mode": "voice_design",
-            "tts_volume": 1.0,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [s_concept],
-    })
+    steps.append(
+        {
+            "step_id": s_video,
+            "stage_id": "video",
+            "name": "视频生成（H3 I2VA + 人声）",
+            "provider_id": "minimax_h3",
+            "params": {
+                "prompt": TOPIC,
+                "duration": 8,
+                "aspect_ratio": "9:16",
+                "resolution": "720p",
+                "frame_rate": 24,
+                "width": 480,
+                "height": 864,
+                "segment_seconds": 4,
+                "segment_prompts": [TOPIC, "橘猫把番茄炒蛋装盘"],
+                "tts_enabled": True,
+                "tts_texts": [NARRATION, "一盘香喷喷的番茄炒蛋就做好了。"],
+                "tts_mode": "voice_design",
+                "tts_volume": 1.0,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [s_concept],
+        }
+    )
 
     return steps
 
@@ -85,7 +89,9 @@ async def run(host: str) -> int:
         r = await client.post(f"{host}/api/director/batches", json=payload)
         r.raise_for_status()
         body = r.json()
-        batch_id = (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        batch_id = (
+            (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        )  # noqa: E501
         print(f"batch={batch_id} steps={len(build_steps())}")
         if not batch_id:
             print(f"创建失败: {json.dumps(body, ensure_ascii=False)[:500]}")

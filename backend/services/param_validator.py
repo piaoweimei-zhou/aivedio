@@ -15,8 +15,8 @@
     if errors:
         raise HTTPException(status_code=422, detail={"errors": errors})
 """
-from typing import Any, Dict, List, Optional
 
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # 参数校验规则定义
@@ -38,8 +38,16 @@ STAGE_PARAM_SCHEMAS: Dict[str, Dict[str, FieldSpec]] = {
         "cfg": {"type": float, "min": 0.1, "max": 10.0, "default": 3.0},
         "steps": {"type": int, "min": 1, "max": 100, "default": 20},
         "seed": {"type": int, "min": -1, "default": -1},
-        "resolution": {"type": str, "choices": ["480p", "720p", "1080p", "1440p", "2k", "4k"], "default": "480p"},
-        "aspect_ratio": {"type": str, "choices": ["16:9", "9:16", "1:1", "4:3", "3:4"], "default": "16:9"},
+        "resolution": {
+            "type": str,
+            "choices": ["480p", "720p", "1080p", "1440p", "2k", "4k"],
+            "default": "480p",
+        },  # noqa: E501
+        "aspect_ratio": {
+            "type": str,
+            "choices": ["16:9", "9:16", "1:1", "4:3", "3:4"],
+            "default": "16:9",
+        },  # noqa: E501
     },
     # 概念图阶段（图像生成）
     "concept": {

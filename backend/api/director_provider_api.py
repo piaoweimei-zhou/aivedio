@@ -53,8 +53,18 @@ PROVIDER_CONFIG_META = [
         "description": "本地部署的 ComfyUI，支持图片生成、精修、放大",
         "capabilities": ["image", "refine", "upscale"],
         "required_envs": [
-            {"key": "COMFYUI_BASE_URL", "label": "ComfyUI 服务地址", "default": "http://127.0.0.1:8188", "required": True},
-            {"key": "COMFYUI_API_KEY", "label": "API Key（可选，如启用了鉴权）", "default": "", "required": False},
+            {
+                "key": "COMFYUI_BASE_URL",
+                "label": "ComfyUI 服务地址",
+                "default": "http://127.0.0.1:8188",
+                "required": True,
+            },  # noqa: E501
+            {
+                "key": "COMFYUI_API_KEY",
+                "label": "API Key（可选，如启用了鉴权）",
+                "default": "",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://github.com/comfyanonymous/ComfyUI",
     },
@@ -65,8 +75,18 @@ PROVIDER_CONFIG_META = [
         "capabilities": ["image", "text"],
         "required_envs": [
             {"key": "OPENAI_API_KEY", "label": "API Key", "default": "", "required": True},
-            {"key": "OPENAI_BASE_URL", "label": "Base URL（DeepSeek 填 https://api.deepseek.com）", "default": "https://api.deepseek.com", "required": True},
-            {"key": "OPENAI_TEXT_MODEL", "label": "文本模型（AI剧本用，DeepSeek 填 deepseek-chat / deepseek-reasoner）", "default": "deepseek-chat", "required": False},
+            {
+                "key": "OPENAI_BASE_URL",
+                "label": "Base URL（DeepSeek 填 https://api.deepseek.com）",
+                "default": "https://api.deepseek.com",
+                "required": True,
+            },  # noqa: E501
+            {
+                "key": "OPENAI_TEXT_MODEL",
+                "label": "文本模型（AI剧本用，DeepSeek 填 deepseek-chat / deepseek-reasoner）",
+                "default": "deepseek-chat",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://platform.openai.com/docs/api-reference",
     },
@@ -77,7 +97,12 @@ PROVIDER_CONFIG_META = [
         "capabilities": ["image", "video"],
         "required_envs": [
             {"key": "RUNNINGHUB_API_KEY", "label": "API Key", "default": "", "required": True},
-            {"key": "RUNNINGHUB_WALLET_API_KEY", "label": "钱包 API Key（可选）", "default": "", "required": False},
+            {
+                "key": "RUNNINGHUB_WALLET_API_KEY",
+                "label": "钱包 API Key（可选）",
+                "default": "",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://www.runninghub.cn",
     },
@@ -87,8 +112,18 @@ PROVIDER_CONFIG_META = [
         "description": "字节即梦 CLI 工具，支持图片和视频生成",
         "capabilities": ["image", "video"],
         "required_envs": [
-            {"key": "JIMENG_CLI_PATH", "label": "jimeng CLI 路径", "default": "jimeng", "required": True},
-            {"key": "JIMENG_POLL_SECONDS", "label": "轮询间隔（秒）", "default": "30", "required": False},
+            {
+                "key": "JIMENG_CLI_PATH",
+                "label": "jimeng CLI 路径",
+                "default": "jimeng",
+                "required": True,
+            },  # noqa: E501
+            {
+                "key": "JIMENG_POLL_SECONDS",
+                "label": "轮询间隔（秒）",
+                "default": "30",
+                "required": False,
+            },
         ],
         "docs_url": "",
     },
@@ -99,10 +134,30 @@ PROVIDER_CONFIG_META = [
         "capabilities": ["image", "video", "text"],
         "required_envs": [
             {"key": "ARK_API_KEY", "label": "ARK API Key", "default": "", "required": True},
-            {"key": "VOLCENGINE_BASE_URL", "label": "Base URL", "default": "https://ark.cn-beijing.volces.com", "required": False},
-            {"key": "VOLCENGINE_IMAGE_MODEL", "label": "图像模型（Endpoint ID）", "default": "doubao-seedream-4-5", "required": False},
-            {"key": "VOLCENGINE_VIDEO_MODEL", "label": "视频模型（Endpoint ID）", "default": "doubao-seedance-1-0-pro-fast", "required": False},
-            {"key": "VOLCENGINE_TEXT_MODEL", "label": "文本模型（Endpoint ID）", "default": "doubao-seed-2-0-pro", "required": False},
+            {
+                "key": "VOLCENGINE_BASE_URL",
+                "label": "Base URL",
+                "default": "https://ark.cn-beijing.volces.com",
+                "required": False,
+            },  # noqa: E501
+            {
+                "key": "VOLCENGINE_IMAGE_MODEL",
+                "label": "图像模型（Endpoint ID）",
+                "default": "doubao-seedream-4-5",
+                "required": False,
+            },  # noqa: E501
+            {
+                "key": "VOLCENGINE_VIDEO_MODEL",
+                "label": "视频模型（Endpoint ID）",
+                "default": "doubao-seedance-1-0-pro-fast",
+                "required": False,
+            },  # noqa: E501
+            {
+                "key": "VOLCENGINE_TEXT_MODEL",
+                "label": "文本模型（Endpoint ID）",
+                "default": "doubao-seed-2-0-pro",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://www.volcengine.com/product/ark",
     },
@@ -113,7 +168,12 @@ PROVIDER_CONFIG_META = [
         "capabilities": ["image"],
         "required_envs": [
             {"key": "GEMINI_API_KEY", "label": "API Key", "default": "", "required": True},
-            {"key": "GEMINI_BASE_URL", "label": "Base URL", "default": "https://generativelanguage.googleapis.com", "required": False},
+            {
+                "key": "GEMINI_BASE_URL",
+                "label": "Base URL",
+                "default": "https://generativelanguage.googleapis.com",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://ai.google.dev",
     },
@@ -124,7 +184,12 @@ PROVIDER_CONFIG_META = [
         "capabilities": ["image"],
         "required_envs": [
             {"key": "MODELSCOPE_API_KEY", "label": "API Key", "default": "", "required": True},
-            {"key": "MODELSCOPE_BASE_URL", "label": "Base URL", "default": "https://api-inference.modelscope.cn", "required": False},
+            {
+                "key": "MODELSCOPE_BASE_URL",
+                "label": "Base URL",
+                "default": "https://api-inference.modelscope.cn",
+                "required": False,
+            },  # noqa: E501
         ],
         "docs_url": "https://www.modelscope.cn",
     },
@@ -139,14 +204,24 @@ async def get_config_meta():
 
 # 前端「环境变量配置」卡片可管理的键
 CONFIG_KEYS = [
-    "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_TEXT_MODEL",
-    "GEMINI_API_KEY", "GEMINI_BASE_URL",
-    "ARK_API_KEY", "VOLCENGINE_BASE_URL",
-    "VOLCENGINE_IMAGE_MODEL", "VOLCENGINE_VIDEO_MODEL", "VOLCENGINE_TEXT_MODEL",
-    "RUNNINGHUB_API_KEY", "RUNNINGHUB_WALLET_API_KEY",
-    "MODELSCOPE_API_KEY", "MODELSCOPE_BASE_URL",
-    "JIMENG_CLI_PATH", "JIMENG_POLL_SECONDS",
-    "COMFYUI_BASE_URL", "COMFYUI_API_KEY",
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "OPENAI_TEXT_MODEL",
+    "GEMINI_API_KEY",
+    "GEMINI_BASE_URL",
+    "ARK_API_KEY",
+    "VOLCENGINE_BASE_URL",
+    "VOLCENGINE_IMAGE_MODEL",
+    "VOLCENGINE_VIDEO_MODEL",
+    "VOLCENGINE_TEXT_MODEL",
+    "RUNNINGHUB_API_KEY",
+    "RUNNINGHUB_WALLET_API_KEY",
+    "MODELSCOPE_API_KEY",
+    "MODELSCOPE_BASE_URL",
+    "JIMENG_CLI_PATH",
+    "JIMENG_POLL_SECONDS",
+    "COMFYUI_BASE_URL",
+    "COMFYUI_API_KEY",
     "FFMPEG_PATH",
 ]
 

@@ -20,7 +20,7 @@ import httpx
 import pytest
 from httpx import ASGITransport
 
-from services.asset_service import AssetProduceResult, AssetRef
+from services.asset_service import AssetProduceResult
 from services.stage_service import StageDef, StagePlugin
 
 # 冒烟阶段生成的文件（用于测试后清理）

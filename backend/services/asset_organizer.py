@@ -93,7 +93,7 @@ def next_seq(generated_dir: str, project_id: str, stage_id: str, content_keyword
             if not fname.startswith(prefix):
                 continue
             # 提取 {seq:03d} 段
-            rest = fname[len(prefix):]
+            rest = fname[len(prefix) :]
             m = re.match(r"_(\d{3})_", rest)
             if m:
                 try:
@@ -114,7 +114,9 @@ def _extract_filename(url: str) -> str:
     return os.path.basename(url.split("?")[0])
 
 
-def _resolve_source(filename: str, generated_dir: str, comfyui_output_dir: str = "") -> Optional[str]:
+def _resolve_source(
+    filename: str, generated_dir: str, comfyui_output_dir: str = ""
+) -> Optional[str]:  # noqa: E501
     """在持久化目录（含子目录）与 ComfyUI output 中定位源文件"""
     if not filename:
         return None
@@ -192,7 +194,7 @@ def organize_asset_files(
         src = _resolve_source(fname, generated_dir, comfyui_output_dir)
         if not src and item.startswith("/output/"):
             # 后处理产物在 backend/output/{category}/ 下
-            rel = item[len("/output/"):]
+            rel = item[len("/output/") :]
             cand = os.path.join(output_dir, rel)
             if os.path.isfile(cand):
                 src = cand
@@ -210,7 +212,9 @@ def organize_asset_files(
                     shutil.move(src, dst)
                 else:
                     shutil.copy2(src, dst)
-            organized.append(f"/api/comfyui/image?filename={target_name}&subfolder={project}/{stage}")
+            organized.append(
+                f"/api/comfyui/image?filename={target_name}&subfolder={project}/{stage}"
+            )  # noqa: E501
             seq += 1
         except OSError as e:
             logger.warning(f"[AssetOrganizer] 整理失败 | {fname} -> {dst} | {e}")

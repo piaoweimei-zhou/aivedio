@@ -11,7 +11,7 @@ Script 感知：当输入包含 script 资产时，结合 storyboard 帧（含 s
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin
@@ -50,11 +50,16 @@ class VideoStage(StagePlugin):
 
         # ── Script 感知：如果输入包含 script 资产，批量生成所有幕的视频 ──
         from services.stages.script_utils import find_script_asset
+
         script_asset = find_script_asset(input_assets)
         if script_asset:
             return await self._execute_from_script(
-                script_asset, input_assets, provider_id, params,
-                asset_svc, provider_svc,
+                script_asset,
+                input_assets,
+                provider_id,
+                params,
+                asset_svc,
+                provider_svc,
             )
 
         # ── 原有逻辑：单段视频生成 ──
@@ -78,6 +83,7 @@ class VideoStage(StagePlugin):
 
         # ⭐ 修复 B1：使用统一时间控制工具，消除 duration/frame_count/segment_seconds 三重含义
         from services.video_time import resolve_video_duration, resolve_segment_seconds
+
         raw_duration = params.get("duration")
         raw_frame_count = params.get("frame_count")
         raw_fps = params.get("fps") or params.get("frame_rate")
@@ -121,14 +127,20 @@ class VideoStage(StagePlugin):
         tts_ref_audio = params.get("tts_ref_audio", "")
         tts_mix_mode = params.get("tts_mix_mode", "replace")
         tts_volume = float(params.get("tts_volume", 1.0))
-        bgm_url = params.get("bgm_url", "")
         bgm_volume = float(params.get("bgm_volume", 0.2))
+        bgm_url = params.get("bgm_url", "")
 
         tts_enabled = params.get("tts_enabled", False)
         # ⭐ H3 原生支持人声（音频由 prompt 驱动），无需 ComfyUI Qwen3TTS 旁支
-        if tts_enabled and tts_texts and len(tts_audios) < len(tts_texts) and provider_id != "minimax_h3":
+        if (
+            tts_enabled
+            and tts_texts
+            and len(tts_audios) < len(tts_texts)
+            and provider_id != "minimax_h3"
+        ):  # noqa: E501
             try:
                 from services.comfyui_service import get_comfyui_service
+
                 comfyui_svc = get_comfyui_service()
                 logger.info(
                     f"[VideoStage] 生成 TTS 配音 | texts={len(tts_texts)}段 | mode={tts_mode}"
@@ -152,14 +164,14 @@ class VideoStage(StagePlugin):
                         tts_audios.append(tts_result.image_url)
                     else:
                         tts_audios[i] = tts_result.image_url
-                    logger.info(f"[VideoStage] TTS 段{i+1} 生成完成 | url={tts_result.image_url[:60]}")
+                    logger.info(
+                        f"[VideoStage] TTS 段{i+1} 生成完成 | url={tts_result.image_url[:60]}"
+                    )
             except Exception as tts_e:
                 logger.warning(f"[VideoStage] TTS 生成失败，将无配音 | error={tts_e}")
                 tts_audios = []
 
-        log_extra = (
-            f" | 多角色参考图={list(reference_images.keys())}" if reference_images else ""
-        )
+        log_extra = f" | 多角色参考图={list(reference_images.keys())}" if reference_images else ""
         log_extra += f" | 分段故事={len(segment_prompts)}段" if segment_prompts else ""
         log_extra += f" | 自定义参数={list(extra_kwargs.keys())}" if extra_kwargs else ""
         log_extra += f" | TTS={len(tts_audios)}段/{tts_mix_mode}" if tts_audios else ""
@@ -214,7 +226,8 @@ class VideoStage(StagePlugin):
                 )
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="video",
                 name=f"{source.name} 视频",
                 parent_id=source.asset_id,
@@ -285,10 +298,15 @@ class VideoStage(StagePlugin):
 
         # 每镜生成一个 H3 视频（画面 prompt 驱动，人声由独立 TTS 提供）
         from services.comfyui_service import get_comfyui_service
+
         comfyui_svc = get_comfyui_service()
         seg_results = []
         for i in range(seg_count):
-            seg_prompt = segment_prompts[i] if i < len(segment_prompts) and segment_prompts[i] else f"{prompt} 镜头{i+1}"
+            seg_prompt = (
+                segment_prompts[i]
+                if i < len(segment_prompts) and segment_prompts[i]
+                else f"{prompt} 镜头{i+1}"
+            )  # noqa: E501
             seg_text = ""
             if i < len(tts_texts) and tts_texts[i]:
                 seg_text = tts_texts[i]
@@ -333,9 +351,13 @@ class VideoStage(StagePlugin):
                                 r.video_url = mixed_url
                                 r.image_url = mixed_url
                     except Exception as tts_e:
-                        logger.warning(f"[VideoStage] 镜{i+1} TTS 混音失败，保留 H3 原音频 | err={tts_e}")
+                        logger.warning(
+                            f"[VideoStage] 镜{i+1} TTS 混音失败，保留 H3 原音频 | err={tts_e}"
+                        )
                 seg_results.append(r)
-                logger.info(f"[VideoStage] H3 镜{i+1}/{seg_count} 完成 | url={getattr(r, 'video_url', '')[:60]}")
+                logger.info(
+                    f"[VideoStage] H3 镜{i+1}/{seg_count} 完成 | url={getattr(r, 'video_url', '')[:60]}"  # noqa: E501
+                )  # noqa: E501
             except Exception as e:
                 logger.error(f"[VideoStage] H3 镜{i+1} 生成失败 | err={e}")
                 seg_results.append(None)
@@ -356,21 +378,25 @@ class VideoStage(StagePlugin):
         )
 
         # 构造拼接后的 ProviderResult
-        total_duration = sum(
-            float(r.duration or 0) for r in valid if getattr(r, "duration", None)
-        ) or duration
-        _fake = type("FakeResult", (), {
-            "provider_id": "minimax_h3",
-            "video_url": merged_url,
-            "image_url": merged_url,
-            "images": [merged_url],
-            "filenames": [merged_url],
-            "seed": seed or 0,
-            "elapsed_ms": int((_time.time() - start) * 1000),
-            "prompt": prompt,
-            "prompt_id": "",
-            "duration": total_duration,
-        })()
+        total_duration = (
+            sum(float(r.duration or 0) for r in valid if getattr(r, "duration", None)) or duration
+        )
+        _fake = type(
+            "FakeResult",
+            (),
+            {
+                "provider_id": "minimax_h3",
+                "video_url": merged_url,
+                "image_url": merged_url,
+                "images": [merged_url],
+                "filenames": [merged_url],
+                "seed": seed or 0,
+                "elapsed_ms": int((_time.time() - start) * 1000),
+                "prompt": prompt,
+                "prompt_id": "",
+                "duration": total_duration,
+            },
+        )()
         return _fake
 
     async def _gen_tts_segment(self, comfyui_svc, text: str, idx: int) -> str:
@@ -400,7 +426,9 @@ class VideoStage(StagePlugin):
         if url.startswith(("http://", "https://")):
             temp_path = output_path_for(f"tmp_{uuid.uuid4().hex[:8]}.{ext}", "temp")
             try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=20.0, read=300.0)) as client:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(20.0, connect=20.0, read=300.0)
+                ) as client:  # noqa: E501
                     resp = await client.get(url)
                     resp.raise_for_status()
                     with open(temp_path, "wb") as f:
@@ -427,23 +455,42 @@ class VideoStage(StagePlugin):
         out_path = output_path_for(f"seg_tts_{uuid.uuid4().hex[:8]}.mp4", "output")
         # 环境音降为背景(0.45) + TTS 人声(1.0) 叠加，amix 以视频原音频时长为准
         args = [
-            ffmpeg, "-y",
-            "-i", seg_local,
-            "-i", tts_local,
+            ffmpeg,
+            "-y",
+            "-i",
+            seg_local,
+            "-i",
+            tts_local,
             "-filter_complex",
             "[0:a]volume=0.45[env];"
             "[1:a]volume=1.0,apad[tts];"
             "[env][tts]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[a]",
-            "-map", "0:v", "-map", "[a]",
-            "-c:v", "copy", "-c:a", "aac", "-ar", "48000", "-b:a", "192k", "-ac", "2",
+            "-map",
+            "0:v",
+            "-map",
+            "[a]",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-ar",
+            "48000",
+            "-b:a",
+            "192k",
+            "-ac",
+            "2",
             out_path,
         ]
         proc = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
-            logger.warning(f"[VideoStage] TTS 混音失败: {stderr.decode('utf-8', errors='replace')[:300]}")
+            logger.warning(
+                f"[VideoStage] TTS 混音失败: {stderr.decode('utf-8', errors='replace')[:300]}"
+            )  # noqa: E501
             return ""
         logger.info(f"[VideoStage] 镜 TTS 混音完成 | out={os.path.basename(out_path)}")
         return output_url_for(os.path.basename(out_path), "output")
@@ -463,8 +510,6 @@ class VideoStage(StagePlugin):
         cleaned = []
         for i, url in enumerate(video_urls):
             local = await resolve_local_video(url)
-            if not local:
-                local_candidates = None
             cleaned_local = await self._clean_clip_audio_align(local, ffmpeg, ffprobe)
             if cleaned_local:
                 cleaned.append(cleaned_local)
@@ -479,14 +524,25 @@ class VideoStage(StagePlugin):
 
         output_file = output_path_for(f"seg_concat_{uuid.uuid4().hex[:8]}.mp4", "output")
         proc = await asyncio.create_subprocess_exec(
-            ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concat_file,
-            "-c", "copy", output_file,
+            ffmpeg,
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            concat_file,
+            "-c",
+            "copy",
+            output_file,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0:
-            logger.warning(f"[VideoStage] concat copy 失败，改用重编码: {stderr.decode('utf-8', errors='replace')[:300]}")
+            logger.warning(
+                f"[VideoStage] concat copy 失败，改用重编码: {stderr.decode('utf-8', errors='replace')[:300]}"  # noqa: E501
+            )  # noqa: E501
             return await self._concat_reencode(cleaned, output_file)
         try:
             os.remove(concat_file)
@@ -499,7 +555,9 @@ class VideoStage(StagePlugin):
         import os
         import uuid
 
-        from services.providers.provider_utils import output_path_for, output_url_for
+        from services.providers.provider_utils import (
+            output_path_for,
+        )
 
         if not local or not os.path.exists(local):
             return None
@@ -508,11 +566,20 @@ class VideoStage(StagePlugin):
         dur_d = float("nan")
         try:
             import json as _json
+
             proc = await asyncio.create_subprocess_exec(
-                ffprobe, "-v", "error",
-                "-select_streams", "v:0", "-show_entries",
-                "stream=duration", "-of", "json", local,
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                ffprobe,
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=duration",
+                "-of",
+                "json",
+                local,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
             out, _ = await proc.communicate()
             data = _json.loads(out.decode("utf-8", errors="replace"))
@@ -522,9 +589,16 @@ class VideoStage(StagePlugin):
             else:
                 # 流无 duration 字段时回退 format
                 proc2 = await asyncio.create_subprocess_exec(
-                    ffprobe, "-v", "error", "-show_entries", "format=duration",
-                    "-of", "json", local,
-                    stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                    ffprobe,
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "json",
+                    local,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
                 )
                 out2, _ = await proc2.communicate()
                 data2 = _json.loads(out2.decode("utf-8", errors="replace"))
@@ -536,18 +610,26 @@ class VideoStage(StagePlugin):
         head_trim = 0.0
         try:
             import re as _re
+
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-hide_banner", "-i", local,
-                "-af", "silencedetect=noise=-45dB:d=0.05",
-                "-f", "null", "-",
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+                ffmpeg,
+                "-hide_banner",
+                "-i",
+                local,
+                "-af",
+                "silencedetect=noise=-45dB:d=0.05",
+                "-f",
+                "null",
+                "-",
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
             )
             _, err = await proc.communicate()
             out_txt = err.decode("utf-8", errors="replace")
             m_s = _re.search(r"silence_start:\s*(-?[\d.]+)", out_txt)
             if m_s:
                 s = float(m_s.group(1))
-                m_e = _re.search(r"silence_end:\s*([\d.]+)", out_txt[m_s.end():])
+                m_e = _re.search(r"silence_end:\s*([\d.]+)", out_txt[m_s.end() :])
                 if m_e:
                     e = float(m_e.group(1))
                     if s <= 0.35 and e >= 0.03 and e <= 0.6:
@@ -564,7 +646,7 @@ class VideoStage(StagePlugin):
         vid_dur = dur_d - head_trim if not (dur_d != dur_d) else None
         audio_filter = "aresample=48000,alimiter=limit=0.85:level=false"
         if vid_dur and vid_dur > 0:
-            audio_filter = f"atrim=0:{vid_dur},asetpts=PTS-STARTPTS,apad,atrim=0:{vid_dur},{audio_filter}"
+            audio_filter = f"atrim=0:{vid_dur},asetpts=PTS-STARTPTS,apad,atrim=0:{vid_dur},{audio_filter}"  # noqa: E501
         args += ["-vf", "setpts=PTS-STARTPTS"]
         args += ["-af", audio_filter]
         if vid_dur and vid_dur > 0:
@@ -574,11 +656,15 @@ class VideoStage(StagePlugin):
         args += [out_path]
 
         proc = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0:
-            logger.warning(f"[VideoStage] 镜头音频清理失败: {stderr.decode('utf-8', errors='replace')[:300]}")
+            logger.warning(
+                f"[VideoStage] 镜头音频清理失败: {stderr.decode('utf-8', errors='replace')[:300]}"
+            )  # noqa: E501
             return None
         os.path.exists(out_path) and os.path.getsize(out_path) > 0 and out_path
 
@@ -589,6 +675,7 @@ class VideoStage(StagePlugin):
         from services.stages.ffmpeg_utils import _ffmpeg_bin
         from services.providers.provider_utils import output_url_for
         import os
+
         ffmpeg = _ffmpeg_bin()
         if os.path.exists(output_file):
             try:
@@ -600,15 +687,41 @@ class VideoStage(StagePlugin):
         args = [ffmpeg, "-y"]
         for p in cleaned_paths:
             args += ["-i", p]
-        args += ["-filter_complex", fc, "-map", "[v]", "-map", "[a]",
-                 "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
-                 "-c:a", "aac", "-ar", "48000", "-b:a", "192k", "-ac", "2", output_file]
+        args += [
+            "-filter_complex",
+            fc,
+            "-map",
+            "[v]",
+            "-map",
+            "[a]",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "20",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-ar",
+            "48000",
+            "-b:a",
+            "192k",
+            "-ac",
+            "2",
+            output_file,
+        ]
         proc = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"逐镜重编码拼接失败: {stderr.decode('utf-8', errors='replace')[:400]}")
+            raise RuntimeError(
+                f"逐镜重编码拼接失败: {stderr.decode('utf-8', errors='replace')[:400]}"
+            )
         return output_url_for(os.path.basename(output_file), "output")
 
     async def _execute_from_script(
@@ -630,8 +743,10 @@ class VideoStage(StagePlugin):
         - 返回第一个，metadata.sibling_asset_ids 记录其余
         """
         import time
+
         start = time.time()
         from services.stages.script_utils import load_script_json, extract_acts
+
         script = await load_script_json(script_asset)
         if not script:
             return self._error_result(f"无法读取剧本 JSON: {script_asset.asset_id}")
@@ -652,6 +767,7 @@ class VideoStage(StagePlugin):
         # ⭐ 修复 P0：_execute_from_script 此前未调用 resolve_video_duration
         # 导致 frame_count/fps/segment_seconds 三个变量未定义，剧本批量生成必抛 NameError
         from services.video_time import resolve_video_duration, resolve_segment_seconds
+
         raw_duration = params.get("duration")
         raw_frame_count = params.get("frame_count")
         raw_fps = params.get("fps") or params.get("frame_rate")
@@ -669,7 +785,6 @@ class VideoStage(StagePlugin):
         tts_ref_audio = params.get("tts_ref_audio", "")
         tts_mix_mode = params.get("tts_mix_mode", "replace")
         tts_volume = float(params.get("tts_volume", 1.0))
-        bgm_url = params.get("bgm_url", "")
         bgm_volume = float(params.get("bgm_volume", 0.2))
         tts_enabled = params.get("tts_enabled", False)
 
@@ -678,6 +793,7 @@ class VideoStage(StagePlugin):
         if tts_enabled and tts_mode == "voice_design":
             from services.stages.script_utils import extract_characters
             from services.stages.tts_utils import build_voice_map
+
             characters = extract_characters(script)
             user_voice_map = params.get("voice_map", {}) or {}
             multi_voice_map = build_voice_map(characters, user_voice_map)
@@ -700,7 +816,7 @@ class VideoStage(StagePlugin):
 
         logger.info(
             f"[VideoStage] Script 感知 | script={script_asset.asset_id} | "
-            f"acts={len(acts)} | storyboard_frames={len(storyboard_frames)} | tts_enabled={tts_enabled}"
+            f"acts={len(acts)} | storyboard_frames={len(storyboard_frames)} | tts_enabled={tts_enabled}"  # noqa: E501
         )
 
         created_assets: List[AssetRef] = []
@@ -714,7 +830,11 @@ class VideoStage(StagePlugin):
                 prompt = f"{prompt}。{narration}"
 
             # 对应的 storyboard 帧（如果有的话）
-            frame_url = storyboard_frames[i].urls[0] if i < len(storyboard_frames) and storyboard_frames[i].urls else None
+            frame_url = (
+                storyboard_frames[i].urls[0]
+                if i < len(storyboard_frames) and storyboard_frames[i].urls
+                else None
+            )  # noqa: E501
             if not frame_url and storyboard_frames:
                 # 回退用第一帧
                 frame_url = storyboard_frames[0].urls[0] if storyboard_frames[0].urls else None
@@ -730,6 +850,7 @@ class VideoStage(StagePlugin):
             if tts_enabled and act_tts_texts and provider_id != "minimax_h3":
                 try:
                     from services.comfyui_service import get_comfyui_service
+
                     comfyui_svc = get_comfyui_service()
                     for j, text in enumerate(act_tts_texts):
                         if not text or not text.strip():
@@ -740,8 +861,10 @@ class VideoStage(StagePlugin):
                         actual_text = text
                         if multi_voice_map:
                             from services.stages.tts_utils import (
-                                get_voice_for_text, strip_speaker_prefix,
+                                get_voice_for_text,
+                                strip_speaker_prefix,
                             )
+
                             actual_voice_desc = get_voice_for_text(
                                 text, multi_voice_map, tts_voice_desc
                             )
@@ -768,6 +891,7 @@ class VideoStage(StagePlugin):
             act_duration = float(act.get("duration_seconds", 5.0))
             # 用本幕 duration 重新解析 frame_count（保持与 fps 一致）
             from services.video_time import resolve_video_duration as _resolve_dur
+
             act_dur_resolved, act_frame_count, act_fps = _resolve_dur(
                 duration=act_duration, frame_count=None, fps=fps
             )
@@ -797,7 +921,8 @@ class VideoStage(StagePlugin):
                     **extra_kwargs,
                 )
                 new_asset = await self._register_asset(
-                    asset_svc, result,
+                    asset_svc,
+                    result,
                     asset_type="video",
                     name=f"第{act.get('act', i+1)}幕视频",
                     parent_id=script_asset.asset_id,
@@ -815,12 +940,16 @@ class VideoStage(StagePlugin):
                         "tts_enabled": bool(tts_enabled),
                         "tts_texts": act_tts_texts,
                         "tts_mode": tts_mode,
-                        "source_storyboard_asset_id": storyboard_frames[i].asset_id if i < len(storyboard_frames) else "",
+                        "source_storyboard_asset_id": (
+                            storyboard_frames[i].asset_id if i < len(storyboard_frames) else ""
+                        ),  # noqa: E501
                     },
                     content_type="",
                 )
                 created_assets.append(new_asset)
-                logger.info(f"[VideoStage] 幕{i+1}/{len(acts)} 完成 | id={new_asset.asset_id} | duration={duration}s")
+                logger.info(
+                    f"[VideoStage] 幕{i+1}/{len(acts)} 完成 | id={new_asset.asset_id} | duration={duration}s"  # noqa: E501
+                )  # noqa: E501
             except Exception as e:
                 logger.error(f"[VideoStage] 幕{i+1} 生成失败 | err={e}")
                 errors.append(f"幕{i+1}: {e}")
@@ -849,7 +978,9 @@ class VideoStage(StagePlugin):
         return AssetProduceResult(asset=primary, success=True, elapsed_ms=elapsed)
 
     def _collect_storyboard_frames(
-        self, input_assets: List[AssetRef], asset_svc,
+        self,
+        input_assets: List[AssetRef],
+        asset_svc,
     ) -> List[AssetRef]:
         """收集 storyboard 帧（主资产 + sibling_asset_ids 中的兄弟帧）
 
@@ -881,5 +1012,6 @@ class VideoStage(StagePlugin):
                 return int(a.metadata.get("act_index", 999))
             except Exception:
                 return 999
+
         frames.sort(key=_act_index)
         return frames

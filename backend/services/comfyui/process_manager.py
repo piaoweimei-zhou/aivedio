@@ -25,12 +25,7 @@ logger = logging.getLogger(__name__)
 
 # ── 配置常量 ──────────────────────────────────────────────────
 
-from services.comfyui.config import COMFYUI_BASE_URL as _CFG_BASE_URL
-from services.comfyui.config import (
-    MEMORY_HIGH_THRESHOLD,
-    VRAM_HIGH_THRESHOLD,
-    MEMORY_CHECK_INTERVAL,
-)
+from services.comfyui.config import COMFYUI_BASE_URL as _CFG_BASE_URL  # noqa: E402
 
 COMFYUI_START_TIMEOUT = 60  # 秒
 COMFYUI_BASE_URL = _CFG_BASE_URL  # 复用 config.py 单一来源
@@ -143,7 +138,8 @@ class ComfyUIProcessManager:
         env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
         cmd = [
-            COMFYUI_PYTHON, COMFYUI_SCRIPT,
+            COMFYUI_PYTHON,
+            COMFYUI_SCRIPT,
             "--use-sage-attention",
             "--bf16-unet",
             "--fast",
@@ -232,10 +228,14 @@ class ComfyUIProcessManager:
                 proc = self._process
                 if sys.platform == "win32":
                     import subprocess as sp
+
                     result = sp.run(
-                        f'taskkill /F /T /PID {proc.pid}',
-                        capture_output=True, shell=True, timeout=5,
-                        encoding='gbk', errors='replace',
+                        f"taskkill /F /T /PID {proc.pid}",
+                        capture_output=True,
+                        shell=True,
+                        timeout=5,
+                        encoding="gbk",
+                        errors="replace",
                     )
                     logger.info(
                         f"[WINDOWS] taskkill /T PID={proc.pid}"
@@ -244,6 +244,7 @@ class ComfyUIProcessManager:
                     )
                 else:
                     import os as _os
+
                     try:
                         _os.killpg(_os.getpgid(proc.pid), signal.SIGTERM)
                     except (ProcessLookupError, PermissionError):
@@ -268,25 +269,32 @@ class ComfyUIProcessManager:
     def _kill_process_on_port(port: int):
         """强制释放指定端口（Windows），防止端口占用导致重启失败"""
         import subprocess as sp
+
         try:
             result = sp.run(
                 f'netstat -ano | findstr ":{port} "',
-                capture_output=True, shell=True, timeout=5,
-                encoding='gbk', errors='replace',
+                capture_output=True,
+                shell=True,
+                timeout=5,
+                encoding="gbk",
+                errors="replace",
             )
             if not result.stdout.strip():
                 return
             seen = set()
             for line in result.stdout.splitlines():
                 parts = line.strip().split()
-                if len(parts) >= 5 and (parts[3] or '').endswith(f':{port}'):
+                if len(parts) >= 5 and (parts[3] or "").endswith(f":{port}"):
                     pid = parts[-1]
                     if pid not in seen:
                         seen.add(pid)
                         sp.run(
-                            f'taskkill /F /T /PID {pid}',
-                            capture_output=True, shell=True, timeout=5,
-                            encoding='gbk', errors='replace',
+                            f"taskkill /F /T /PID {pid}",
+                            capture_output=True,
+                            shell=True,
+                            timeout=5,
+                            encoding="gbk",
+                            errors="replace",
                         )
                         logger.info(f"[WINDOWS] 已释放端口 {port} (PID={pid}, 含子进程树)")
         except Exception as e:
@@ -367,6 +375,7 @@ class ComfyUIProcessManager:
         """为 ComfyUI 释放显存：停止 llama.cpp"""
         try:
             from services.process_manager import get_llm_manager
+
             llm_mgr = get_llm_manager()
             if llm_mgr.is_running:
                 logger.info("[VRAM] 停止 llama.cpp → 为 ComfyUI 释放显存")

@@ -33,17 +33,17 @@ _GRAPHIC_TYPE_TEMPLATES = {
     "infographic": {
         "label": "信息图",
         "desc": "标题 + 多个信息块（图标/标题/正文）",
-        "json_schema": '{"title":"...","subtitle":"...","sections":[{"heading":"...","body":"..."}]}',
+        "json_schema": '{"title":"...","subtitle":"...","sections":[{"heading":"...","body":"..."}]}',  # noqa: E501
     },
     "comparison": {
         "label": "对比图",
         "desc": "左右两栏对比，突出差异",
-        "json_schema": '{"title":"...","left_label":"...","left_items":["..."],"right_label":"...","right_items":["..."]}',
+        "json_schema": '{"title":"...","left_label":"...","left_items":["..."],"right_label":"...","right_items":["..."]}',  # noqa: E501
     },
     "tutorial": {
         "label": "教程图",
         "desc": "步骤式教程（序号+标题+描述，可选箭头标注）",
-        "json_schema": '{"title":"...","steps":[{"title":"...","description":"...","arrow_hint":"可选，例如：点击右上角按钮"}]}',
+        "json_schema": '{"title":"...","steps":[{"title":"...","description":"...","arrow_hint":"可选，例如：点击右上角按钮"}]}',  # noqa: E501
     },
     "checklist": {
         "label": "清单图",
@@ -63,7 +63,7 @@ _GRAPHIC_TYPE_TEMPLATES = {
     "video_cover": {
         "label": "视频封面图",
         "desc": "标题大字 + 对比画面（吸引点击）",
-        "json_schema": '{"title":"...","subtitle":"...","left_label":"...","right_label":"...","hook":"..."}',
+        "json_schema": '{"title":"...","subtitle":"...","left_label":"...","right_label":"...","hook":"..."}',  # noqa: E501
     },
     "emotional_scene": {
         "label": "情感共鸣图",
@@ -76,10 +76,10 @@ _DEFAULT_LLM_MODEL = os.getenv("OPENAI_TEXT_MODEL", "deepseek-chat")
 
 # 中文字体路径（Windows）
 _FONT_CANDIDATES = [
-    "C:/Windows/Fonts/msyh.ttc",      # 微软雅黑
-    "C:/Windows/Fonts/msyhbd.ttc",    # 微软雅黑粗体
-    "C:/Windows/Fonts/simhei.ttf",    # 黑体
-    "C:/Windows/Fonts/simsun.ttc",   # 宋体
+    "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+    "C:/Windows/Fonts/msyhbd.ttc",  # 微软雅黑粗体
+    "C:/Windows/Fonts/simhei.ttf",  # 黑体
+    "C:/Windows/Fonts/simsun.ttc",  # 宋体
     "/System/Library/Fonts/PingFang.ttc",  # macOS
     "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux
 ]
@@ -183,9 +183,7 @@ class GraphicStage(StagePlugin):
 
         # ── 渲染为 PNG ────────────────────────────────────────
         try:
-            image_url = await self._render_graphic(
-                graphic_type, content, style, width, height
-            )
+            image_url = await self._render_graphic(graphic_type, content, style, width, height)
         except Exception as e:
             logger.error(f"[GraphicStage] 渲染失败: {e}")
             return self._error(f"图片渲染失败: {e}")
@@ -240,9 +238,7 @@ class GraphicStage(StagePlugin):
             f"5. JSON 结构如下：{template['json_schema']}\n"
         )
 
-    def _build_user_prompt(
-        self, graphic_type: str, topic: str, title: str, params: Dict
-    ) -> str:
+    def _build_user_prompt(self, graphic_type: str, topic: str, title: str, params: Dict) -> str:
         parts = [f"主题：{topic}"]
         if title:
             parts.append(f"标题（可参考）：{title}")
@@ -265,7 +261,9 @@ class GraphicStage(StagePlugin):
         elif graphic_type == "video_cover":
             parts.append("标题大字控制在8字以内，左右对比标签各3-5字，结尾钩子10字以内")
         elif graphic_type == "emotional_scene":
-            parts.append("场景描述用于 AI 绘图参考（含光线/氛围/主体），情绪标签1词，配文20字以内走心")
+            parts.append(
+                "场景描述用于 AI 绘图参考（含光线/氛围/主体），情绪标签1词，配文20字以内走心"
+            )
 
         return "\n".join(parts)
 
@@ -285,6 +283,7 @@ class GraphicStage(StagePlugin):
             pass
         # 尝试提取第一个 JSON 块
         import re
+
         match = re.search(r"\{[\s\S]*\}", text)
         if match:
             try:
@@ -317,12 +316,24 @@ class GraphicStage(StagePlugin):
         # 加载字体
         font_path = _find_font()
         font_bold = _find_font(bold=True) or font_path
-        f_title = ImageFont.truetype(font_bold or font_path, 48) if font_path else ImageFont.load_default()
+        f_title = (
+            ImageFont.truetype(font_bold or font_path, 48)
+            if font_path
+            else ImageFont.load_default()
+        )  # noqa: E501
         f_subtitle = ImageFont.truetype(font_path, 28) if font_path else ImageFont.load_default()
         f_body = ImageFont.truetype(font_path, 26) if font_path else ImageFont.load_default()
         f_small = ImageFont.truetype(font_path, 22) if font_path else ImageFont.load_default()
-        f_quote = ImageFont.truetype(font_bold or font_path, 52) if font_path else ImageFont.load_default()
-        f_number = ImageFont.truetype(font_bold or font_path, 36) if font_path else ImageFont.load_default()
+        f_quote = (
+            ImageFont.truetype(font_bold or font_path, 52)
+            if font_path
+            else ImageFont.load_default()
+        )  # noqa: E501
+        f_number = (
+            ImageFont.truetype(font_bold or font_path, 36)
+            if font_path
+            else ImageFont.load_default()
+        )  # noqa: E501
 
         margin = 60
         y = margin
@@ -332,21 +343,58 @@ class GraphicStage(StagePlugin):
 
         # 按类型渲染
         if graphic_type == "infographic":
-            y = self._render_infographic(draw, content, palette, f_title, f_subtitle, f_body, f_small, width, margin, y)
+            y = self._render_infographic(
+                draw, content, palette, f_title, f_subtitle, f_body, f_small, width, margin, y
+            )  # noqa: E501
         elif graphic_type == "comparison":
-            y = self._render_comparison(draw, content, palette, f_title, f_subtitle, f_body, f_small, width, height, margin, y)
+            y = self._render_comparison(
+                draw,
+                content,
+                palette,
+                f_title,
+                f_subtitle,
+                f_body,
+                f_small,
+                width,
+                height,
+                margin,
+                y,
+            )  # noqa: E501
         elif graphic_type == "tutorial":
-            y = self._render_tutorial(draw, content, palette, f_title, f_body, f_small, f_number, width, margin, y)
+            y = self._render_tutorial(
+                draw, content, palette, f_title, f_body, f_small, f_number, width, margin, y
+            )  # noqa: E501
         elif graphic_type == "checklist":
-            y = self._render_checklist(draw, content, palette, f_title, f_body, f_small, width, margin, y)
+            y = self._render_checklist(
+                draw, content, palette, f_title, f_body, f_small, width, margin, y
+            )  # noqa: E501
         elif graphic_type == "quote":
-            y = self._render_quote(draw, content, palette, f_quote, f_body, width, height, margin, y)
+            y = self._render_quote(
+                draw, content, palette, f_quote, f_body, width, height, margin, y
+            )  # noqa: E501
         elif graphic_type == "data_chart":
-            y = self._render_data_chart(draw, content, palette, f_title, f_body, f_small, width, margin, y)
+            y = self._render_data_chart(
+                draw, content, palette, f_title, f_body, f_small, width, margin, y
+            )  # noqa: E501
         elif graphic_type == "video_cover":
-            y = self._render_video_cover(draw, content, palette, f_title, f_subtitle, f_body, f_small, f_quote, width, height, margin, y)
+            y = self._render_video_cover(
+                draw,
+                content,
+                palette,
+                f_title,
+                f_subtitle,
+                f_body,
+                f_small,
+                f_quote,
+                width,
+                height,
+                margin,
+                y,
+            )  # noqa: E501
         elif graphic_type == "emotional_scene":
-            y = self._render_emotional_scene(draw, content, palette, f_title, f_body, f_small, f_quote, width, height, margin, y)
+            y = self._render_emotional_scene(
+                draw, content, palette, f_title, f_body, f_small, f_quote, width, height, margin, y
+            )  # noqa: E501
 
         # 底部水印
         watermark = "AI 导演工作台"
@@ -360,6 +408,7 @@ class GraphicStage(StagePlugin):
 
         # 保存
         from services.providers.provider_utils import output_path_for, output_url_for
+
         filename = f"graphic_{graphic_type}_{uuid.uuid4().hex[:8]}.png"
         path = output_path_for(filename, "graphic")
         img.save(path, "PNG", optimize=True)
@@ -369,10 +418,38 @@ class GraphicStage(StagePlugin):
     def _get_palette(self, style: str) -> Dict[str, str]:
         """获取配色方案"""
         palettes = {
-            "modern": {"bg": "#FFFFFF", "accent": "#1890FF", "text": "#262626", "muted": "#BFBFBF", "card": "#F5F7FA", "card_border": "#E8E8E8"},
-            "minimal": {"bg": "#FAFAFA", "accent": "#595959", "text": "#262626", "muted": "#BFBFBF", "card": "#F0F0F0", "card_border": "#D9D9D9"},
-            "warm": {"bg": "#FFF8F0", "accent": "#FA8C16", "text": "#5C3D2E", "muted": "#D4B896", "card": "#FFF0E0", "card_border": "#F5D5B0"},
-            "tech": {"bg": "#0D1117", "accent": "#58A6FF", "text": "#C9D1D9", "muted": "#484F58", "card": "#161B22", "card_border": "#30363D"},
+            "modern": {
+                "bg": "#FFFFFF",
+                "accent": "#1890FF",
+                "text": "#262626",
+                "muted": "#BFBFBF",
+                "card": "#F5F7FA",
+                "card_border": "#E8E8E8",
+            },  # noqa: E501
+            "minimal": {
+                "bg": "#FAFAFA",
+                "accent": "#595959",
+                "text": "#262626",
+                "muted": "#BFBFBF",
+                "card": "#F0F0F0",
+                "card_border": "#D9D9D9",
+            },  # noqa: E501
+            "warm": {
+                "bg": "#FFF8F0",
+                "accent": "#FA8C16",
+                "text": "#5C3D2E",
+                "muted": "#D4B896",
+                "card": "#FFF0E0",
+                "card_border": "#F5D5B0",
+            },  # noqa: E501
+            "tech": {
+                "bg": "#0D1117",
+                "accent": "#58A6FF",
+                "text": "#C9D1D9",
+                "muted": "#484F58",
+                "card": "#161B22",
+                "card_border": "#30363D",
+            },  # noqa: E501
         }
         return palettes.get(style, palettes["modern"])
 
@@ -402,7 +479,9 @@ class GraphicStage(StagePlugin):
         return y
 
     # ── 信息图 ────────────────────────────────────────────────
-    def _render_infographic(self, draw, content, palette, f_title, f_subtitle, f_body, f_small, width, margin, y):
+    def _render_infographic(
+        self, draw, content, palette, f_title, f_subtitle, f_body, f_small, width, margin, y
+    ):  # noqa: E501
         title = content.get("title", "信息图")
         subtitle = content.get("subtitle", "")
         sections = content.get("sections", [])
@@ -425,7 +504,10 @@ class GraphicStage(StagePlugin):
             # 卡片背景
             draw.rounded_rectangle(
                 [margin, y, margin + card_w, y + block_h],
-                radius=12, fill=palette["card"], outline=palette["card_border"], width=1
+                radius=12,
+                fill=palette["card"],
+                outline=palette["card_border"],
+                width=1,
             )
             # 左侧色条
             draw.rectangle([margin, y, margin + 6, y + block_h], fill=palette["accent"])
@@ -441,7 +523,9 @@ class GraphicStage(StagePlugin):
         return y
 
     # ── 对比图 ────────────────────────────────────────────────
-    def _render_comparison(self, draw, content, palette, f_title, f_subtitle, f_body, f_small, width, height, margin, y):
+    def _render_comparison(
+        self, draw, content, palette, f_title, f_subtitle, f_body, f_small, width, height, margin, y
+    ):  # noqa: E501
         title = content.get("title", "对比图")
         left_label = content.get("left_label", "方案A")
         left_items = content.get("left_items", [])
@@ -463,26 +547,44 @@ class GraphicStage(StagePlugin):
 
         # 左右卡片
         card_h = max(len(left_items), len(right_items)) * 50 + 40
-        draw.rounded_rectangle([left_x, y, left_x + col_w, y + card_h], radius=12, fill=palette["card"], outline=palette["card_border"], width=1)
-        draw.rounded_rectangle([right_x, y, right_x + col_w, y + card_h], radius=12, fill=palette["card"], outline=palette["accent"], width=2)
+        draw.rounded_rectangle(
+            [left_x, y, left_x + col_w, y + card_h],
+            radius=12,
+            fill=palette["card"],
+            outline=palette["card_border"],
+            width=1,
+        )  # noqa: E501
+        draw.rounded_rectangle(
+            [right_x, y, right_x + col_w, y + card_h],
+            radius=12,
+            fill=palette["card"],
+            outline=palette["accent"],
+            width=2,
+        )  # noqa: E501
 
         ly = y + 20
         for item in left_items:
             draw.ellipse([left_x + 16, ly + 8, left_x + 24, ly + 16], fill=palette["muted"])
-            ly = self._draw_wrapped_text(draw, (left_x + 36, ly), str(item), f_body, palette["text"], 14)
+            ly = self._draw_wrapped_text(
+                draw, (left_x + 36, ly), str(item), f_body, palette["text"], 14
+            )  # noqa: E501
             ly += 12
 
         ry = y + 20
         for item in right_items:
             draw.ellipse([right_x + 16, ry + 8, right_x + 24, ry + 16], fill=palette["accent"])
-            ry = self._draw_wrapped_text(draw, (right_x + 36, ry), str(item), f_body, palette["accent"], 14)
+            ry = self._draw_wrapped_text(
+                draw, (right_x + 36, ry), str(item), f_body, palette["accent"], 14
+            )  # noqa: E501
             ry += 12
 
         y += card_h + 20
         return y
 
     # ── 教程图 ────────────────────────────────────────────────
-    def _render_tutorial(self, draw, content, palette, f_title, f_body, f_small, f_number, width, margin, y):
+    def _render_tutorial(
+        self, draw, content, palette, f_title, f_body, f_small, f_number, width, margin, y
+    ):  # noqa: E501
         title = content.get("title", "教程图")
         steps = content.get("steps", [])
 
@@ -498,10 +600,17 @@ class GraphicStage(StagePlugin):
             circle_r = 28
             cx = margin + circle_r
             cy = y + circle_r
-            draw.ellipse([cx - circle_r, cy - circle_r, cx + circle_r, cy + circle_r], fill=palette["accent"])
+            draw.ellipse(
+                [cx - circle_r, cy - circle_r, cx + circle_r, cy + circle_r], fill=palette["accent"]
+            )  # noqa: E501
             num_text = str(i + 1)
             bbox = draw.textbbox((0, 0), num_text, font=f_number)
-            draw.text((cx - (bbox[2] - bbox[0]) // 2, cy - (bbox[3] - bbox[1]) // 2 - 4), num_text, font=f_number, fill="#FFFFFF")
+            draw.text(
+                (cx - (bbox[2] - bbox[0]) // 2, cy - (bbox[3] - bbox[1]) // 2 - 4),
+                num_text,
+                font=f_number,
+                fill="#FFFFFF",
+            )  # noqa: E501
 
             # 步骤内容
             text_x = margin + circle_r * 2 + 24
@@ -519,7 +628,8 @@ class GraphicStage(StagePlugin):
                 hint_w = self._text_width(draw, arrow_hint, f_small) + 24
                 draw.rounded_rectangle(
                     [hint_bg_x, hint_y - 4, hint_bg_x + hint_w, hint_y + f_small.size + 14],
-                    radius=8, fill=palette["accent"],
+                    radius=8,
+                    fill=palette["accent"],
                 )
                 draw.text((hint_bg_x + 12, hint_y + 4), arrow_hint, font=f_small, fill="#FFFFFF")
                 y = hint_y + f_small.size + 24
@@ -538,13 +648,24 @@ class GraphicStage(StagePlugin):
 
         card_w = width - margin * 2
         card_h = len(items) * 48 + 30
-        draw.rounded_rectangle([margin, y, margin + card_w, y + card_h], radius=12, fill=palette["card"], outline=palette["card_border"], width=1)
+        draw.rounded_rectangle(
+            [margin, y, margin + card_w, y + card_h],
+            radius=12,
+            fill=palette["card"],
+            outline=palette["card_border"],
+            width=1,
+        )  # noqa: E501
 
         iy = y + 20
         for item in items:
             # 勾选框
             box_size = 22
-            draw.rounded_rectangle([margin + 16, iy, margin + 16 + box_size, iy + box_size], radius=4, outline=palette["accent"], width=2)
+            draw.rounded_rectangle(
+                [margin + 16, iy, margin + 16 + box_size, iy + box_size],
+                radius=4,
+                outline=palette["accent"],
+                width=2,
+            )  # noqa: E501
             draw.text((margin + 20, iy - 2), "✓", font=f_small, fill=palette["accent"])
             # 文本
             self._draw_wrapped_text(draw, (margin + 56, iy), str(item), f_body, palette["text"], 22)
@@ -584,7 +705,9 @@ class GraphicStage(StagePlugin):
         return height - margin
 
     # ── 数据图 ────────────────────────────────────────────────
-    def _render_data_chart(self, draw, content, palette, f_title, f_body, f_small, width, margin, y):
+    def _render_data_chart(
+        self, draw, content, palette, f_title, f_body, f_small, width, margin, y
+    ):  # noqa: E501
         title = content.get("title", "数据图")
         unit = content.get("unit", "")
         bars = content.get("bars", [])
@@ -609,23 +732,40 @@ class GraphicStage(StagePlugin):
             y += 42
 
             # 条形图背景
-            draw.rounded_rectangle([margin, y, margin + chart_w + 160, y + bar_h], radius=6, fill=palette["card"])
+            draw.rounded_rectangle(
+                [margin, y, margin + chart_w + 160, y + bar_h], radius=6, fill=palette["card"]
+            )  # noqa: E501
             # 条形图前景
             bar_w = int(chart_w * (value / max_val)) if max_val > 0 else 0
             if bar_w > 0:
-                draw.rounded_rectangle([margin, y, margin + bar_w, y + bar_h], radius=6, fill=palette["accent"])
+                draw.rounded_rectangle(
+                    [margin, y, margin + bar_w, y + bar_h], radius=6, fill=palette["accent"]
+                )  # noqa: E501
 
             # 数值
             val_text = f"{value}{unit}"
-            draw.text((margin + chart_w + 170, y + 4), val_text, font=f_body, fill=palette["accent"])
+            draw.text(
+                (margin + chart_w + 170, y + 4), val_text, font=f_body, fill=palette["accent"]
+            )  # noqa: E501
             y += bar_h + gap
 
         return y
 
     # ── 视频封面图（标题大字 + 对比画面） ─────────────────────
     def _render_video_cover(
-        self, draw, content, palette, f_title, f_subtitle, f_body, f_small, f_quote,
-        width, height, margin, y,
+        self,
+        draw,
+        content,
+        palette,
+        f_title,
+        f_subtitle,
+        f_body,
+        f_small,
+        f_quote,
+        width,
+        height,
+        margin,
+        y,
     ):
         title = content.get("title", "")
         subtitle = content.get("subtitle", "")
@@ -658,38 +798,50 @@ class GraphicStage(StagePlugin):
         left_box_y = y
         draw.rounded_rectangle(
             [margin, left_box_y, margin + box_w, left_box_y + box_h],
-            radius=12, fill=palette["card"], outline=palette["card_border"], width=2,
+            radius=12,
+            fill=palette["card"],
+            outline=palette["card_border"],
+            width=2,
         )
         # 左侧标签
         lw = self._text_width(draw, left_label, f_title)
         draw.text(
             ((margin + box_w // 2 - lw // 2), left_box_y + box_h // 2 - 24),
-            left_label, font=f_title, fill=palette["muted"],
+            left_label,
+            font=f_title,
+            fill=palette["muted"],
         )
         # 左侧大 ×
         draw.text(
             (margin + box_w // 2 - 24, left_box_y + box_h - 80),
-            "\u00d7", font=f_quote, fill="#FF4D4F",
+            "\u00d7",
+            font=f_quote,
+            fill="#FF4D4F",
         )
 
         # 右侧"后"（亮色）
         right_x = margin + box_w + gap_w
         draw.rounded_rectangle(
             [right_x, left_box_y, right_x + box_w, left_box_y + box_h],
-            radius=12, fill=palette["accent"], outline=palette["accent"], width=2,
+            radius=12,
+            fill=palette["accent"],
+            outline=palette["accent"],
+            width=2,
         )
         # 右侧标签
         rw = self._text_width(draw, right_label, f_title)
-        # 反色文字
-        right_text_color = "#FFFFFF" if palette["bg"] != "#FFFFFF" else "#FFFFFF"
         draw.text(
             (right_x + box_w // 2 - rw // 2, left_box_y + box_h // 2 - 24),
-            right_label, font=f_title, fill="#FFFFFF",
+            right_label,
+            font=f_title,
+            fill="#FFFFFF",
         )
         # 右侧大 ✓
         draw.text(
             (right_x + box_w // 2 - 20, left_box_y + box_h - 80),
-            "\u2713", font=f_quote, fill="#FFFFFF",
+            "\u2713",
+            font=f_quote,
+            fill="#FFFFFF",
         )
 
         y = left_box_y + box_h + 30
@@ -701,14 +853,17 @@ class GraphicStage(StagePlugin):
             block_h = 30 + len(hook_lines) * (f_body.size + 6) + 20
             draw.rounded_rectangle(
                 [margin, y, width - margin, y + block_h],
-                radius=10, fill=palette["accent"],
+                radius=10,
+                fill=palette["accent"],
             )
             inner_y = y + 15
             for line in hook_lines:
                 lw = self._text_width(draw, line, f_body)
                 draw.text(
                     ((width - lw) // 2, inner_y),
-                    line, font=f_body, fill="#FFFFFF",
+                    line,
+                    font=f_body,
+                    fill="#FFFFFF",
                 )
                 inner_y += f_body.size + 6
             y += block_h + 10
@@ -717,8 +872,18 @@ class GraphicStage(StagePlugin):
 
     # ── 情感共鸣图（情绪场景图） ──────────────────────────────
     def _render_emotional_scene(
-        self, draw, content, palette, f_title, f_body, f_small, f_quote,
-        width, height, margin, y,
+        self,
+        draw,
+        content,
+        palette,
+        f_title,
+        f_body,
+        f_small,
+        f_quote,
+        width,
+        height,
+        margin,
+        y,
     ):
         title = content.get("title", "")
         scene_desc = content.get("scene_desc", "")
@@ -738,7 +903,10 @@ class GraphicStage(StagePlugin):
         scene_h = 360
         draw.rounded_rectangle(
             [margin, y, width - margin, y + scene_h],
-            radius=12, fill=palette["card"], outline=palette["card_border"], width=2,
+            radius=12,
+            fill=palette["card"],
+            outline=palette["card_border"],
+            width=2,
         )
         # 左侧色条
         draw.rectangle([margin, y, margin + 6, y + scene_h], fill=palette["accent"])
@@ -752,7 +920,8 @@ class GraphicStage(StagePlugin):
             tw = self._text_width(draw, tag, f_small)
             draw.rounded_rectangle(
                 [inner_x, inner_y, inner_x + tw + 20, inner_y + f_small.size + 14],
-                radius=8, fill=palette["accent"],
+                radius=8,
+                fill=palette["accent"],
             )
             draw.text((inner_x + 10, inner_y + 6), tag, font=f_small, fill="#FFFFFF")
             inner_y += f_small.size + 30
@@ -760,8 +929,13 @@ class GraphicStage(StagePlugin):
         # 场景描述（多行）
         if scene_desc:
             inner_y = self._draw_wrapped_text(
-                draw, (inner_x, inner_y), scene_desc, f_body,
-                palette["text"], max_chars=18, line_gap=10,
+                draw,
+                (inner_x, inner_y),
+                scene_desc,
+                f_body,
+                palette["text"],
+                max_chars=18,
+                line_gap=10,
             )
 
         # 居中提示："此处为场景图占位，AI 绘图可参考上述描述"
@@ -769,7 +943,9 @@ class GraphicStage(StagePlugin):
         tw = self._text_width(draw, tip, f_small)
         draw.text(
             ((width - tw) // 2, y + scene_h - 40),
-            tip, font=f_small, fill=palette["muted"],
+            tip,
+            font=f_small,
+            fill=palette["muted"],
         )
 
         y += scene_h + 30
@@ -780,7 +956,10 @@ class GraphicStage(StagePlugin):
             block_h = 40 + len(cap_lines) * (f_quote.size + 6) + 30
             draw.rounded_rectangle(
                 [margin, y, width - margin, y + block_h],
-                radius=12, fill=palette["card"], outline=palette["accent"], width=2,
+                radius=12,
+                fill=palette["card"],
+                outline=palette["accent"],
+                width=2,
             )
             inner_y = y + 20
             # 开头引号

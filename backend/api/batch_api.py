@@ -16,7 +16,7 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/director/batches", tags=["导演工作台-批量
 
 
 # ==================== Request Models ====================
+
 
 class BatchStepRequest(BaseModel):
     step_id: str = ""
@@ -54,6 +55,7 @@ class RetryBatchRequest(BaseModel):
 
 
 # ==================== Endpoints ====================
+
 
 @router.post("")
 async def create_batch(request: CreateBatchRequest):
@@ -103,7 +105,9 @@ async def get_batch(batch_id: str):
 
 
 @router.post("/{batch_id}/start")
-async def start_batch(batch_id: str, dry_run: bool = Query(False, description="预检模式：只检查不执行")):
+async def start_batch(
+    batch_id: str, dry_run: bool = Query(False, description="预检模式：只检查不执行")
+):
     """启动批量任务
 
     - dry_run=true: 只预检（DAG结构+Provider可用性），不执行
@@ -146,6 +150,7 @@ async def dry_run_batch(batch_id: str):
     # 获取详细的 DAG 和 Provider 信息
     dag = await svc.get_dag(batch_id) or {}
     from services.provider_service import get_provider_service
+
     provider_svc = get_provider_service()
     check_result = provider_svc.pre_check_batch(batch.steps)
     return {

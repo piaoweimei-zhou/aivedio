@@ -12,6 +12,7 @@
 - frame_count = duration × fps
 - duration = frame_count / fps
 """
+
 from typing import Optional, Tuple
 
 DEFAULT_FPS = 24

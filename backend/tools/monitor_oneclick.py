@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """监控一键成片批次，等待逐镜 video / export 完成，校验成片音画时长对齐"""
+
 import asyncio
 import json
 import subprocess
@@ -25,8 +26,18 @@ def ffprobe(path):
     """返回 (has_audio, video_duration, audio_duration, audio_start)"""
     try:
         p = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", path],
-            capture_output=True, text=True,
+            [
+                "ffprobe",
+                "-v",
+                "quiet",
+                "-print_format",
+                "json",
+                "-show_format",
+                "-show_streams",
+                path,
+            ],  # noqa: E501
+            capture_output=True,
+            text=True,
         )
         data = json.loads(p.stdout)
         v_dur = a_dur = None
@@ -40,7 +51,7 @@ def ffprobe(path):
                 a_dur = float(s.get("duration") or 0)
                 a_start = float(s.get("start_time") or 0)
         return has_audio, v_dur, a_dur, a_start
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -63,9 +74,12 @@ async def main():
 
             vs = video.get("status")
             es = export.get("status")
-            print(f"[{now}] batch={status} | video={vs} | export={es} "
-                  f"| video_err={'Y' if video.get('error') else ''} "
-                  f"| export_asset={export.get('output_asset_id') or ''}", flush=True)
+            print(
+                f"[{now}] batch={status} | video={vs} | export={es} "
+                f"| video_err={'Y' if video.get('error') else ''} "
+                f"| export_asset={export.get('output_asset_id') or ''}",
+                flush=True,
+            )
             # 找成片产物（export 输出）
             if es == "completed" or status in ("completed", "partial", "failed", "cancelled"):
                 # 尝试从 export 资产拿视频路径
@@ -77,8 +91,11 @@ async def main():
                         path = asset.get("file_path") or asset.get("path") or asset.get("url", "")
                         print(f"[monitor] 成片资产 id={asset_id} path={path}", flush=True)
                         has_a, vd, ad, ast = ffprobe(path)
-                        print(f"[monitor] 音画校验 video_dur={vd:.3f}s audio_dur={ad if ad is not None else 'N/A'}s "
-                              f"audio_start={ast if ast is not None else 'N/A'} has_audio={has_a} | diff={abs((ad or vd)-vd):.3f}s", flush=True)
+                        print(
+                            f"[monitor] 音画校验 video_dur={vd:.3f}s audio_dur={ad if ad is not None else 'N/A'}s "  # noqa: E501
+                            f"audio_start={ast if ast is not None else 'N/A'} has_audio={has_a} | diff={abs((ad or vd)-vd):.3f}s",  # noqa: E501
+                            flush=True,
+                        )  # noqa: E501
                     except Exception as e:
                         print(f"[monitor] 取资产失败: {e}", flush=True)
                 print("[monitor] 批次已到终态，退出。", flush=True)

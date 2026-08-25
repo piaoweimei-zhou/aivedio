@@ -19,6 +19,7 @@
 
 注意：仍保留 services/*_service.py 中的 get_*_service() 函数，便于非 API 代码使用（如 main.py lifespan）。
 """
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -39,70 +40,82 @@ if TYPE_CHECKING:
 def get_asset_service_dep() -> "AssetService":
     """AssetService 依赖工厂（用于 FastAPI Depends）"""
     from services.asset_service import get_asset_service
+
     return get_asset_service()
 
 
 def get_canvas_service_dep() -> "CanvasService":
     """CanvasService 依赖工厂"""
     from services.canvas_service import get_canvas_service
+
     return get_canvas_service()
 
 
 def get_comfyui_service_dep() -> "ComfyUIService":
     """ComfyUIService 依赖工厂"""
     from services.comfyui_service import get_comfyui_service
+
     return get_comfyui_service()
 
 
 def get_batch_task_service_dep() -> "BatchTaskService":
     """BatchTaskService 依赖工厂"""
     from services.batch_task_service import get_batch_task_service
+
     return get_batch_task_service()
 
 
 def get_gen_task_manager_dep() -> "GenTaskManager":
     """GenTaskManager 依赖工厂"""
     from services.gen_task_manager import get_gen_task_manager
+
     return get_gen_task_manager()
 
 
 def get_project_service_dep() -> "ProjectService":
     """ProjectService 依赖工厂"""
     from services.project_service import get_project_service
+
     return get_project_service()
 
 
 def get_preset_service_dep() -> "PresetService":
     """PresetService 依赖工厂"""
     from services.preset_service import get_preset_service
+
     return get_preset_service()
 
 
 def get_prompt_service_dep() -> "PromptService":
     """PromptService 依赖工厂"""
     from services.prompt_service import get_prompt_service
+
     return get_prompt_service()
 
 
 def get_provider_service_dep() -> "ProviderService":
     """ProviderService 依赖工厂"""
     from services.provider_service import get_provider_service
+
     return get_provider_service()
 
 
 def get_stage_service_dep() -> "StageService":
     """StageService 依赖工厂"""
     from services.stage_service import get_stage_service
+
     return get_stage_service()
 
 
 def get_workflow_template_service_dep() -> "WorkflowTemplateService":
     """WorkflowTemplateService 依赖工厂"""
     from services.workflow_template_service import get_workflow_template_service
+
     return get_workflow_template_service()
 
 
 def get_ws_manager_dep() -> "WsConnectionManager":
     """WsConnectionManager 依赖工厂"""
     from services.ws_service import get_ws_manager
+
     return get_ws_manager()

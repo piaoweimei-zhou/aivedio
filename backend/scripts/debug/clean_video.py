@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """清理 comfyui_video / comfyui_video_long 违规"""
+
 import io
 import re
 import subprocess
@@ -11,14 +12,18 @@ FILES = ["services/comfyui_video.py", "services/comfyui_video_long.py"]
 edits = {
     "services/comfyui_video.py": [
         (r"^from pathlib import Path\n", ""),  # 函数内局部 import
-        ("from services.comfyui_helpers import ComfyUIGenResult, _mem_log, logger\n",
-         "from services.comfyui_helpers import ComfyUIGenResult, _mem_log\n"),
+        (
+            "from services.comfyui_helpers import ComfyUIGenResult, _mem_log, logger\n",
+            "from services.comfyui_helpers import ComfyUIGenResult, _mem_log\n",
+        ),
     ],
     "services/comfyui_video_long.py": [
         (r"^import subprocess\n", ""),
         (r"^from pathlib import Path\n", ""),
-        ("from services.comfyui_helpers import ComfyUIGenResult, logger\n",
-         "from services.comfyui_helpers import ComfyUIGenResult\n"),
+        (
+            "from services.comfyui_helpers import ComfyUIGenResult, logger\n",
+            "from services.comfyui_helpers import ComfyUIGenResult\n",
+        ),
         (r"^import urllib.request as _urlreq\n", ""),  # 未用局部 import（行首模块级）
     ],
 }
@@ -31,8 +36,13 @@ print("1) import 清理完成")
 
 # 2) E501 长行加 noqa（对 flake8 报 E501 的行，行尾追加）
 for fp in FILES:
-    r = subprocess.run([sys.executable, "-m", "flake8", fp, "--max-line-length=100"],
-                       capture_output=True, text=True, encoding="utf-8", errors="ignore")
+    r = subprocess.run(
+        [sys.executable, "-m", "flake8", fp, "--max-line-length=100"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+    )
     e501_lines = set()
     for ln in r.stdout.splitlines():
         if ": E501 " in ln and ":101:" in ln:

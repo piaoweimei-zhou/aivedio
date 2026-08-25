@@ -19,6 +19,6 @@ class PoseExtractionStage(SingleExtractionStage):
     name_suffix = "姿态"
     prompt_text = "extract pose"
     description = "从人物图像提取 OpenPose 姿态骨架图"
-    default_method = None                       # 不传 method
-    fixed_extraction_type = "openpose"          # extraction_type 固定
+    default_method = None  # 不传 method
+    fixed_extraction_type = "openpose"  # extraction_type 固定
     input_content_types = ["character"]

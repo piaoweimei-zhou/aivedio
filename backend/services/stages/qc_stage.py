@@ -15,7 +15,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from services.paths import QC_DIR
 
-from services.stage_service import StagePlugin, StageDef, AssetRef, AssetProduceResult, get_asset_service
+from services.stage_service import (
+    StagePlugin,
+    StageDef,
+    AssetRef,
+    AssetProduceResult,
+    get_asset_service,
+)  # noqa: E501
 from services.qc.qc_service import run_qc_async, QcResult
 
 
@@ -53,8 +59,11 @@ class QcStage(StagePlugin):
 
         try:
             result: QcResult = await run_qc_async(
-                video_path, caption=caption, threshold=threshold,
-                use_semantic=use_semantic, manage_server=manage_server
+                video_path,
+                caption=caption,
+                threshold=threshold,
+                use_semantic=use_semantic,
+                manage_server=manage_server,
             )
         except Exception as e:
             return self._error_result(f"qc 执行失败: {e}")
@@ -89,15 +98,18 @@ class QcStage(StagePlugin):
         with open(snap_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         history_path = os.path.join(report_dir, f"qc_history_{video_asset.asset_id}.json")
-        _append_qc_history(history_path, {
-            "ts": ts,
-            "snap": snap_name,
-            "total_score": float(report.get("total_score", 0.0)),
-            "passed": bool(report.get("passed", False)),
-            "blocked": bool(report.get("blocked", False)),
-            "dimensions": report.get("dimensions", {}),
-            "blocked_reasons": report.get("blocked_reasons", []),
-        })
+        _append_qc_history(
+            history_path,
+            {
+                "ts": ts,
+                "snap": snap_name,
+                "total_score": float(report.get("total_score", 0.0)),
+                "passed": bool(report.get("passed", False)),
+                "blocked": bool(report.get("blocked", False)),
+                "dimensions": report.get("dimensions", {}),
+                "blocked_reasons": report.get("blocked_reasons", []),
+            },
+        )
 
         # 门禁结果单独落盘（供 API / 前端快速读取，无需解析整份报告）
         gate_name = f"qc_gate_{video_asset.asset_id}.json"
@@ -119,10 +131,10 @@ class QcStage(StagePlugin):
     @staticmethod
     def _resolve_local_path(asset: AssetRef) -> Optional[str]:
         """从资产 urls 解析本地文件路径（兼容 file:// 与相对路径）。"""
-        for u in (asset.urls or []):
+        for u in asset.urls or []:
             p = u
             if p.startswith("file://"):
-                p = p[len("file://"):]
+                p = p[len("file://") :]
             if os.path.exists(p):
                 return p
             # 尝试相对 backend 根
@@ -135,6 +147,7 @@ class QcStage(StagePlugin):
 def _append_qc_history(history_path: str, entry: Dict[str, Any]) -> None:
     """追加一条 QC 历史记录（#8 趋势对比）。保留最近 50 条。"""
     import json as _json
+
     history: List[Dict[str, Any]] = []
     if os.path.exists(history_path):
         try:
@@ -153,4 +166,5 @@ def _append_qc_history(history_path: str, entry: Dict[str, Any]) -> None:
 def register() -> None:
     """注册入口（供 stage_service 自动发现，可选）。"""
     from services.stage_service import register_stage
+
     register_stage(QcStage)

@@ -26,10 +26,11 @@ router = APIRouter(prefix="/api/director/workflow-templates", tags=["导演工�
 
 # ==================== Request Models ====================
 
+
 class WorkflowStepTemplateRequest(BaseModel):
     stage_id: str
     name: str = ""
-    input_mode: str = "auto"            # auto / fixed / user_select
+    input_mode: str = "auto"  # auto / fixed / user_select
     input_from_steps: List[str] = []
     input_asset_ids: List[str] = []
     provider_id: str = ""
@@ -56,13 +57,16 @@ class UpdateTemplateRequest(BaseModel):
 class CreateBatchFromTemplateRequest(BaseModel):
     name: str
     project_id: str = ""
-    input_assets: Dict[str, List[str]] = {}     # {"character": ["asset_id1"], "scene": ["asset_id2"]}
+    input_assets: Dict[str, List[str]] = (
+        {}
+    )  # {"character": ["asset_id1"], "scene": ["asset_id2"]}  # noqa: E501
     step_params: Dict[str, Dict[str, Any]] = {}  # {"step_1": {"prompt": "..."}}
     stop_on_failure: bool = True
-    auto_start: bool = False                     # 创建后自动启动
+    auto_start: bool = False  # 创建后自动启动
 
 
 # ==================== Endpoints ====================
+
 
 @router.get("")
 async def list_templates(category: str = Query("")):
@@ -112,7 +116,9 @@ async def update_template(template_id: str, request: UpdateTemplateRequest):
     svc = get_workflow_template_service()
     updates = {k: v for k, v in request.model_dump().items() if v is not None}
     if "steps" in updates and updates["steps"]:
-        updates["steps"] = [s.model_dump() if hasattr(s, 'model_dump') else s for s in updates["steps"]]
+        updates["steps"] = [
+            s.model_dump() if hasattr(s, "model_dump") else s for s in updates["steps"]
+        ]  # noqa: E501
     tpl = svc.update(template_id, updates)
     if not tpl:
         raise HTTPException(status_code=400, detail="更新失败（模板不存在或为预置模板）")
@@ -148,13 +154,13 @@ async def create_batch_from_template(template_id: str, request: CreateBatchFromT
         raise HTTPException(status_code=404, detail="模板不存在")
 
     logger.info(
-        f"[WorkflowAPI] 从模板创建批量任务 | "
-        f"template={template_id} batch={batch.batch_id}"
+        f"[WorkflowAPI] 从模板创建批量任务 | " f"template={template_id} batch={batch.batch_id}"
     )
 
     # 自动启动
     if request.auto_start:
         from services.batch_task_service import get_batch_task_service
+
         await get_batch_task_service().start(batch.batch_id)
         logger.info(f"[WorkflowAPI] 自动启动批量任务 | batch={batch.batch_id}")
 

@@ -29,19 +29,12 @@ from services.workflow_storyboard_custom import (
     build_gpt_storyboard_workflow,
 )
 
-import copy
-import json
 import logging
-import os
-import re
-import time
 import random
-import shutil
-from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
-from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
+
 
 def build_storyboard_workflow_v2(
     reference_images: Dict[str, str],
@@ -84,7 +77,6 @@ def build_storyboard_workflow_v2(
     Returns:
         (workflows列表, step_names列表, metadata字典)
     """
-    _t0 = time.time()
     actual_seed = seed or random.randint(0, 2**31 - 1)
 
     # ⭐ V6.0: 模板路由
@@ -133,9 +125,12 @@ def build_storyboard_workflow_v2(
         )
     elif template == "upscale":
         # 超分放大：从 reference_images 获取参考图
-        ref_image = (reference_images.get("reference", "") or
-                     reference_images.get("character", "") or
-                     reference_images.get("scene", "") or "")
+        ref_image = (
+            reference_images.get("reference", "")
+            or reference_images.get("character", "")
+            or reference_images.get("scene", "")
+            or ""
+        )
         return build_upscale_workflow(
             reference_image=ref_image,
             seed=actual_seed,
@@ -143,9 +138,12 @@ def build_storyboard_workflow_v2(
         )
     elif template == "3view":
         # 三视图：从 reference_images 获取参考图
-        ref_image = (reference_images.get("reference", "") or
-                     reference_images.get("character", "") or
-                     reference_images.get("scene", "") or "")
+        ref_image = (
+            reference_images.get("reference", "")
+            or reference_images.get("character", "")
+            or reference_images.get("scene", "")
+            or ""
+        )
         return build_3view_workflow(
             reference_image=ref_image,
             seed=actual_seed,
@@ -154,10 +152,15 @@ def build_storyboard_workflow_v2(
     elif template in _EXTRACTION_TEMPLATES:
         # 提取类工作流（姿态/线稿/深度图/三合一）
         wf_file = _EXTRACTION_TEMPLATES.get(template, "")
-        ref_image = (reference_images.get("reference", "") or
-                     reference_images.get("character", "") or
-                     reference_images.get("scene", "") or "")
-        logger.info(f"[StoryboardV2] 路由到提取工作流 | template={template} | file={wf_file} | ref={ref_image}")
+        ref_image = (
+            reference_images.get("reference", "")
+            or reference_images.get("character", "")
+            or reference_images.get("scene", "")
+            or ""
+        )
+        logger.info(
+            f"[StoryboardV2] 路由到提取工作流 | template={template} | file={wf_file} | ref={ref_image}"
+        )  # noqa: E501
         return build_extraction_workflow(
             reference_image=ref_image,
             template=template,
@@ -217,13 +220,14 @@ def build_storyboard_workflow_v2(
         )
     elif template == "template_clean":
         # 模板清场+蒙版生成：SAM2识别人物 → 清场深度图 + 生成蒙版
-        ref_image = (reference_images.get("reference", "") or
-                     reference_images.get("character", "") or
-                     reference_images.get("scene", "") or "")
-        depth_image = reference_images.get("depth", "")
-        logger.info(
-            f"[StoryboardV2] 路由到模板清场 | ref={ref_image} | depth={depth_image}"
+        ref_image = (
+            reference_images.get("reference", "")
+            or reference_images.get("character", "")
+            or reference_images.get("scene", "")
+            or ""
         )
+        depth_image = reference_images.get("depth", "")
+        logger.info(f"[StoryboardV2] 路由到模板清场 | ref={ref_image} | depth={depth_image}")
         return build_template_clean_workflow(
             reference_image=ref_image,
             depth_image=depth_image,
@@ -232,9 +236,12 @@ def build_storyboard_workflow_v2(
         )
     elif template == "template_pose":
         # 模板Pose优化：简化7节点骨架渲染
-        ref_image = (reference_images.get("reference", "") or
-                     reference_images.get("character", "") or
-                     reference_images.get("scene", "") or "")
+        ref_image = (
+            reference_images.get("reference", "")
+            or reference_images.get("character", "")
+            or reference_images.get("scene", "")
+            or ""
+        )
         logger.info(f"[StoryboardV2] 路由到模板Pose优化 | ref={ref_image}")
         return build_template_pose_workflow(
             reference_image=ref_image,
@@ -247,7 +254,7 @@ def build_storyboard_workflow_v2(
 
     # ⭐ 4套定制分镜模板
     elif template == "single_person":
-        logger.info(f"[StoryboardV2] 路由到单人分镜")
+        logger.info("[StoryboardV2] 路由到单人分镜")
         return build_single_person_workflow(
             reference_images=reference_images,
             prompt_text=prompt_text,
@@ -257,7 +264,7 @@ def build_storyboard_workflow_v2(
             height=height,
         )
     elif template == "dual_person":
-        logger.info(f"[StoryboardV2] 路由到双人融合分镜")
+        logger.info("[StoryboardV2] 路由到双人融合分镜")
         return build_dual_person_workflow(
             reference_images=reference_images,
             prompt_text=prompt_text,
@@ -267,7 +274,7 @@ def build_storyboard_workflow_v2(
             height=height,
         )
     elif template == "local_multi":
-        logger.info(f"[StoryboardV2] 路由到本地多人分镜")
+        logger.info("[StoryboardV2] 路由到本地多人分镜")
         return build_local_multi_workflow(
             reference_images=reference_images,
             prompt_text=prompt_text,
@@ -277,7 +284,7 @@ def build_storyboard_workflow_v2(
             height=height,
         )
     elif template == "gpt_storyboard":
-        logger.info(f"[StoryboardV2] 路由到GPT分镜")
+        logger.info("[StoryboardV2] 路由到GPT分镜")
         return build_gpt_storyboard_workflow(
             reference_images=reference_images,
             prompt_text=prompt_text,
@@ -288,9 +295,7 @@ def build_storyboard_workflow_v2(
         )
 
     # ═══ 默认：走分镜换装模板（V6.0 删除旧版 Fish 融合逻辑） ═══
-    logger.info(
-        f"[StoryboardV2] 未指定模板，默认走 costume_change（分镜换装）"
-    )
+    logger.info("[StoryboardV2] 未指定模板，默认走 costume_change（分镜换装）")
     return build_costume_change_workflow(
         reference_images=reference_images,
         prompt_text=prompt_text,

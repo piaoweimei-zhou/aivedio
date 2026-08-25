@@ -1,6 +1,5 @@
 """用本地 Qwen3-VL-8B 生成视频内容描述（画面/人物/情节/字幕/风格）"""
 
-import asyncio
 import json
 import os
 import sys
@@ -49,6 +48,7 @@ def main():
     print("原始输出:", text[:500])
     # 抽取 JSON
     import re
+
     m = re.search(r"\{.*\}", text, re.DOTALL)
     if not m:
         print("[FAIL] 未解析到 JSON")

@@ -58,6 +58,7 @@ class AngleStage(StagePlugin):
                 result = await self._generate_via_comfyui(source, seed, params)
             elif provider_id == "modelscope":
                 from services.providers.modelscope_provider import ModelScopeProvider
+
                 ms_provider = ModelScopeProvider()
                 result = await ms_provider.generate_angle(
                     prompt=prompt,
@@ -76,7 +77,8 @@ class AngleStage(StagePlugin):
                 )
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="multi_view",
                 name=f"{source.name} 三视图",
                 parent_id=source.asset_id,
@@ -84,7 +86,7 @@ class AngleStage(StagePlugin):
                     "source_asset_id": source.asset_id,
                     "prompt": prompt,
                     "provider": provider_id,
-                    "seed": result.seed if hasattr(result, 'seed') else seed,
+                    "seed": result.seed if hasattr(result, "seed") else seed,
                 },
                 content_type=source.content_type,
             )

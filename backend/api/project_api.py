@@ -17,7 +17,7 @@
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/director/projects", tags=["导演工作台-项�
 
 
 # ==================== Request Models ====================
+
 
 class CreateProjectRequest(BaseModel):
     name: str
@@ -45,6 +46,7 @@ class UpdateProjectRequest(BaseModel):
 
 
 # ==================== Helper ====================
+
 
 def _project_dict(project) -> Dict[str, Any]:
     return project.to_dict()
@@ -67,6 +69,7 @@ def _asset_dict(asset) -> Dict[str, Any]:
 
 
 # ==================== CRUD Endpoints ====================
+
 
 @router.post("")
 async def create_project(request: CreateProjectRequest):
@@ -128,6 +131,7 @@ async def delete_project(project_id: str):
 
 
 # ==================== 资产关联 Endpoints ====================
+
 
 @router.get("/{project_id}/assets")
 async def list_project_assets(

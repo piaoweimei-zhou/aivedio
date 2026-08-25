@@ -14,7 +14,7 @@ import io
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin, collect_content_type
@@ -23,23 +23,24 @@ logger = logging.getLogger(__name__)
 
 # CSV列映射：列索引 → 工作流参数
 CSV_COLUMNS = [
-    "shot_id",       # 镜头号
-    "template",      # 模板编号（如T01_双人正面对话）
-    "char_a",        # 人物A资产名
-    "char_b",        # 人物B资产名
-    "char_c",        # 人物C资产名（可选，用于3人/分层）
-    "char_d",        # 人物D资产名（可选，用于4人/分层）
-    "prompt_a",      # 区域A提示词
-    "prompt_b",      # 区域B提示词
-    "prompt_global", # 全局提示词
-    "prompt_id",     # 提示词库 ID（可选，引用提示词中心，自动解析为 prompt_global）
-    "prompt_vars",   # 提示词变量 JSON（可选，如 {"character":"小明","action":"走路"}）
+    "shot_id",  # 镜头号
+    "template",  # 模板编号（如T01_双人正面对话）
+    "char_a",  # 人物A资产名
+    "char_b",  # 人物B资产名
+    "char_c",  # 人物C资产名（可选，用于3人/分层）
+    "char_d",  # 人物D资产名（可选，用于4人/分层）
+    "prompt_a",  # 区域A提示词
+    "prompt_b",  # 区域B提示词
+    "prompt_global",  # 全局提示词
+    "prompt_id",  # 提示词库 ID（可选，引用提示词中心，自动解析为 prompt_global）
+    "prompt_vars",  # 提示词变量 JSON（可选，如 {"character":"小明","action":"走路"}）
 ]
 
 
 @dataclass
 class BatchResult:
     """批量生成结果容器 — 兼容 _register_asset 的 ProviderResult 接口"""
+
     urls: List[str]
     elapsed_ms: int
     outputs: List = field(default_factory=list)
@@ -123,6 +124,7 @@ class BatchStoryboardStage(StagePlugin):
         results = []
         errors = []
         import time
+
         start_time = time.time()
 
         for i in range(start_row, total_rows):
@@ -142,14 +144,19 @@ class BatchStoryboardStage(StagePlugin):
             if prompt_id_in_row and not prompt_global:
                 try:
                     from services.prompt_service import get_prompt_service
+
                     prompt_svc = get_prompt_service()
                     vars_json = row.get("prompt_vars", "")
                     row_vars = {}
                     if vars_json:
                         try:
-                            row_vars = json.loads(vars_json) if isinstance(vars_json, str) else vars_json
+                            row_vars = (
+                                json.loads(vars_json) if isinstance(vars_json, str) else vars_json
+                            )  # noqa: E501
                         except Exception:
-                            logger.warning(f"[BatchStoryboardStage] 镜头{shot_id}: prompt_vars JSON 解析失败")
+                            logger.warning(
+                                f"[BatchStoryboardStage] 镜头{shot_id}: prompt_vars JSON 解析失败"
+                            )  # noqa: E501
                     result = prompt_svc.resolve(prompt_id_in_row, row_vars)
                     if result:
                         prompt_global = result[0]
@@ -178,19 +185,25 @@ class BatchStoryboardStage(StagePlugin):
                 urls = asset_info.get("urls", [])
                 if urls:
                     ref_type = char_type_map[key]
-                    reference_images.append({
-                        "url": urls[0],
-                        "role": ref_type,
-                        "type": ref_type,
-                        "name": name,
-                    })
+                    reference_images.append(
+                        {
+                            "url": urls[0],
+                            "role": ref_type,
+                            "type": ref_type,
+                            "name": name,
+                        }
+                    )
 
             if len(reference_images) < 1:
                 errors.append({"shot_id": shot_id, "error": "缺少人物资产或图片URL"})
                 continue
 
             # 决定使用哪个工作流模板
-            if template.startswith("T09") or template.startswith("T10") or len(reference_images) >= 4:
+            if (
+                template.startswith("T09")
+                or template.startswith("T10")
+                or len(reference_images) >= 4
+            ):  # noqa: E501
                 wf_template = "layered_render"
             else:
                 wf_template = "multi_person"
@@ -207,12 +220,14 @@ class BatchStoryboardStage(StagePlugin):
                     prompt_a=prompt_a,
                     prompt_b=prompt_b,
                 )
-                results.append({
-                    "shot_id": shot_id,
-                    "template": template,
-                    "success": True,
-                    "output": result.images if hasattr(result, "images") else [],
-                })
+                results.append(
+                    {
+                        "shot_id": shot_id,
+                        "template": template,
+                        "success": True,
+                        "output": result.images if hasattr(result, "images") else [],
+                    }
+                )
                 logger.info(f"[BatchStoryboardStage] 镜头{shot_id} 完成")
             except Exception as e:
                 errors.append({"shot_id": shot_id, "error": str(e)})
@@ -236,7 +251,8 @@ class BatchStoryboardStage(StagePlugin):
         batch_result = BatchResult(urls=[], elapsed_ms=elapsed_ms)
 
         new_asset = await self._register_asset(
-            asset_svc, batch_result,
+            asset_svc,
+            batch_result,
             asset_type="storyboard_batch",
             name=params.get("name", f"批量分镜({success_count}/{total_rows})"),
             parent_id=parent_id,
@@ -271,11 +287,16 @@ class BatchStoryboardStage(StagePlugin):
                 clean_key = key.strip().lower()
                 # 映射中文列名
                 cn_map = {
-                    "镜头号": "shot_id", "镜头": "shot_id",
-                    "模板编号": "template", "模板": "template",
-                    "人物a": "char_a", "人物b": "char_b",
-                    "人物c": "char_c", "人物d": "char_d",
-                    "区域a提示词": "prompt_a", "区域b提示词": "prompt_b",
+                    "镜头号": "shot_id",
+                    "镜头": "shot_id",
+                    "模板编号": "template",
+                    "模板": "template",
+                    "人物a": "char_a",
+                    "人物b": "char_b",
+                    "人物c": "char_c",
+                    "人物d": "char_d",
+                    "区域a提示词": "prompt_a",
+                    "区域b提示词": "prompt_b",
                     "全局提示词": "prompt_global",
                 }
                 mapped_key = cn_map.get(clean_key, clean_key)

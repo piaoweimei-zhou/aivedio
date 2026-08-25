@@ -12,7 +12,7 @@
 import dataclasses
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -27,6 +27,7 @@ router = APIRouter(prefix="/api/director/stages", tags=["导演工作台-阶段"
 
 # ==================== Request Models ====================
 
+
 class ExecuteStageRequest(BaseModel):
     stage_id: str
     input_asset_ids: List[str]
@@ -36,6 +37,7 @@ class ExecuteStageRequest(BaseModel):
 
 
 # ==================== Stage Endpoints ====================
+
 
 @router.get("")
 async def list_stages():
@@ -59,9 +61,12 @@ async def execute_stage(request: ExecuteStageRequest):
     """
     # ⭐ Phase 4：参数校验中间件（类型/范围/必填）
     from services.param_validator import validate_stage_params
+
     validation_errors = validate_stage_params(request.stage_id, request.params)
     if validation_errors:
-        logger.warning(f"[StageAPI] 参数校验失败 | stage={request.stage_id} | errors={validation_errors}")
+        logger.warning(
+            f"[StageAPI] 参数校验失败 | stage={request.stage_id} | errors={validation_errors}"
+        )
         raise HTTPException(
             status_code=422,
             detail={"message": "参数校验失败", "errors": validation_errors},
@@ -121,7 +126,7 @@ async def execute_stage(request: ExecuteStageRequest):
             "status": "running",
             "stage_id": request.stage_id,
             "message": "任务已提交，通过 GET /task/{task_id} 查询状态",
-        }
+        },
     )
 
 
@@ -140,13 +145,17 @@ async def get_task_status(task_id: str):
         result = _safe_result(task.result)
         response["success"] = result.get("success", False)
         asset = result.get("asset")
-        response["asset"] = {
-            "asset_id": _safe_get(asset, "asset_id"),
-            "asset_type": _safe_get(asset, "asset_type"),
-            "content_type": _safe_get(asset, "content_type"),
-            "name": _safe_get(asset, "name"),
-            "urls": _safe_get(asset, "urls", []),
-        } if asset and result.get("success") else None
+        response["asset"] = (
+            {
+                "asset_id": _safe_get(asset, "asset_id"),
+                "asset_type": _safe_get(asset, "asset_type"),
+                "content_type": _safe_get(asset, "content_type"),
+                "name": _safe_get(asset, "name"),
+                "urls": _safe_get(asset, "urls", []),
+            }
+            if asset and result.get("success")
+            else None
+        )
         response["elapsed_ms"] = result.get("elapsed_ms", 0)
 
     if task.status == "failed":
@@ -175,6 +184,7 @@ async def cancel_task(task_id: str):
 
 
 # ==================== 辅助函数 ====================
+
 
 def _safe_get(obj: Any, key: str, default: Any = None) -> Any:
     """安全地从 dataclass 或 dict 中获取字段值"""
@@ -213,23 +223,27 @@ async def resolve_stages(input_types: List[str]):
     """根据输入类型查找可用阶段"""
     svc = get_stage_service()
     stages = svc.resolve(input_types)
-    return {"stages": [
-        {
-            "stage_id": s.stage_id,
-            "name": s.name,
-            "output_type": s.output_type,
-            "default_provider": s.default_provider,
-        }
-        for s in stages
-    ]}
+    return {
+        "stages": [
+            {
+                "stage_id": s.stage_id,
+                "name": s.name,
+                "output_type": s.output_type,
+                "default_provider": s.default_provider,
+            }
+            for s in stages
+        ]
+    }
 
 
 # ==================== 新增阶段专用接口 ====================
+
 
 @router.get("/script/video-types")
 async def list_video_types():
     """列出 AI 剧本支持的 6 种视频类型"""
     from services.stages.script_stage import list_video_types
+
     return {"video_types": list_video_types()}
 
 
@@ -237,6 +251,7 @@ async def list_video_types():
 async def list_styles():
     """列出全部网感风格预设（含默认标记）"""
     from services.style_registry import list_styles
+
     return {"styles": list_styles()}
 
 
@@ -244,6 +259,7 @@ async def list_styles():
 async def get_style(style_id: str):
     """查询单个网感风格"""
     from services.style_registry import get_style
+
     style = get_style(style_id)
     if not style:
         raise HTTPException(status_code=404, detail=f"风格不存在: {style_id}")
@@ -254,6 +270,7 @@ async def get_style(style_id: str):
 async def list_graphic_types():
     """列出图文生成支持的 6 种图文类型"""
     from services.stages.graphic_stage import list_graphic_types
+
     return {"graphic_types": list_graphic_types()}
 
 
@@ -261,6 +278,7 @@ async def list_graphic_types():
 async def list_tts_voices():
     """列出 TTS 多角色音色库"""
     from services.stages.tts_utils import list_default_voices
+
     return {"voices": list_default_voices()}
 
 
@@ -303,6 +321,7 @@ async def get_script_content(asset_id: str):
 async def list_record_windows():
     """列出当前可录制的窗口（Windows 专用，返回窗口标题供前端选择）"""
     from services.stages.screen_record_stage import list_windows_async
+
     windows = await list_windows_async()
     return {"windows": windows}
 
@@ -310,12 +329,14 @@ async def list_record_windows():
 def _asset_to_dict(asset) -> Dict[str, Any]:
     """资产转 dict（避免循环导入 asset_service 已有方法）"""
     import dataclasses
+
     if dataclasses.is_dataclass(asset):
         return {f.name: getattr(asset, f.name) for f in dataclasses.fields(asset)}
     return {"asset_id": getattr(asset, "asset_id", ""), "name": getattr(asset, "name", "")}
 
 
 # ==================== 内部方法 ====================
+
 
 async def _execute_sync(request: ExecuteStageRequest):
     """同步执行（向后兼容快速文生图）"""
@@ -330,13 +351,17 @@ async def _execute_sync(request: ExecuteStageRequest):
     asset = r.get("asset")
     return {
         "success": r.get("success", False),
-        "asset": {
-            "asset_id": _safe_get(asset, "asset_id"),
-            "asset_type": _safe_get(asset, "asset_type"),
-            "content_type": _safe_get(asset, "content_type"),
-            "name": _safe_get(asset, "name"),
-            "urls": _safe_get(asset, "urls", []),
-        } if asset and r.get("success") else None,
+        "asset": (
+            {
+                "asset_id": _safe_get(asset, "asset_id"),
+                "asset_type": _safe_get(asset, "asset_type"),
+                "content_type": _safe_get(asset, "content_type"),
+                "name": _safe_get(asset, "name"),
+                "urls": _safe_get(asset, "urls", []),
+            }
+            if asset and r.get("success")
+            else None
+        ),
         "error": r.get("error"),
         "elapsed_ms": r.get("elapsed_ms", 0),
     }

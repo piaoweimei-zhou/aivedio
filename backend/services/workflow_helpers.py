@@ -4,13 +4,10 @@ ComfyUI 工作流构建器 — 共享工具与常量
 节点查找、工作流加载、参考图解析、参数注入等公共函数。
 """
 
-import copy
 import json
 import logging
 import os
 import re
-import time
-import random
 import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
@@ -18,11 +15,12 @@ from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
 
+
 def find_node_by_class_type(wf: dict, class_type: str) -> list:
     """通过 class_type 查找所有匹配的节点，返回 [(node_id, node_data), ...]"""
     results = []
     for nid, ndata in wf.items():
-        if isinstance(ndata, dict) and ndata.get('class_type') == class_type:
+        if isinstance(ndata, dict) and ndata.get("class_type") == class_type:
             results.append((nid, ndata))
     return results
 
@@ -31,7 +29,7 @@ def find_node_by_title(wf: dict, title: str) -> list:
     """通过 _meta.title 查找所有匹配的节点，返回 [(node_id, node_data), ...]"""
     results = []
     for nid, ndata in wf.items():
-        if isinstance(ndata, dict) and ndata.get('_meta', {}).get('title') == title:
+        if isinstance(ndata, dict) and ndata.get("_meta", {}).get("title") == title:
             results.append((nid, ndata))
     return results
 
@@ -45,7 +43,7 @@ def find_first_node_by_class_type(wf: dict, class_type: str) -> tuple:
 def find_first_node_by_class_type_contains(wf: dict, class_type_part: str) -> tuple:
     """通过 class_type 部分匹配查找第一个节点，返回 (node_id, node_data) 或 (None, None)"""
     for nid, ndata in wf.items():
-        if isinstance(ndata, dict) and class_type_part in ndata.get('class_type', ''):
+        if isinstance(ndata, dict) and class_type_part in ndata.get("class_type", ""):
             return (nid, ndata)
     return (None, None)
 
@@ -102,12 +100,15 @@ def _infer_saveimage_type(wf: dict, save_nid: str, infer_map: dict) -> str:
                     queue.append((upstream_nid, depth + 1))
 
     return "unknown"
+
+
 _WF_DIR = Path(__file__).parent.parent.parent / "workflows"
 
 # 文生图工作流模板（支持多版本，按 content_type 切换）
-_WF_STANDARD = _WF_DIR / "文生图.json"      # 旧标准版（8步/cfg=1）
+_WF_STANDARD = _WF_DIR / "文生图.json"  # 旧标准版（8步/cfg=1）
 _WF_CINEMATIC = _WF_DIR / "最终文生图.json"  # 最终优化版（25步/cfg=2/AuraFlow）
-_WF_PROP = _WF_DIR / "最终道具工作流.json"   # 道具专用版（+SeedVR2超分）
+_WF_PROP = _WF_DIR / "最终道具工作流.json"  # 道具专用版（+SeedVR2超分）
+
 
 def _load_workflow(file_path: Path, label: str = "") -> Dict[str, Any]:
     """安全加载工作流 JSON 文件"""
@@ -122,6 +123,7 @@ def _load_workflow(file_path: Path, label: str = "") -> Dict[str, Any]:
     else:
         logger.warning(f"[Workflow] {file_path} 不存在")
     return {}
+
 
 # 向后兼容：保留 BASE_WORKFLOW 符号引用
 BASE_WORKFLOW: Dict[str, Any] = _load_workflow(_WF_STANDARD, "(标准版)")
@@ -138,7 +140,12 @@ ADDITIONAL_LORAS = {
         "strength_model": 0.8,
     },
 }
-QWEN_WORKFLOW_FILE = Path(__file__).parent.parent.parent / "Qwen Image Edit - Remix AIO v2.0 全功能合集工作流 By：肥猴 (1).json"
+QWEN_WORKFLOW_FILE = (
+    Path(__file__).parent.parent.parent
+    / "Qwen Image Edit - Remix AIO v2.0 全功能合集工作流 By：肥猴 (1).json"
+)  # noqa: E501
+
+
 def format_qwen_prompt(
     keep: str = "",
     change: str = "",
@@ -148,7 +155,7 @@ def format_qwen_prompt(
 ) -> str:
     """
     格式化5段式提示词
-    
+
     Args:
         keep: [KEEP] 保留元素
         change: [CHANGE] 改变指令
@@ -157,7 +164,7 @@ def format_qwen_prompt(
         fallback: [FALLBACK] 冲突解决
     """
     sections = []
-    
+
     if keep:
         sections.append(f"[KEEP]\n{keep}")
     if change:
@@ -168,24 +175,32 @@ def format_qwen_prompt(
         sections.append(f"[AVOID]\n{avoid}")
     if fallback:
         sections.append(f"[FALLBACK]\n{fallback}")
-    
+
     return "\n\n".join(sections)
+
+
 # ComfyUI 目录（统一从 config 模块读取）
-from services.comfyui.config import COMFYUI_DIR as _COMFYUI_DIR, COMFYUI_OUTPUT_DIR as _COMFYUI_OUTPUT_DIR
+from services.comfyui.config import (  # noqa: E402
+    COMFYUI_DIR as _COMFYUI_DIR,
+    COMFYUI_OUTPUT_DIR as _COMFYUI_OUTPUT_DIR,
+)  # noqa: E402  # noqa: E501
+
 _COMFYUI_INPUT_DIR = os.path.join(_COMFYUI_DIR, "input") if _COMFYUI_DIR else ""
+
+
 def _resolve_comfyui_image(ref: str) -> str:
     """
     将参考图像 URL/路径解析为 ComfyUI LoadImage 可用的文件名。
-    
+
     ComfyUI 的 LoadImage 节点只接受 input 目录下的文件名（不带路径），
     而生成的图片在 output 目录中。此函数会：
     1. 从 URL (如 /api/comfyui/image?filename=xxx.png) 中提取 filename
     2. 将文件从 output 目录复制到 input 目录
     3. 返回纯文件名
-    
+
     Args:
         ref: 参考图像 URL 或本地路径
-    
+
     Returns:
         ComfyUI input 目录下的文件名
     """
@@ -194,17 +209,17 @@ def _resolve_comfyui_image(ref: str) -> str:
 
     # 从 URL 中提取 filename 参数
     filename = ref
-    if '?' in ref or ref.startswith('/api/'):
+    if "?" in ref or ref.startswith("/api/"):
         parsed = urlparse(ref)
         params = parse_qs(parsed.query)
-        if 'filename' in params:
-            filename = params['filename'][0]
+        if "filename" in params:
+            filename = params["filename"][0]
         elif parsed.path:
             # 可能是 /api/comfyui/image/filename.png 格式
-            filename = parsed.path.rsplit('/', 1)[-1]
+            filename = parsed.path.rsplit("/", 1)[-1]
 
     # 如果已经只是文件名（不含目录分隔符），无需复制
-    if '/' not in filename and '\\' not in filename:
+    if "/" not in filename and "\\" not in filename:
         # 确保文件在 input 目录中
         src = os.path.join(_COMFYUI_OUTPUT_DIR, filename)
         dst = os.path.join(_COMFYUI_INPUT_DIR, filename)
@@ -228,11 +243,23 @@ def _resolve_comfyui_image(ref: str) -> str:
             # input 存在但 output 不存在（可能是上传的文件），直接使用
             pass
         else:
-            logger.warning(f"[Qwen] output 目录未找到图片: {src}（将由上游 service 的缓存/HTTP fallback 处理）")
+            logger.warning(
+                f"[Qwen] output 目录未找到图片: {src}（将由上游 service 的缓存/HTTP fallback 处理）"
+            )
         return filename
 
-    # 如果是完整本地路径，直接提取文件名
+    # 如果是完整本地路径，直接提取文件名并复制到 input 目录
     fname = os.path.basename(filename)
+    src = os.path.dirname(os.path.abspath(filename))
+    dst = os.path.join(_COMFYUI_INPUT_DIR, fname)
+    if os.path.exists(os.path.join(src, fname)) and not os.path.exists(dst):
+        try:
+            os.makedirs(_COMFYUI_INPUT_DIR, exist_ok=True)
+            shutil.copy2(os.path.join(src, fname), dst)
+            logger.info(f"[Qwen] 复制图片到 ComfyUI input: {fname}")
+        except Exception as e:
+            logger.warning(f"[Qwen] 复制图片失败: {e}")
+    return fname
 
 
 _TEMPLATE_DIR = Path(__file__).parent.parent.parent / "workflows" / "templates"
@@ -241,11 +268,11 @@ _TEMPLATE_DIR = Path(__file__).parent.parent.parent / "workflows" / "templates"
 def _resolve_template_asset(template_name: str, asset_type: str) -> str:
     """
     从 workflows/templates/ 加载模板文件并复制到 ComfyUI input 目录。
-    
+
     Args:
         template_name: 如 "T01_双人正面对话"
         asset_type: "mask" / "depth_clean" / "pose"
-    
+
     Returns:
         ComfyUI input 目录下的文件名，或空字符串（文件不存在时）
     """
@@ -272,22 +299,22 @@ def _resolve_template_asset(template_name: str, asset_type: str) -> str:
     except Exception as e:
         logger.warning(f"[WorkflowBuilder][模板] 复制失败: {e}")
         return ""
-    src = os.path.dirname(os.path.abspath(filename))
-    dst = os.path.join(_COMFYUI_INPUT_DIR, fname)
-    if os.path.exists(os.path.join(src, fname)) and not os.path.exists(dst):
-        try:
-            os.makedirs(_COMFYUI_INPUT_DIR, exist_ok=True)
-            shutil.copy2(os.path.join(src, fname), dst)
-            logger.info(f"[Qwen] 复制图片到 ComfyUI input: {fname}")
-        except Exception as e:
-            logger.warning(f"[Qwen] 复制图片失败: {e}")
-    return fname
+
+
 _REFINE_LORA_STRENGTH = {
-    "character": 1.0,   "scene": 0.6,   "prop": 0.4,   "": 1.0,
+    "character": 1.0,
+    "scene": 0.6,
+    "prop": 0.4,
+    "": 1.0,
 }
 _REFINE_SCALE_LENGTH = {
-    "character": 1344,  "scene": 1344,  "prop": 1024,  "": 1344,
+    "character": 1344,
+    "scene": 1344,
+    "prop": 1024,
+    "": 1344,
 }
+
+
 def _detect_age_in_prompt(prompt: str):
     """
     从提示词中检测年龄信息，返回 (age_group, description)。
@@ -296,7 +323,7 @@ def _detect_age_in_prompt(prompt: str):
     description: 拼接在触发词中的年龄描述
     """
     # 1. 精确匹配 "X岁"
-    m = re.search(r'(\d+)\s*岁', prompt)
+    m = re.search(r"(\d+)\s*岁", prompt)
     if m:
         age = int(m.group(1))
         if age <= 3:
@@ -315,7 +342,18 @@ def _detect_age_in_prompt(prompt: str):
             return ("elder", "中老年，成熟面孔，")
 
     # 2. 关键词匹配
-    child_kw = ["小孩", "儿童", "宝宝", "婴儿", "萝莉", "正太", "小男孩", "小女孩", "小朋友", "孩童"]
+    child_kw = [
+        "小孩",
+        "儿童",
+        "宝宝",
+        "婴儿",
+        "萝莉",
+        "正太",
+        "小男孩",
+        "小女孩",
+        "小朋友",
+        "孩童",
+    ]
     teen_kw = ["青少年", "少女", "少年", "男生", "女生"]
     adult_kw = ["美女", "帅哥", "男人", "女人", "女士", "先生", "大叔", "阿姨", "成年"]
 
@@ -330,6 +368,8 @@ def _detect_age_in_prompt(prompt: str):
             return ("young", "青年，年轻成人，")
 
     return ("unknown", "")
+
+
 def _get_denoise_sequence() -> List[Tuple[float, str, float]]:
     """返回 Fish 融合步骤序列
 
@@ -339,6 +379,8 @@ def _get_denoise_sequence() -> List[Tuple[float, str, float]]:
     return [
         (1.0, "primary_char", 1.0),
     ]
+
+
 def _load_workflow_template(template_name: str) -> Dict[str, Any]:
     """从 workflows/ 目录加载 JSON 模板"""
     wf_dir = Path(__file__).parent.parent.parent / "workflows"
@@ -411,8 +453,8 @@ def _set_reference_image(
         wf[node_id]["inputs"]["image"] = resolved
     else:
         nid, ndata = find_first_node_by_class_type(wf, class_type)
-        if nid and ndata and 'image' in ndata.get('inputs', {}):
-            wf[nid]['inputs']['image'] = resolved
+        if nid and ndata and "image" in ndata.get("inputs", {}):
+            wf[nid]["inputs"]["image"] = resolved
     return wf
 
 
@@ -435,10 +477,10 @@ def _set_clip_text(
     elif class_type:
         nid, ndata = find_first_node_by_class_type_contains(wf, class_type)
         if nid and ndata:
-            if "text" in ndata.get('inputs', {}):
-                wf[nid]['inputs']['text'] = text
-            elif "prompt" in ndata.get('inputs', {}):
-                wf[nid]['inputs']['prompt'] = text
+            if "text" in ndata.get("inputs", {}):
+                wf[nid]["inputs"]["text"] = text
+            elif "prompt" in ndata.get("inputs", {}):
+                wf[nid]["inputs"]["prompt"] = text
     return wf
 
 
@@ -452,6 +494,8 @@ def _set_filename_prefix(wf: Dict[str, Any], prefix: str) -> Dict[str, Any]:
     if found == 0:
         logger.warning("[Workflow] 未找到 SaveImage 节点")
     return wf
+
+
 def _detect_fusion_type(
     reference_images: Dict[str, str],
 ) -> Dict[str, str]:
@@ -540,20 +584,23 @@ def _build_character_fusion_step(
     )
 
     # Fish 模板已内置正确参数，只需覆写 seed 和 filename_prefix
-    wf = _set_ksampler_params(wf, denoise=1.0, cfg_scale=1.0, seed=seed,
-                               steps=4, scheduler="beta57")
+    wf = _set_ksampler_params(
+        wf, denoise=1.0, cfg_scale=1.0, seed=seed, steps=4, scheduler="beta57"
+    )
 
     # 获取 LoadImage 节点（按 ID 排序）
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     load_nodes.sort(key=lambda x: x[0])
+
     # 便捷访问
     def _set_img(idx, img_path):
         if idx < len(load_nodes) and img_path:
-            wf[load_nodes[idx][0]]['inputs']['image'] = img_path
+            wf[load_nodes[idx][0]]["inputs"]["image"] = img_path
+
     def _get_img(idx):
         if idx < len(load_nodes):
-            return wf[load_nodes[idx][0]]['inputs'].get('image', '')
-        return ''
+            return wf[load_nodes[idx][0]]["inputs"].get("image", "")
+        return ""
 
     # ⭐ 图2(第2个 LoadImage) = 原始场景环境参考（永远不变）
     scene_file = _resolve_comfyui_image(original_scene or "")
@@ -572,7 +619,9 @@ def _build_character_fusion_step(
     if fusion_mode == "2img":
         img_10_file = fallback_image
         if fusion_info:
-            img_10_file = _resolve_comfyui_image(fusion_info.get("image_1", "") or "") or fallback_image
+            img_10_file = (
+                _resolve_comfyui_image(fusion_info.get("image_1", "") or "") or fallback_image
+            )  # noqa: E501
         # 图1 = 主要元素
         _set_img(0, img_10_file)
         # 图3 = 与图2相同（场景），两图融合不需要第三张独立参考图
@@ -582,7 +631,7 @@ def _build_character_fusion_step(
     elif previous_shot_url:
         prev_file = _resolve_comfyui_image(previous_shot_url)
         _set_img(0, prev_file)
-        logger.info(f"[Workflow] 迭代模式: 图1使用上次融合结果")
+        logger.info("[Workflow] 迭代模式: 图1使用上次融合结果")
         if fusion_info:
             img_12 = _resolve_comfyui_image(fusion_info.get("image_3", "") or "")
             if img_12:
@@ -613,33 +662,47 @@ def _build_character_fusion_step(
         _set_img(2, scene_file or fallback_image)
 
     # ⭐ V5.0: 直接使用用户 prompt
-    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance')
-    if nid_enc and enc_data and 'prompt' in enc_data.get('inputs', {}):
-        wf[nid_enc]['inputs']['prompt'] = prompt_text
-        logger.info(f"[Workflow] Fish融合prompt (type={fusion_info.get('type','?') if fusion_info else 'legacy'}): {prompt_text[:80]}")
+    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
+    if nid_enc and enc_data and "prompt" in enc_data.get("inputs", {}):
+        wf[nid_enc]["inputs"]["prompt"] = prompt_text
+        logger.info(
+            f"[Workflow] Fish融合prompt (type={fusion_info.get('type', '?') if fusion_info else 'legacy'}): {prompt_text[:80]}"  # noqa: E501
+        )  # noqa: E501
 
     # ⭐ 两图融合模式：image3 连接设为与 image2 相同（复刻 Fish 两图融合）
     if fusion_mode == "2img" and nid_enc and enc_data:
-        if "image3" in enc_data.get('inputs', {}):
+        if "image3" in enc_data.get("inputs", {}):
             # 找到第2个 LoadImage 节点的 ID，作为 image3 的链接源
             if len(load_nodes) >= 2:
-                wf[nid_enc]['inputs']['image3'] = [load_nodes[1][0], 0]
+                wf[nid_enc]["inputs"]["image3"] = [load_nodes[1][0], 0]
 
     # ⭐ 尺寸覆写：如果指定了 width/height，覆写 EmptyLatentImage 节点
     if width and height:
-        nid_el, el_data = find_first_node_by_class_type(wf, 'EmptyLatentImage')
+        nid_el, el_data = find_first_node_by_class_type(wf, "EmptyLatentImage")
         if nid_el and el_data:
-            wf[nid_el]['inputs']['width'] = width
-            wf[nid_el]['inputs']['height'] = height
+            wf[nid_el]["inputs"]["width"] = width
+            wf[nid_el]["inputs"]["height"] = height
             logger.info(f"[Workflow] Fish融合尺寸覆写: {width}×{height}")
 
     wf = _set_filename_prefix(wf, f"{filename_prefix}_{seed}")
     return wf
+
+
 STORYBOARD_TEMPLATES = [
-    "costume_change", "multi_frame", "panorama", "pose_transfer",
-    "upscale", "3view", "pose_extraction", "lineart_extraction", "depth_map",
+    "costume_change",
+    "multi_frame",
+    "panorama",
+    "pose_transfer",
+    "upscale",
+    "3view",
+    "pose_extraction",
+    "lineart_extraction",
+    "depth_map",
     # ⭐ 4套定制分镜模板
-    "single_person", "dual_person", "local_multi", "gpt_storyboard",
+    "single_person",
+    "dual_person",
+    "local_multi",
+    "gpt_storyboard",
 ]
 _EXTRACTION_TEMPLATES = {
     "pose_extraction": "姿态迁移骨骼图.json",
@@ -647,6 +710,8 @@ _EXTRACTION_TEMPLATES = {
     "depth_map": "depth_map.json",
     "extract_all": "三个骨架图.json",
 }
+
+
 def get_workflow_node_summary(workflow: Dict[str, Any]) -> Dict[str, Any]:
     """获取工作流节点摘要（用于调试）"""
     summary = {}

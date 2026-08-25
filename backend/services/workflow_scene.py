@@ -6,6 +6,7 @@ ComfyUI 工作流构建器 — 场景/增强类工作流
 
 from services.workflow_helpers import (
     _COMFYUI_INPUT_DIR,
+    _COMFYUI_OUTPUT_DIR,
     _EXTRACTION_TEMPLATES,
     _infer_saveimage_type,
     _load_workflow_template,
@@ -21,15 +22,12 @@ import copy
 import json
 import logging
 import os
-import re
 import time
 import random
-import shutil
-from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
-from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
+
 
 def build_panorama_workflow(
     reference_image: str,
@@ -98,8 +96,12 @@ def build_panorama_workflow(
         "denoise": 1.0,
     }
 
-    logger.info(f"[WorkflowBuilder][全景图] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}")
+    logger.info(
+        f"[WorkflowBuilder][全景图] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}"
+    )
     return [wf], ["全景图"], metadata
+
+
 def build_pose_transfer_workflow(
     character_image: str,
     pose_reference_image: str,
@@ -135,28 +137,29 @@ def build_pose_transfer_workflow(
     char_file = _resolve_comfyui_image(character_image)
     pose_file = _resolve_comfyui_image(pose_reference_image)
 
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     load_nodes.sort(key=lambda x: x[0])
     if len(load_nodes) >= 1 and char_file:
-        wf[load_nodes[0][0]]['inputs']['image'] = char_file
+        wf[load_nodes[0][0]]["inputs"]["image"] = char_file
     if len(load_nodes) >= 2 and pose_file:
-        wf[load_nodes[1][0]]['inputs']['image'] = pose_file
+        wf[load_nodes[1][0]]["inputs"]["image"] = pose_file
 
     # 注入提示词（TextEncodeQwenImageEditPlus 节点）
-    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance')
-    if nid_enc and enc_data and 'prompt' in enc_data.get('inputs', {}):
-        wf[nid_enc]['inputs']['prompt'] = prompt_text
+    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
+    if nid_enc and enc_data and "prompt" in enc_data.get("inputs", {}):
+        wf[nid_enc]["inputs"]["prompt"] = prompt_text
 
     # 注入种子和参数
-    wf = _set_ksampler_params(wf, denoise=1.0, cfg_scale=1.0, seed=actual_seed,
-                               steps=4, scheduler="beta57")
+    wf = _set_ksampler_params(
+        wf, denoise=1.0, cfg_scale=1.0, seed=actual_seed, steps=4, scheduler="beta57"
+    )
 
     # 尺寸覆写（EmptyLatentImage 节点）
     if width and height:
-        nid, ndata = find_first_node_by_class_type(wf, 'EmptyLatentImage')
+        nid, ndata = find_first_node_by_class_type(wf, "EmptyLatentImage")
         if nid and ndata:
-            wf[nid]['inputs']['width'] = width
-            wf[nid]['inputs']['height'] = height
+            wf[nid]["inputs"]["width"] = width
+            wf[nid]["inputs"]["height"] = height
 
     wf = _set_filename_prefix(wf, f"{filename_prefix}_{actual_seed}")
 
@@ -168,8 +171,12 @@ def build_pose_transfer_workflow(
         "cfg": 1.0,
     }
 
-    logger.info(f"[WorkflowBuilder][姿态迁移] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}")
+    logger.info(
+        f"[WorkflowBuilder][姿态迁移] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}"
+    )
     return [wf], ["姿态迁移"], metadata
+
+
 def build_upscale_workflow(
     reference_image: str,
     seed: Optional[int] = None,
@@ -195,15 +202,16 @@ def build_upscale_workflow(
 
     # 注入参考图（LoadImage 节点）
     ref_file = _resolve_comfyui_image(reference_image)
-    nid, ndata = find_first_node_by_class_type(wf, 'LoadImage')
+    nid, ndata = find_first_node_by_class_type(wf, "LoadImage")
     if nid and ndata and ref_file:
-        wf[nid]['inputs']['image'] = ref_file
+        wf[nid]["inputs"]["image"] = ref_file
         # 校验文件路径和大小
         src_path = os.path.join(_COMFYUI_OUTPUT_DIR, ref_file)
         dst_path = os.path.join(_COMFYUI_INPUT_DIR, ref_file)
         src_sz = os.path.getsize(src_path) if os.path.exists(src_path) else 0
         dst_sz = os.path.getsize(dst_path) if os.path.exists(dst_path) else 0
         import hashlib
+
         src_hash = ""
         dst_hash = ""
         if os.path.exists(src_path):
@@ -222,9 +230,9 @@ def build_upscale_workflow(
         logger.warning(f"[WorkflowBuilder][超分] 参考图路径为空: {reference_image}")
 
     # 注入种子（SeedVR2VideoUpscaler 节点）
-    nid_seedvr, _ = find_first_node_by_class_type(wf, 'SeedVR2VideoUpscaler')
+    nid_seedvr, _ = find_first_node_by_class_type(wf, "SeedVR2VideoUpscaler")
     if nid_seedvr:
-        wf[nid_seedvr]['inputs']['seed'] = actual_seed
+        wf[nid_seedvr]["inputs"]["seed"] = actual_seed
 
     wf = _set_filename_prefix(wf, f"{filename_prefix}_{actual_seed}")
 
@@ -233,11 +241,17 @@ def build_upscale_workflow(
         "seed": actual_seed,
     }
 
-    logger.info(f"[WorkflowBuilder][超分] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}")
+    logger.info(
+        f"[WorkflowBuilder][超分] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}"
+    )
 
     # 打印完整工作流 JSON 用于比对（仅 debug 级别）
-    logger.debug(f"[WorkflowBuilder][超分] 工作流详情: {json.dumps(wf, ensure_ascii=False, indent=2)}")
+    logger.debug(
+        f"[WorkflowBuilder][超分] 工作流详情: {json.dumps(wf, ensure_ascii=False, indent=2)}"
+    )
     return [wf], ["超分放大"], metadata
+
+
 def build_extraction_workflow(
     reference_image: str,
     template: str,
@@ -257,16 +271,16 @@ def build_extraction_workflow(
 
     # 注入参考图到 LoadImage 节点
     ref_file = _resolve_comfyui_image(reference_image)
-    nid_load, _ = find_first_node_by_class_type(wf, 'LoadImage')
+    nid_load, _ = find_first_node_by_class_type(wf, "LoadImage")
     if nid_load and ref_file:
-        wf[nid_load]['inputs']['image'] = ref_file
+        wf[nid_load]["inputs"]["image"] = ref_file
     elif not ref_file:
         logger.warning(f"[WorkflowBuilder][提取] 参考图路径为空: {reference_image}")
 
     # 设置种子
     actual_seed = seed or random.randint(0, 2**31 - 1)
-    for nid, ndata in find_node_by_class_type(wf, 'KSampler'):
-        ndata['inputs']['seed'] = actual_seed
+    for nid, ndata in find_node_by_class_type(wf, "KSampler"):
+        ndata["inputs"]["seed"] = actual_seed
 
     # 设置 SaveImage prefix — 根据上游节点类型智能识别，而非依赖遍历顺序
     if template == "extract_all":
@@ -275,18 +289,20 @@ def build_extraction_workflow(
             "depth": ["depth", "midas", "zoe", "leres"],
             "pose": ["pose", "openpose", "dwpose", "dwpreprocessor", "keypoint", "sdpose"],
         }
-        for nid, ndata in find_node_by_class_type(wf, 'SaveImage'):
+        for nid, ndata in find_node_by_class_type(wf, "SaveImage"):
             type_tag = _infer_saveimage_type(wf, nid, _infer_map)
             if filename_prefix and filename_prefix != "extraction":
-                ndata['inputs']['filename_prefix'] = f"{filename_prefix}_{type_tag}"
+                ndata["inputs"]["filename_prefix"] = f"{filename_prefix}_{type_tag}"
             else:
-                ndata['inputs']['filename_prefix'] = f"{type_tag}_{actual_seed}"
+                ndata["inputs"]["filename_prefix"] = f"{type_tag}_{actual_seed}"
     else:
-        for i, (nid, ndata) in enumerate(find_node_by_class_type(wf, 'SaveImage')):
-            ndata['inputs']['filename_prefix'] = f"{filename_prefix}_{actual_seed}"
+        for i, (nid, ndata) in enumerate(find_node_by_class_type(wf, "SaveImage")):
+            ndata["inputs"]["filename_prefix"] = f"{filename_prefix}_{actual_seed}"
 
     metadata = {"template": template, "seed": actual_seed, "reference_image": ref_file}
     return [wf], [f"{template}提取"], metadata
+
+
 def build_layered_render_workflow(
     char_a_image: str,
     char_b_image: str,
@@ -330,7 +346,6 @@ def build_layered_render_workflow(
     Returns:
         (workflows列表, step_names列表, metadata字典)
     """
-    import copy
     _t0 = time.time()
     actual_seed = seed or random.randint(0, 2**31 - 1)
 
@@ -437,6 +452,8 @@ def build_layered_render_workflow(
         f"steps={len(workflows)} | template={template_name}"
     )
     return workflows, step_names, metadata
+
+
 def build_template_clean_workflow(
     reference_image: str,
     depth_image: str = "",
@@ -455,15 +472,15 @@ def build_template_clean_workflow(
 
     # 注入参考构图图到 LoadImage 节点
     ref_file = _resolve_comfyui_image(reference_image)
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     if load_nodes:
         nid, ndata = load_nodes[0]
-        ndata['inputs']['image'] = ref_file
+        ndata["inputs"]["image"] = ref_file
         logger.info(f"[TemplateClean] 参考图 → node {nid}: {ref_file}")
 
     # 简化工作流只有 1 个 SaveImage（mask_raw）
-    for nid, ndata in find_node_by_class_type(wf, 'SaveImage'):
-        ndata['inputs']['filename_prefix'] = f"{filename_prefix}_mask_raw"
+    for nid, ndata in find_node_by_class_type(wf, "SaveImage"):
+        ndata["inputs"]["filename_prefix"] = f"{filename_prefix}_mask_raw"
 
     metadata = {
         "template": "template_clean",
@@ -475,6 +492,8 @@ def build_template_clean_workflow(
         f"ref={ref_file} | nodes={len(wf)}"
     )
     return [wf], ["模板清场+蒙版"], metadata
+
+
 def build_template_pose_workflow(
     reference_image: str,
     filename_prefix: str = "template_pose",
@@ -495,22 +514,22 @@ def build_template_pose_workflow(
 
     # 注入参考Pose图到 LoadImage 节点
     ref_file = _resolve_comfyui_image(reference_image)
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     if load_nodes:
         nid, ndata = load_nodes[0]
-        ndata['inputs']['image'] = ref_file
+        ndata["inputs"]["image"] = ref_file
         logger.info(f"[TemplatePose] 参考Pose → node {nid}: {ref_file}")
 
     # 注入 SimplifiedPoseRenderer 参数
     for nid, ndata in wf.items():
-        if isinstance(ndata, dict) and ndata.get('class_type') == 'SimplifiedPoseRenderer':
-            ndata['inputs']['joint_radius'] = joint_radius
-            ndata['inputs']['line_width'] = line_width
-            ndata['inputs']['head_radius'] = head_radius
+        if isinstance(ndata, dict) and ndata.get("class_type") == "SimplifiedPoseRenderer":
+            ndata["inputs"]["joint_radius"] = joint_radius
+            ndata["inputs"]["line_width"] = line_width
+            ndata["inputs"]["head_radius"] = head_radius
 
     # 设置 SaveImage filename_prefix
-    for i, (nid, ndata) in enumerate(find_node_by_class_type(wf, 'SaveImage')):
-        ndata['inputs']['filename_prefix'] = f"{filename_prefix}_pose"
+    for i, (nid, ndata) in enumerate(find_node_by_class_type(wf, "SaveImage")):
+        ndata["inputs"]["filename_prefix"] = f"{filename_prefix}_pose"
 
     metadata = {
         "template": "template_pose",

@@ -1,14 +1,12 @@
 """QC 验证：用本地 Qwen3-VL-8B 对成片跑完整质检（技术 + 语义）"""
 
 import asyncio
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.qc.qc_service import (  # noqa: E402
-    MAIN_MODEL,
     MODEL_DISPLAY,
     run_qc_async,
 )
@@ -32,7 +30,7 @@ async def main():
     print(f"通过: {'是' if d.get('passed') else '否'} (阈值 {d.get('threshold', 60)})")
     print(f"模型: {d.get('model_used')}")
     if d.get("blocked"):
-        print(f"红线拦截: 是")
+        print("红线拦截: 是")
         for r in d.get("blocked_reasons") or []:
             print(f"  - {r}")
     print("=" * 50)

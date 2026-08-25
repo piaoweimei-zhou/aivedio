@@ -7,8 +7,7 @@
 """
 
 import logging
-import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.provider_service import get_provider_service
@@ -19,9 +18,9 @@ logger = logging.getLogger(__name__)
 # content_type 驱动的精修约束后缀（自动追加到用户指令后面）
 _REFINE_CONSTRAINTS = {
     "character": "保持原图的脸部特征、发型和肤色完全不变，仅修改指定部位。",
-    "scene":     "保持场景的核心结构、建筑布局和物体位置不变。",
-    "prop":      "保留原图的轮廓外形不变，仅修改材质、颜色或表面纹理。",
-    "":          "",
+    "scene": "保持场景的核心结构、建筑布局和物体位置不变。",
+    "prop": "保留原图的轮廓外形不变，仅修改材质、颜色或表面纹理。",
+    "": "",
 }
 
 
@@ -48,6 +47,7 @@ async def _get_image_size_from_url(image_url: str) -> Optional[str]:
 
         # 通过 HTTP 请求 ComfyUI /view 端点读取图片尺寸
         from services.comfyui.config import COMFYUI_BASE_URL
+
         base_url = COMFYUI_BASE_URL
         view_url = f"{base_url}/view?filename={filename}&type=output"
 
@@ -57,19 +57,24 @@ async def _get_image_size_from_url(image_url: str) -> Optional[str]:
                     data = await resp.read()
                     from PIL import Image
                     import io
+
                     with Image.open(io.BytesIO(data)) as img:
                         w, h = img.size
                         logger.info(f"[RefineStage] 读取到实际图片尺寸: {w}x{h} | file={filename}")
                         return f"{w}x{h}"
                 else:
-                    logger.warning(f"[RefineStage] HTTP 获取图片失败: status={resp.status} | url={view_url}")
+                    logger.warning(
+                        f"[RefineStage] HTTP 获取图片失败: status={resp.status} | url={view_url}"
+                    )  # noqa: E501
 
         # Fallback: 本地文件读取（从 ComfyUI output 目录）
         from services.comfyui.config import COMFYUI_DIR, COMFYUI_OUTPUT_DIR
+
         if COMFYUI_DIR and os.path.isdir(COMFYUI_OUTPUT_DIR):
             filepath = os.path.join(COMFYUI_OUTPUT_DIR, filename)
             if os.path.exists(filepath):
                 from PIL import Image
+
                 with Image.open(filepath) as img:
                     w, h = img.size
                     logger.info(f"[RefineStage] 本地读取图片尺寸: {w}x{h} | file={filepath}")
@@ -141,7 +146,7 @@ class RefineStage(StagePlugin):
                 prompt = prompt + " " + constraint
 
         logger.info(
-            f"[RefineStage] 精修 | provider={provider_id} | mode={mode} | content_type={content_type} | asset={source.asset_id}"
+            f"[RefineStage] 精修 | provider={provider_id} | mode={mode} | content_type={content_type} | asset={source.asset_id}"  # noqa: E501
         )
 
         try:
@@ -241,6 +246,7 @@ class RefineStage(StagePlugin):
         # 如果是 upscale 模式，调整尺寸
         if mode == "upscale":
             import re
+
             match = re.fullmatch(r"\s*(\d+)\s*[xX*]\s*(\d+)\s*", size)
             if match:
                 w, h = int(match.group(1)), int(match.group(2))

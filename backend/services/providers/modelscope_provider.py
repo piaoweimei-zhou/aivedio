@@ -9,7 +9,7 @@ import asyncio
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import httpx
 
@@ -51,7 +51,7 @@ class ModelScopeProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         api_key = self._get_api_key()
@@ -89,7 +89,9 @@ class ModelScopeProvider(ProviderPlugin):
 
         async with httpx.AsyncClient(timeout=AI_REQUEST_TIMEOUT) as client:
             # 提交任务
-            submit_res = await client.post(f"{api_root}/v1/images/generations", headers=headers, json=payload)
+            submit_res = await client.post(
+                f"{api_root}/v1/images/generations", headers=headers, json=payload
+            )  # noqa: E501
             submit_res.raise_for_status()
             raw = submit_res.json()
             task_id = raw.get("task_id")
@@ -138,7 +140,9 @@ class ModelScopeProvider(ProviderPlugin):
                     if images:
                         local_urls = []
                         for url in images:
-                            local_url = await save_image_to_output({"type": "url", "value": url}, prefix="ms_")
+                            local_url = await save_image_to_output(
+                                {"type": "url", "value": url}, prefix="ms_"
+                            )  # noqa: E501
                             local_urls.append(local_url)
                         elapsed = int((time.time() - start) * 1000)
                         return ProviderResult(
@@ -164,7 +168,7 @@ class ModelScopeProvider(ProviderPlugin):
         image_urls: List[str],
         model: str = "Qwen/Qwen-Image-Edit-2511",
         resolution: str = "",
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """
         三视图生成（ModelScope 专用）
@@ -196,7 +200,9 @@ class ModelScopeProvider(ProviderPlugin):
             payload["size"] = resolution
 
         async with httpx.AsyncClient(timeout=AI_REQUEST_TIMEOUT) as client:
-            submit_res = await client.post(f"{api_root}/v1/images/generations", headers=headers, json=payload)
+            submit_res = await client.post(
+                f"{api_root}/v1/images/generations", headers=headers, json=payload
+            )  # noqa: E501
             submit_res.raise_for_status()
             raw = submit_res.json()
             task_id = raw.get("task_id")
@@ -230,7 +236,9 @@ class ModelScopeProvider(ProviderPlugin):
                     images = data.get("output_images") or []
                     local_urls = []
                     for url in images:
-                        local_url = await save_image_to_output({"type": "url", "value": url}, prefix="ms_angle_")
+                        local_url = await save_image_to_output(
+                            {"type": "url", "value": url}, prefix="ms_angle_"
+                        )  # noqa: E501
                         local_urls.append(local_url)
                     elapsed = int((time.time() - start) * 1000)
                     return ProviderResult(

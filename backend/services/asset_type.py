@@ -9,6 +9,7 @@
     asset_svc.create(asset_type=AssetType.VIDEO, ...)
     asset_svc.create(asset_type=AssetType.STORYBOARD, ...)
 """
+
 from typing import List
 
 
@@ -49,12 +50,24 @@ class AssetType:
     def all_types(cls) -> List[str]:
         """返回所有合法的资产类型字符串"""
         return [
-            cls.IMAGE, cls.VIDEO, cls.AUDIO,
-            cls.STORYBOARD, cls.STORYBOARD_BATCH, cls.STORYBOARD_LAYERED, cls.STORYBOARD_MULTI,
-            cls.CONCEPT, cls.MULTI_VIEW, cls.PANO,
-            cls.EDIT, cls.REFINE,
+            cls.IMAGE,
+            cls.VIDEO,
+            cls.AUDIO,
+            cls.STORYBOARD,
+            cls.STORYBOARD_BATCH,
+            cls.STORYBOARD_LAYERED,
+            cls.STORYBOARD_MULTI,
+            cls.CONCEPT,
+            cls.MULTI_VIEW,
+            cls.PANO,
+            cls.EDIT,
+            cls.REFINE,
             cls.SCRIPT,
-            cls.MASK, cls.DEPTH, cls.DEPTH_CLEAN, cls.POSE, cls.LINEART,
+            cls.MASK,
+            cls.DEPTH,
+            cls.DEPTH_CLEAN,
+            cls.POSE,
+            cls.LINEART,
         ]
 
     @classmethod
@@ -66,9 +79,19 @@ class AssetType:
     def is_image_like(cls, asset_type: str) -> bool:
         """是否为图片类资产（可用于图片生成工作流的输入）"""
         return asset_type in (
-            cls.IMAGE, cls.STORYBOARD, cls.STORYBOARD_LAYERED, cls.STORYBOARD_MULTI,
-            cls.CONCEPT, cls.MULTI_VIEW, cls.PANO,
-            cls.MASK, cls.DEPTH, cls.DEPTH_CLEAN, cls.POSE, cls.LINEART, cls.REFINE,
+            cls.IMAGE,
+            cls.STORYBOARD,
+            cls.STORYBOARD_LAYERED,
+            cls.STORYBOARD_MULTI,
+            cls.CONCEPT,
+            cls.MULTI_VIEW,
+            cls.PANO,
+            cls.MASK,
+            cls.DEPTH,
+            cls.DEPTH_CLEAN,
+            cls.POSE,
+            cls.LINEART,
+            cls.REFINE,
         )
 
     @classmethod

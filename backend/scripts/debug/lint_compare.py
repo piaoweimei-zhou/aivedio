@@ -1,18 +1,28 @@
 # -*- coding: utf-8 -*-
 """精确对比：只统计我改的文件的 lint 净变化（路径标准化）"""
+
 import re
 import collections
 
 CHANGED = {
-    "services/paths.py", "services/providers/provider_utils.py",
-    "services/comfyui_helpers.py", "services/canvas_service.py",
-    "services/structured_logging.py", "services/asset_service.py",
-    "services/gen_task_manager.py", "services/preset_service.py",
-    "services/project_service.py", "services/prompt_service.py",
-    "services/workflow_template_service.py", "services/batch_task_service.py",
-    "services/stages/qc_stage.py", "services/asset_organizer.py",
-    "api/canvas_api.py", "api/director_asset_api.py",
-    "api/infinite_canvas_api.py", "main.py",
+    "services/paths.py",
+    "services/providers/provider_utils.py",
+    "services/comfyui_helpers.py",
+    "services/canvas_service.py",
+    "services/structured_logging.py",
+    "services/asset_service.py",
+    "services/gen_task_manager.py",
+    "services/preset_service.py",
+    "services/project_service.py",
+    "services/prompt_service.py",
+    "services/workflow_template_service.py",
+    "services/batch_task_service.py",
+    "services/stages/qc_stage.py",
+    "services/asset_organizer.py",
+    "api/canvas_api.py",
+    "api/director_asset_api.py",
+    "api/infinite_canvas_api.py",
+    "main.py",
 }
 
 
@@ -42,8 +52,10 @@ print(f"{'文件':<42}{'码':<6}{'基线':<6}{'当前':<6}差值")
 print("-" * 70)
 total_delta = 0
 for fname in sorted(CHANGED):
-    for code in sorted({c for (f, c), _ in base.items() if f == fname} |
-                       {c for (f, c), _ in cur.items() if f == fname}):
+    for code in sorted(
+        {c for (f, c), _ in base.items() if f == fname}
+        | {c for (f, c), _ in cur.items() if f == fname}
+    ):
         bv = base.get((fname, code), 0)
         cv = cur.get((fname, code), 0)
         if bv != cv:

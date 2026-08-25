@@ -25,6 +25,7 @@ Preset 模型：
 - is_default: 是否为项目的默认预设
 - created_at / updated_at
 """
+
 from services.paths import PRESETS_DIR
 
 import json
@@ -43,14 +44,15 @@ _PRESET_DIR = PRESETS_DIR
 @dataclass
 class Preset:
     """任务预设"""
+
     preset_id: str
     name: str
-    stage_id: str                                    # 对应 Stage ID
-    project_id: str = ""                             # 所属项目（空=全局）
-    provider_id: str = ""                            # 供应商
+    stage_id: str  # 对应 Stage ID
+    project_id: str = ""  # 所属项目（空=全局）
+    provider_id: str = ""  # 供应商
     params: Dict[str, Any] = field(default_factory=dict)  # 阶段参数
     reference_asset_ids: List[str] = field(default_factory=list)  # 参考资产
-    is_default: bool = False                         # 项目默认预设
+    is_default: bool = False  # 项目默认预设
     description: str = ""
     created_at: float = 0.0
     updated_at: float = 0.0

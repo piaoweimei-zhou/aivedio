@@ -63,11 +63,16 @@ class StoryboardStage(StagePlugin):
 
         # ── Script 感知：如果输入包含 script 资产，批量生成所有幕的分镜 ──
         from services.stages.script_utils import find_script_asset
+
         script_asset = find_script_asset(input_assets)
         if script_asset:
             return await self._execute_from_script(
-                script_asset, input_assets, provider_id, params,
-                asset_svc, provider_svc,
+                script_asset,
+                input_assets,
+                provider_id,
+                params,
+                asset_svc,
+                provider_svc,
             )
 
         # ── 原有逻辑：单张分镜生成 ──
@@ -86,7 +91,7 @@ class StoryboardStage(StagePlugin):
 
         logger.info(
             f"[StoryboardStage] 分镜 | provider={provider_id} | "
-            f"refs={len(reference_images)} | template={template or 'default'} | style={style['style_id'] if style else ''}"
+            f"refs={len(reference_images)} | template={template or 'default'} | style={style['style_id'] if style else ''}"  # noqa: E501
         )
 
         try:
@@ -110,7 +115,8 @@ class StoryboardStage(StagePlugin):
             content_type = collect_content_type(input_assets)
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="storyboard",
                 name=params.get("name", "分镜帧"),
                 parent_id=parent_id,
@@ -140,11 +146,13 @@ class StoryboardStage(StagePlugin):
                 continue
             for url in asset.urls:
                 if url:
-                    refs.append({
-                        "url": url,
-                        "role": asset.asset_type,
-                        "name": asset.name,
-                    })
+                    refs.append(
+                        {
+                            "url": url,
+                            "role": asset.asset_type,
+                            "name": asset.name,
+                        }
+                    )
         return refs
 
     async def _execute_from_script(
@@ -165,8 +173,10 @@ class StoryboardStage(StagePlugin):
         - 返回第一个，metadata.sibling_asset_ids 记录其余
         """
         import time
+
         start = time.time()
         from services.stages.script_utils import load_script_json, extract_acts
+
         script = await load_script_json(script_asset)
         if not script:
             return self._error_result(f"无法读取剧本 JSON: {script_asset.asset_id}")
@@ -187,7 +197,7 @@ class StoryboardStage(StagePlugin):
 
         logger.info(
             f"[StoryboardStage] Script 感知 | script={script_asset.asset_id} | "
-            f"acts={len(acts)} | refs={len(reference_images)} | style={style['style_id'] if style else ''}"
+            f"acts={len(acts)} | refs={len(reference_images)} | style={style['style_id'] if style else ''}"  # noqa: E501
         )
 
         created_assets: List[AssetRef] = []
@@ -218,7 +228,8 @@ class StoryboardStage(StagePlugin):
                     **gen_kwargs,
                 )
                 new_asset = await self._register_asset(
-                    asset_svc, result,
+                    asset_svc,
+                    result,
                     asset_type="storyboard",
                     name=f"第{act.get('act', i+1)}幕分镜",
                     parent_id=script_asset.asset_id,
@@ -266,7 +277,9 @@ class StoryboardStage(StagePlugin):
         return AssetProduceResult(asset=primary, success=True, elapsed_ms=elapsed)
 
     def _collect_reference_images_with_siblings(
-        self, input_assets: List[AssetRef], asset_svc,
+        self,
+        input_assets: List[AssetRef],
+        asset_svc,
     ) -> List[Dict[str, str]]:
         """收集参考图，包括 concept 主资产 + sibling_asset_ids 中的角色图"""
         refs = []
@@ -279,11 +292,13 @@ class StoryboardStage(StagePlugin):
             seen_ids.add(asset.asset_id)
             for url in asset.urls:
                 if url:
-                    refs.append({
-                        "url": url,
-                        "role": asset.asset_type,
-                        "name": asset.name,
-                    })
+                    refs.append(
+                        {
+                            "url": url,
+                            "role": asset.asset_type,
+                            "name": asset.name,
+                        }
+                    )
             # 展开 sibling_asset_ids
             for sid in asset.metadata.get("sibling_asset_ids", []):
                 if sid in seen_ids:
@@ -293,9 +308,11 @@ class StoryboardStage(StagePlugin):
                     seen_ids.add(sid)
                     for url in sibling.urls:
                         if url:
-                            refs.append({
-                                "url": url,
-                                "role": sibling.asset_type,
-                                "name": sibling.name,
-                            })
+                            refs.append(
+                                {
+                                    "url": url,
+                                    "role": sibling.asset_type,
+                                    "name": sibling.name,
+                                }
+                            )
         return refs

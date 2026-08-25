@@ -1,5 +1,4 @@
 """网感风格注册表 + 阶段接入 单元测试"""
-import pytest
 
 from services.style_registry import (
     _DEFAULT_STYLE_ID,
@@ -20,8 +19,12 @@ def test_list_styles_has_six_and_default():
     assert len(styles) == 6
     ids = {s["style_id"] for s in styles}
     assert ids == {
-        "wanggan_vivid", "cinematic", "healing",
-        "cyberpunk", "retro_film", "fresh_japanese",
+        "wanggan_vivid",
+        "cinematic",
+        "healing",
+        "cyberpunk",
+        "retro_film",
+        "fresh_japanese",
     }
     defaults = [s for s in styles if s.get("is_default")]
     assert len(defaults) == 1

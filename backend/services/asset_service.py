@@ -8,6 +8,7 @@
 - 版本化（非破坏性迭代）
 - WebSocket 广播（资产变更通知）
 """
+
 from services.paths import ASSETS_DIR
 
 import json
@@ -17,7 +18,6 @@ import time
 import uuid
 import asyncio
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -26,18 +26,20 @@ logger = logging.getLogger(__name__)
 # 数据模型
 # ============================================================
 
+
 @dataclass
 class AssetRef:
     """资产引用 — 资产注册表中的最小单元"""
+
     asset_id: str
-    asset_type: str              # 生产阶段类型: concept/edit/storyboard/video/pose/lineart/depth/multi_view/pano
+    asset_type: str  # 生产阶段类型: concept/edit/storyboard/video/pose/lineart/depth/multi_view/pano  # noqa: E501
     name: str
-    content_type: str = ""       # 内容类型: character/scene/prop/"" (空=无内容分类)
-    urls: List[str] = field(default_factory=list)   # 图片/视频 URL 列表
+    content_type: str = ""  # 内容类型: character/scene/prop/"" (空=无内容分类)
+    urls: List[str] = field(default_factory=list)  # 图片/视频 URL 列表
     metadata: Dict[str, Any] = field(default_factory=dict)  # 附加元数据
-    parent_id: Optional[str] = None     # 来源资产 ID（用于追踪生产链）
-    project_id: Optional[str] = None    # 所属项目 ID（None=全局/未分类）
-    version: int = 1                    # 版本号（非破坏性迭代）
+    parent_id: Optional[str] = None  # 来源资产 ID（用于追踪生产链）
+    project_id: Optional[str] = None  # 所属项目 ID（None=全局/未分类）
+    version: int = 1  # 版本号（非破坏性迭代）
     created_at: float = 0.0
     updated_at: float = 0.0
 
@@ -53,6 +55,7 @@ class AssetRef:
 @dataclass
 class AssetProduceResult:
     """资产生产结果 — Stage 插件的输出"""
+
     asset: AssetRef
     success: bool = True
     error: Optional[str] = None
@@ -67,30 +70,30 @@ class AssetProduceResult:
 # 当前支持的资产类型（开放集合，可随时扩展）
 # 生产阶段类型
 STAGE_TYPES = {
-    "concept":      {"label": "概念图",     "category": "image"},
-    "edit":         {"label": "精修图",     "category": "image"},
-    "multi_view":   {"label": "三视图",     "category": "image"},
-    "pano":         {"label": "360全景",    "category": "image"},
-    "lineart":      {"label": "线稿",       "category": "image"},
-    "depth":        {"label": "深度图",     "category": "image"},
-    "depth_clean":  {"label": "清场深度图", "category": "image"},
-    "storyboard":   {"label": "分镜帧",     "category": "image"},
+    "concept": {"label": "概念图", "category": "image"},
+    "edit": {"label": "精修图", "category": "image"},
+    "multi_view": {"label": "三视图", "category": "image"},
+    "pano": {"label": "360全景", "category": "image"},
+    "lineart": {"label": "线稿", "category": "image"},
+    "depth": {"label": "深度图", "category": "image"},
+    "depth_clean": {"label": "清场深度图", "category": "image"},
+    "storyboard": {"label": "分镜帧", "category": "image"},
     "storyboard_multi": {"label": "多人分镜", "category": "image"},
     "storyboard_layered": {"label": "分层渲染", "category": "image"},
     "storyboard_batch": {"label": "批量分镜", "category": "image"},
     "template_production": {"label": "模板制作", "category": "image"},
-    "csv":             {"label": "CSV脚本", "category": "data"},
-    "script":          {"label": "AI剧本", "category": "data"},
-    "pose":         {"label": "姿态",       "category": "image"},
-    "mask":         {"label": "蒙版",       "category": "image"},
-    "video":        {"label": "视频",       "category": "video"},
+    "csv": {"label": "CSV脚本", "category": "data"},
+    "script": {"label": "AI剧本", "category": "data"},
+    "pose": {"label": "姿态", "category": "image"},
+    "mask": {"label": "蒙版", "category": "image"},
+    "video": {"label": "视频", "category": "video"},
 }
 
 # 内容类型（描绘对象维度）
 CONTENT_TYPES = {
-    "character":    {"label": "角色"},
-    "scene":        {"label": "场景"},
-    "prop":         {"label": "道具"},
+    "character": {"label": "角色"},
+    "scene": {"label": "场景"},
+    "prop": {"label": "道具"},
 }
 
 # 兼容旧代码：ASSET_TYPES = STAGE_TYPES + CONTENT_TYPES
@@ -101,6 +104,7 @@ ASSET_TYPES = {**STAGE_TYPES, **CONTENT_TYPES}
 # AssetService
 # ============================================================
 
+
 class AssetService:
     """资产注册表服务"""
 
@@ -108,7 +112,7 @@ class AssetService:
         self.storage_dir = storage_dir or ASSETS_DIR
         self._assets: Dict[str, AssetRef] = {}
         self._ws_callbacks: List = []  # WebSocket 广播回调
-        self._lock = asyncio.Lock()    # 并发写入锁
+        self._lock = asyncio.Lock()  # 并发写入锁
         self._load()
 
     # ── CRUD ──────────────────────────────────────────────
@@ -148,7 +152,9 @@ class AssetService:
             self._assets[asset.asset_id] = asset
             await asyncio.get_event_loop().run_in_executor(None, self._save)
         self._broadcast("asset:created", asset)
-        logger.info(f"[AssetService] 创建资产 | type={asset_type} content_type={content_type} name={name} id={asset.asset_id} project={project_id or '-'}")
+        logger.info(
+            f"[AssetService] 创建资产 | type={asset_type} content_type={content_type} name={name} id={asset.asset_id} project={project_id or '-'}"  # noqa: E501
+        )  # noqa: E501
         return asset
 
     def get(self, asset_id: str) -> Optional[AssetRef]:
@@ -176,7 +182,9 @@ class AssetService:
         if content_type:
             results = [a for a in results if a.content_type == content_type]
         if category:
-            results = [a for a in results if ASSET_TYPES.get(a.asset_type, {}).get("category") == category]
+            results = [
+                a for a in results if ASSET_TYPES.get(a.asset_type, {}).get("category") == category
+            ]  # noqa: E501
         if parent_id:
             results = [a for a in results if a.parent_id == parent_id]
         if project_id is not None:
@@ -228,6 +236,7 @@ class AssetService:
         # 通知 CanvasService 清理引用该资产的节点
         try:
             from services.canvas_service import get_canvas_service
+
             canvas_svc = get_canvas_service()
             await canvas_svc.remove_nodes_by_asset(asset_id)
         except Exception as e:
@@ -412,7 +421,6 @@ class AssetService:
         2. generated/ 与 ComfyUI output 目录递归按文件名搜索
         3. HTTP GET 兜底（前端即靠 HTTP 加载，200 才算存在）
         """
-        import asyncio
         from urllib.parse import urlparse, parse_qs
 
         # 准备搜索目录（延迟获取，避免重）—— 用类属性默认
@@ -420,11 +428,13 @@ class AssetService:
         comfy_dir = ""
         try:
             from services.comfyui_helpers import GENERATED_DIR as _g
+
             gen_dir = _g if os.path.isdir(_g) else ""
         except Exception:
             pass
         try:
             from services.comfyui.config import COMFYUI_OUTPUT_DIR as _c
+
             comfy_dir = _c if _c and os.path.isdir(_c) else ""
         except Exception:
             pass
@@ -435,6 +445,7 @@ class AssetService:
             # 1) output_file_from_url 精确解析
             try:
                 from services.providers.provider_utils import output_file_from_url
+
                 local = output_file_from_url(url)
                 if local and os.path.isfile(local):
                     return True
@@ -520,6 +531,7 @@ class AssetService:
 # ============================================================
 
 _instance: Optional[AssetService] = None
+
 
 def get_asset_service() -> AssetService:
     global _instance

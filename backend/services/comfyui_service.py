@@ -15,18 +15,14 @@ ComfyUI 服务
 
 import asyncio
 import logging
-import os
 import subprocess
-import time
 from collections import OrderedDict
-from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
-from dataclasses import dataclass
+from typing import Awaitable, Callable, Dict, List, Optional
 
 import aiohttp
 
 from services.comfyui.config import COMFYUI_DIR
-from services.comfyui_helpers import ComfyUIConfig, ComfyUIGenResult
+from services.comfyui_helpers import ComfyUIConfig
 from services.comfyui_lifecycle import ComfyUILifecycleMixin
 from services.comfyui_generation import ComfyUIGenerationMixin
 from services.comfyui_video import ComfyUIVideoMixin

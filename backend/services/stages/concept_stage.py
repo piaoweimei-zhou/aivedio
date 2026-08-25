@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 # content_type 驱动的默认尺寸
 _DEFAULT_SIZES = {
     "character": "1080x1920",
-    "scene":     "1920x1080",
-    "prop":      "1920x1080",
+    "scene": "1920x1080",
+    "prop": "1920x1080",
     "emotional_scene": "1080x1350",  # 情感共鸣图，竖版4:5 适合社媒
-    "":          "1080x1920",
+    "": "1080x1920",
 }
 
 # content_type 驱动的提示词增强前缀（中文，Z-Image 对中文敏感）
@@ -31,10 +31,10 @@ _DEFAULT_SIZES = {
 # 这里只做轻量补充，避免与 workflow_builder 重复
 _PROMPT_PREFIX = {
     "character": "",  # 触发词由 workflow_builder 统一添加
-    "scene":     "",
-    "prop":      "",
+    "scene": "",
+    "prop": "",
     "emotional_scene": "情绪共鸣场景图，强调光线氛围与人物情绪表达，电影质感，",
-    "":          "",
+    "": "",
 }
 
 
@@ -75,11 +75,16 @@ class ConceptStage(StagePlugin):
 
         # ── Script 感知：如果输入包含 script 资产，批量生成角色概念图 ──
         from services.stages.script_utils import find_script_asset
+
         script_asset = find_script_asset(input_assets)
         if script_asset:
             return await self._execute_from_script(
-                script_asset, input_assets, provider_id, params,
-                asset_svc, provider_svc,
+                script_asset,
+                input_assets,
+                provider_id,
+                params,
+                asset_svc,
+                provider_svc,
             )
 
         # ── 原有逻辑：从 prompt 生成单张概念图 ──
@@ -111,7 +116,9 @@ class ConceptStage(StagePlugin):
 
         provider_id = self._resolve_provider(provider_id)
 
-        logger.info(f"[ConceptStage] 生成概念图 | provider={provider_id} | content_type={content_type} | size={size} | prompt={prompt[:60]}")
+        logger.info(
+            f"[ConceptStage] 生成概念图 | provider={provider_id} | content_type={content_type} | size={size} | prompt={prompt[:60]}"  # noqa: E501
+        )  # noqa: E501
 
         try:
             reference_images = None
@@ -133,11 +140,19 @@ class ConceptStage(StagePlugin):
             )
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="concept",
                 name=name,
                 parent_id=parent_id,
-                extra_metadata={"prompt": prompt, "model": model or result.model, "size": size, "content_type": content_type, "style_id": style["style_id"] if style else "", "style_name": style["name"] if style else ""},
+                extra_metadata={
+                    "prompt": prompt,
+                    "model": model or result.model,
+                    "size": size,
+                    "content_type": content_type,
+                    "style_id": style["style_id"] if style else "",
+                    "style_name": style["name"] if style else "",
+                },  # noqa: E501
                 content_type=content_type,
             )
 
@@ -166,8 +181,10 @@ class ConceptStage(StagePlugin):
         - content_type="character"
         """
         import time
+
         start = time.time()
         from services.stages.script_utils import load_script_json, extract_characters
+
         script = await load_script_json(script_asset)
         if not script:
             return self._error_result(f"无法读取剧本 JSON: {script_asset.asset_id}")
@@ -190,7 +207,7 @@ class ConceptStage(StagePlugin):
 
         logger.info(
             f"[ConceptStage] Script 感知 | script={script_asset.asset_id} | "
-            f"characters={len(characters)} | provider={provider_id} | style={style['style_id'] if style else ''}"
+            f"characters={len(characters)} | provider={provider_id} | style={style['style_id'] if style else ''}"  # noqa: E501
         )
 
         created_assets: List[AssetRef] = []
@@ -216,7 +233,8 @@ class ConceptStage(StagePlugin):
                     content_type=content_type,
                 )
                 new_asset = await self._register_asset(
-                    asset_svc, result,
+                    asset_svc,
+                    result,
                     asset_type="concept",
                     name=char["name"],
                     parent_id=script_asset.asset_id,
@@ -234,7 +252,9 @@ class ConceptStage(StagePlugin):
                     content_type=content_type,
                 )
                 created_assets.append(new_asset)
-                logger.info(f"[ConceptStage] 角色{i+1}/{len(characters)} 完成 | name={char['name']} | id={new_asset.asset_id}")
+                logger.info(
+                    f"[ConceptStage] 角色{i+1}/{len(characters)} 完成 | name={char['name']} | id={new_asset.asset_id}"  # noqa: E501
+                )  # noqa: E501
             except Exception as e:
                 logger.error(f"[ConceptStage] 角色{i+1} 生成失败 | name={char['name']} | err={e}")
                 errors.append(f"{char['name']}: {e}")

@@ -14,6 +14,7 @@ P2+: 任务状态持久化
 - 服务重启后从磁盘恢复未完成任务
 - 已完成/失败任务自动过期清理
 """
+
 from services.paths import TASK_STATE_DIR
 
 import asyncio
@@ -22,7 +23,6 @@ import json
 import logging
 import os
 import time
-import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -42,16 +42,17 @@ _DEFAULT_TASK_TIMEOUT = 1800
 @dataclass
 class GenTask:
     """ComfyUI 生成任务"""
+
     task_id: str
-    status: str = "pending"       # pending / running / completed / failed
-    stage_id: str = ""            # 执行的阶段 ID
-    prompt_id: str = ""           # ComfyUI prompt_id
+    status: str = "pending"  # pending / running / completed / failed
+    stage_id: str = ""  # 执行的阶段 ID
+    prompt_id: str = ""  # ComfyUI prompt_id
     result: Optional[Dict[str, Any]] = None  # 执行结果
     error: str = ""
     created_at: float = 0.0
     updated_at: float = 0.0
     elapsed_ms: int = 0
-    progress: float = 0.0         # 0-100
+    progress: float = 0.0  # 0-100
 
     # 执行参数（后台任务使用）
     _execute_fn: Optional[Callable] = field(default=None, repr=False)
@@ -209,19 +210,16 @@ class GenTaskManager:
                 logger.warning(f"[GenTask] 恢复任务失败 | file={path.name} | error={e}")
 
         if restored or expired:
-            logger.info(
-                f"[GenTask] 磁盘恢复完成 | "
-                f"restored={restored} | expired={expired}"
-            )
+            logger.info(f"[GenTask] 磁盘恢复完成 | " f"restored={restored} | expired={expired}")
 
     async def _cleanup_expired_tasks(self):
         """清理内存和磁盘中已过期的已完成/失败任务"""
         now = time.time()
         async with self._lock:
             to_remove = [
-                tid for tid, t in self._tasks.items()
-                if t.status in ("completed", "failed")
-                and now - t.updated_at > self._completed_ttl
+                tid
+                for tid, t in self._tasks.items()
+                if t.status in ("completed", "failed") and now - t.updated_at > self._completed_ttl
             ]
             for tid in to_remove:
                 del self._tasks[tid]
@@ -320,10 +318,7 @@ class GenTaskManager:
             task.progress = 100.0
             task.updated_at = time.time()
 
-            logger.info(
-                f"[GenTask] 任务完成 | id={task_id} | "
-                f"elapsed={task.elapsed_ms}ms"
-            )
+            logger.info(f"[GenTask] 任务完成 | id={task_id} | " f"elapsed={task.elapsed_ms}ms")
 
         except asyncio.TimeoutError:
             task.status = "failed"
@@ -354,7 +349,9 @@ class GenTaskManager:
                     else:
                         cb(task)
                 except Exception as e:
-                    logger.warning(f"[GenTask] on_done 回调失败: {cb.__name__ if hasattr(cb, '__name__') else cb}: {e}")
+                    logger.warning(
+                        f"[GenTask] on_done 回调失败: {cb.__name__ if hasattr(cb, '__name__') else cb}: {e}"  # noqa: E501
+                    )  # noqa: E501
 
     def register_done_callback(self, cb: Callable) -> None:
         """注册任务完成回调（支持多个回调，避免互相覆盖）
@@ -363,13 +360,17 @@ class GenTaskManager:
         """
         if cb not in self._on_done_callbacks:
             self._on_done_callbacks.append(cb)
-            logger.info(f"[GenTask] 注册 on_done 回调 | cb={cb.__name__ if hasattr(cb, '__name__') else cb} | total={len(self._on_done_callbacks)}")
+            logger.info(
+                f"[GenTask] 注册 on_done 回调 | cb={cb.__name__ if hasattr(cb, '__name__') else cb} | total={len(self._on_done_callbacks)}"  # noqa: E501
+            )  # noqa: E501
 
     def unregister_done_callback(self, cb: Callable) -> None:
         """取消注册任务完成回调"""
         if cb in self._on_done_callbacks:
             self._on_done_callbacks.remove(cb)
-            logger.info(f"[GenTask] 取消注册 on_done 回调 | cb={cb.__name__ if hasattr(cb, '__name__') else cb} | total={len(self._on_done_callbacks)}")
+            logger.info(
+                f"[GenTask] 取消注册 on_done 回调 | cb={cb.__name__ if hasattr(cb, '__name__') else cb} | total={len(self._on_done_callbacks)}"  # noqa: E501
+            )  # noqa: E501
 
     def get_task(self, task_id: str) -> Optional[GenTask]:
         """获取任务状态"""

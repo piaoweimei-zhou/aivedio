@@ -10,7 +10,7 @@ TTS 多角色配音工具
 
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,12 @@ _DEFAULT_VOICES = {
 
 # 默认音色轮转池（角色未指定音色时按顺序分配）
 _DEFAULT_VOICE_POOL = [
-    "male_young", "female_young",
-    "male_middle", "female_middle",
-    "male_old", "female_old",
+    "male_young",
+    "female_young",
+    "male_middle",
+    "female_middle",
+    "male_old",
+    "female_old",
 ]
 
 
@@ -92,7 +95,9 @@ def build_voice_map(
         voice_map["旁白"] = _DEFAULT_VOICES["narrator_male"]
         voice_map["narrator"] = _DEFAULT_VOICES["narrator_male"]
 
-    logger.info(f"[TTS] voice_map 构建完成 | characters={len(voice_map)} | {list(voice_map.keys())}")
+    logger.info(
+        f"[TTS] voice_map 构建完成 | characters={len(voice_map)} | {list(voice_map.keys())}"
+    )
     return voice_map
 
 
@@ -102,7 +107,9 @@ def _infer_voice_from_desc(desc: str) -> Optional[str]:
         return None
 
     # 性别
-    is_female = any(k in desc for k in ["女", "母", "娘", "姐", "妹", "婆", "妻", "皇后", "公主", "妃"])
+    is_female = any(
+        k in desc for k in ["女", "母", "娘", "姐", "妹", "婆", "妻", "皇后", "公主", "妃"]
+    )
     is_male = any(k in desc for k in ["男", "公", "爹", "哥", "弟", "爷", "夫", "帝", "王", "将"])
 
     # 年龄

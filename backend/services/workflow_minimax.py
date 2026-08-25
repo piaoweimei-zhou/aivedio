@@ -15,12 +15,14 @@
 MiniMax H3 是音视频统一模型，audio_mode=True 时同步生成环境音（含对话/音效），
 与后续 TTS 台词配音可并存。
 """
+
 from typing import Any, Dict
 
 
 def _as_multiline(text: str) -> str:
     """把含换行的提示词转成 ComfyUI STRING widget 的多行表示（\\n 转义）。"""
     return text.replace("\\n", "\n").replace("\n", "\\n")
+
 
 # —— 该工作流依赖的权重文件名（与新 ComfyUI 目录 models 对应）——
 UNET_NAME = "minimax_h3_fl2va_int8_convrot.safetensors"
@@ -120,67 +122,109 @@ def build_minimax_h3_video_workflow(
     prompt = prompt.strip() or "一个简单的纯色背景上漂浮的物体。"
     # 真正的随机化由调用方传入的 seed 决定；这里默认取系统时间微秒
     import time
-    seed = int(seed) or (int(time.time() * 1000) % (2 ** 32))
+
+    seed = int(seed) or (int(time.time() * 1000) % (2**32))
 
     wf: Dict[str, Dict[str, Any]] = {
         "vae_video": {"class_type": "VAELoader", "inputs": {"vae_name": VIDEO_VAE}},
         "vae_audio": {"class_type": "VAELoader", "inputs": {"vae_name": AUDIO_VAE}},
-        "unet": {"class_type": "UNETLoader", "inputs": {"unet_name": UNET_NAME, "weight_dtype": "default"}},
-        "clip": {"class_type": "CLIPLoader", "inputs": {"clip_name": CLIP_NAME, "type": "minimax", "device": "default"}},
-        "patched": {"class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch", "inputs": {
-            "model": ["unet", "MODEL"],
-        }},
-        "lora": {"class_type": "LoraLoaderModelOnly", "inputs": {
-            "model": ["patched", "model"],
-            "lora_name": LORA_NAME, "strength_model": 1.0,
-        }},
-        "cond": {"class_type": "MiniMaxH3AudioConditioningT8", "inputs": {
-            "clip": ["clip", "CLIP"],
-            "video_vae": ["vae_video", "VAE"],
-            "audio_vae": ["vae_audio", "VAE"],
-            "prompt": _as_multiline(prompt),
-            "width": width, "height": height, "length": frames,
-            "task_type": "I2VA" if reference_image else "auto",
-            "audio_mode": audio_mode,
-            "audio_denoise_strength": 0.0,
-            "add_source_as_reference": False,
-            "prompt_primary_audio_ordinal": 0,
-            "strict_prompt_tags": False,
-            "ref_image_size": "match",
-            "reference_video_policy": "official_2_to_15s",
-        }},
-        "rate": {"class_type": "MiniMaxH3MultiRateSamplerEXPT8", "inputs": {
-            "model": ["lora", "MODEL"],
-            "av_latent": ["cond", "av_latent"],
-            "video_steps": video_steps, "audio_steps": audio_steps,
-            "shift_video": shift_video, "shift_audio": shift_audio,
-        }},
-        "guider": {"class_type": "BasicGuider", "inputs": {
-            "model": ["rate", "MODEL"],
-            "conditioning": ["cond", "positive"],
-        }},
+        "unet": {
+            "class_type": "UNETLoader",
+            "inputs": {"unet_name": UNET_NAME, "weight_dtype": "default"},
+        },  # noqa: E501
+        "clip": {
+            "class_type": "CLIPLoader",
+            "inputs": {"clip_name": CLIP_NAME, "type": "minimax", "device": "default"},
+        },  # noqa: E501
+        "patched": {
+            "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+            "inputs": {
+                "model": ["unet", "MODEL"],
+            },
+        },
+        "lora": {
+            "class_type": "LoraLoaderModelOnly",
+            "inputs": {
+                "model": ["patched", "model"],
+                "lora_name": LORA_NAME,
+                "strength_model": 1.0,
+            },
+        },
+        "cond": {
+            "class_type": "MiniMaxH3AudioConditioningT8",
+            "inputs": {
+                "clip": ["clip", "CLIP"],
+                "video_vae": ["vae_video", "VAE"],
+                "audio_vae": ["vae_audio", "VAE"],
+                "prompt": _as_multiline(prompt),
+                "width": width,
+                "height": height,
+                "length": frames,
+                "task_type": "I2VA" if reference_image else "auto",
+                "audio_mode": audio_mode,
+                "audio_denoise_strength": 0.0,
+                "add_source_as_reference": False,
+                "prompt_primary_audio_ordinal": 0,
+                "strict_prompt_tags": False,
+                "ref_image_size": "match",
+                "reference_video_policy": "official_2_to_15s",
+            },
+        },
+        "rate": {
+            "class_type": "MiniMaxH3MultiRateSamplerEXPT8",
+            "inputs": {
+                "model": ["lora", "MODEL"],
+                "av_latent": ["cond", "av_latent"],
+                "video_steps": video_steps,
+                "audio_steps": audio_steps,
+                "shift_video": shift_video,
+                "shift_audio": shift_audio,
+            },
+        },
+        "guider": {
+            "class_type": "BasicGuider",
+            "inputs": {
+                "model": ["rate", "MODEL"],
+                "conditioning": ["cond", "positive"],
+            },
+        },
         "noise": {"class_type": "RandomNoise", "inputs": {"noise_seed": seed}},
-        "sampler": {"class_type": "SamplerCustomAdvanced", "inputs": {
-            "noise": ["noise", "NOISE"],
-            "guider": ["guider", "GUIDER"],
-            "sampler": ["rate", "sampler"],
-            "sigmas": ["rate", "sigmas"],
-            "latent_image": ["cond", "av_latent"],
-        }},
-        "avdecode": {"class_type": "MiniMaxH3AVDecodeT8", "inputs": {
-            "av_latent": ["sampler", "output"],
-            "video_vae": ["vae_video", "VAE"],
-            "audio_vae": ["vae_audio", "VAE"],
-        }},
-        "combine": {"class_type": "VHS_VideoCombine", "inputs": {
-            "images": ["avdecode", "frames"],
-            "audio": ["avdecode", "generated_audio"],
-            "frame_rate": frame_rate, "loop_count": 1,
-            "filename_prefix": filename_prefix, "format": "video/h264-mp4",
-            "pingpong": False, "save_output": True, "pix_fmt": "yuv420p",
-            "crf": 15, "save_metadata": True, "trim_to_audio": False,
-            "videopreview": False,
-        }},
+        "sampler": {
+            "class_type": "SamplerCustomAdvanced",
+            "inputs": {
+                "noise": ["noise", "NOISE"],
+                "guider": ["guider", "GUIDER"],
+                "sampler": ["rate", "sampler"],
+                "sigmas": ["rate", "sigmas"],
+                "latent_image": ["cond", "av_latent"],
+            },
+        },
+        "avdecode": {
+            "class_type": "MiniMaxH3AVDecodeT8",
+            "inputs": {
+                "av_latent": ["sampler", "output"],
+                "video_vae": ["vae_video", "VAE"],
+                "audio_vae": ["vae_audio", "VAE"],
+            },
+        },
+        "combine": {
+            "class_type": "VHS_VideoCombine",
+            "inputs": {
+                "images": ["avdecode", "frames"],
+                "audio": ["avdecode", "generated_audio"],
+                "frame_rate": frame_rate,
+                "loop_count": 1,
+                "filename_prefix": filename_prefix,
+                "format": "video/h264-mp4",
+                "pingpong": False,
+                "save_output": True,
+                "pix_fmt": "yuv420p",
+                "crf": 15,
+                "save_metadata": True,
+                "trim_to_audio": False,
+                "videopreview": False,
+            },
+        },
     }
     if reference_image:
         wf["loadimage"] = {"class_type": "LoadImage", "inputs": {"image": reference_image}}

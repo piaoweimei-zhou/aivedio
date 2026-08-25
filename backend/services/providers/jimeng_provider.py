@@ -10,12 +10,11 @@ import logging
 import os
 import shutil
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from services.provider_service import ProviderPlugin, ProviderResult
 from services.providers.provider_utils import (
     output_file_from_url,
-    output_url_for,
     parse_size,
     save_image_to_output,
     save_video_to_output,
@@ -67,6 +66,7 @@ class JimengProvider(ProviderPlugin):
         if not w or not h:
             return "1:1"
         from math import gcd
+
         g = gcd(w, h)
         return f"{w // g}:{h // g}"
 
@@ -76,7 +76,7 @@ class JimengProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         refs = [ref for ref in (reference_images or []) if ref.get("url")]
@@ -94,7 +94,7 @@ class JimengProvider(ProviderPlugin):
                     "image2image",
                     f"--images={local_path}",
                     f"--prompt={prompt}",
-                    f"--resolution_type=standard",
+                    "--resolution_type=standard",
                     f"--poll={self._poll_seconds()}",
                 ]
             else:
@@ -104,7 +104,7 @@ class JimengProvider(ProviderPlugin):
                     "text2image",
                     f"--prompt={prompt}",
                     f"--ratio={ratio}",
-                    f"--resolution_type=standard",
+                    "--resolution_type=standard",
                     f"--poll={self._poll_seconds()}",
                 ]
 
@@ -152,7 +152,7 @@ class JimengProvider(ProviderPlugin):
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         temp_paths = []
@@ -208,6 +208,7 @@ class JimengProvider(ProviderPlugin):
     def _extract_urls(self, output: str) -> List[str]:
         """从 CLI 输出中提取 URL"""
         import re
+
         urls = re.findall(r'https?://[^\s"\'<>]+\.(?:png|jpg|jpeg|webp|mp4|webm)', output)
         if not urls:
             # 尝试更宽松的匹配

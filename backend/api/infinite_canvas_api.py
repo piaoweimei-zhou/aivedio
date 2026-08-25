@@ -10,11 +10,10 @@ import uuid
 import time
 import datetime
 import asyncio
-from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
-from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from services.canvas_service import get_canvas_service
@@ -45,6 +44,7 @@ def is_video_url(url: str) -> bool:
 # 可保证 ComfyUI 离线时仍从本地读取已生成资源。本 router 的 include 顺序先于
 # main.py 的 @app.get，同名路由会遮蔽主实现，反致 GENERATED_DIR 本地读取失效。
 # 如需扩展搜读目录，请改 main.py 的 serve_comfyui_image 的 search_dirs。
+
 
 # 生成任务已统一由 GenTaskManager 管理（services/gen_task_manager.py）
 # 生成任务（gen_*）由 GenTaskManager 自带清理逻辑管理，
@@ -87,6 +87,7 @@ class MetaBody(BaseModel):
 # 辅助
 # ============================================================
 
+
 def _to_canvas_dict(layout) -> dict:
     return {
         "id": layout.canvas_id,
@@ -117,12 +118,14 @@ def _to_canvas_dict(layout) -> dict:
 # 基础 API
 # ============================================================
 
+
 @router.get("/config")
 async def get_config():
     """获取系统配置"""
     comfyui_status = "disconnected"
     try:
         from services.comfyui_service import get_comfyui_service
+
         svc = get_comfyui_service()
         comfyui_status = "connected" if await svc.is_alive() else "disconnected"
     except Exception:
@@ -139,7 +142,14 @@ async def get_config():
 @router.get("/workflows")
 async def list_workflows():
     """列出可用工作流（从 workflows/ 目录加载，匹配原版 canvas.js 格式）"""
-    _BUILTIN = {"Z-Image.json", "Z-Image-Enhance.json", "2511.json", "klein-enhance.json", "Flux2-Klein.json", "upscale.json"}
+    _BUILTIN = {
+        "Z-Image.json",
+        "Z-Image-Enhance.json",
+        "2511.json",
+        "klein-enhance.json",
+        "Flux2-Klein.json",
+        "upscale.json",
+    }  # noqa: E501
     items = []
     if os.path.isdir(_WF_DIR):
         for fname in sorted(os.listdir(_WF_DIR)):
@@ -156,12 +166,14 @@ async def list_workflows():
                         cfg = json.load(f) or {}
                 except Exception:
                     pass
-            items.append({
-                "name": rel,
-                "title": cfg.get("title") or fname.replace(".json", ""),
-                "builtin": False,
-                "field_count": len(cfg.get("fields") or []),
-            })
+            items.append(
+                {
+                    "name": rel,
+                    "title": cfg.get("title") or fname.replace(".json", ""),
+                    "builtin": False,
+                    "field_count": len(cfg.get("fields") or []),
+                }
+            )
     items.sort(key=lambda item: (0 if item["name"].startswith("custom/") else 1, item["title"]))
     return JSONResponse(
         content={"workflows": items},
@@ -194,13 +206,16 @@ async def get_workflow(name: str):
     # 清理 LoadImage 节点中硬编码的不存在图片文件名，避免新环境引用失效文件
     try:
         from services.comfyui_service import COMFYUI_DIR
+
         _input_dir = os.path.join(COMFYUI_DIR, "input") if COMFYUI_DIR else ""
         for _nid, _ndata in raw.items():
             if isinstance(_ndata, dict) and _ndata.get("class_type") == "LoadImage":
                 _inputs = _ndata.get("inputs", {})
                 _img = _inputs.get("image", "")
                 if isinstance(_img, str) and _img:
-                    _exists = os.path.isfile(os.path.join(_input_dir, _img)) if _input_dir else False
+                    _exists = (
+                        os.path.isfile(os.path.join(_input_dir, _img)) if _input_dir else False
+                    )  # noqa: E501
                     _exists = _exists or os.path.isfile(os.path.join(_UPLOAD_DIR, _img))
                     if not _exists:
                         _inputs["image"] = ""  # 文件不存在，清空让用户上传时填充
@@ -222,12 +237,15 @@ async def get_workflow(name: str):
         # 自动生成 config.fields：扫描工作流节点，全部作为 setting 字段
         fields = []
         _TEXT_ENCODERS = {
-            "CLIPTextEncode", "TextEncodeQwenImageEditPlus",
-            "TextEncode", "QwenTextEncode",
+            "CLIPTextEncode",
+            "TextEncodeQwenImageEditPlus",
+            "TextEncode",
+            "QwenTextEncode",
             "TextEncodeQwenImageEditPlusAdvance_lrzjason",
         }
         _TEXT_INPUT_TYPES = {
-            "PrimitiveStringMultiline", "PrimitiveString",
+            "PrimitiveStringMultiline",
+            "PrimitiveString",
             "Text Multiline",
         }
         # 统计各类节点数量，用于分组和命名
@@ -282,29 +300,36 @@ async def get_workflow(name: str):
                 default_img = inputs.get("image", "")
                 if default_img:
                     from services.comfyui_service import COMFYUI_DIR
-                    comfy_input = os.path.join(COMFYUI_DIR, "input", default_img) if COMFYUI_DIR else ""
+
+                    comfy_input = (
+                        os.path.join(COMFYUI_DIR, "input", default_img) if COMFYUI_DIR else ""
+                    )  # noqa: E501
                     if not comfy_input or not os.path.isfile(comfy_input):
                         default_img = ""  # 文件不存在，不设为默认值
-                fields.append({
-                    "id": f"image_{node_id}",
-                    "node": node_id,
-                    "input": "image",
-                    "type": "image",
-                    "name": f"图片{img_idx} → {title}",
-                    "default": default_img,
-                    "group": "images",
-                    "compact": True,
-                })
+                fields.append(
+                    {
+                        "id": f"image_{node_id}",
+                        "node": node_id,
+                        "input": "image",
+                        "type": "image",
+                        "name": f"图片{img_idx} → {title}",
+                        "default": default_img,
+                        "group": "images",
+                        "compact": True,
+                    }
+                )
             elif ct == "Comfly_api_set":
                 # API配置节点：提取 apikey 输入
-                fields.append({
-                    "id": f"apikey_{node_id}",
-                    "node": node_id,
-                    "input": "apikey",
-                    "type": "text",
-                    "name": f"API Key → {title}",
-                    "group": "settings",
-                })
+                fields.append(
+                    {
+                        "id": f"apikey_{node_id}",
+                        "node": node_id,
+                        "input": "apikey",
+                        "type": "text",
+                        "name": f"API Key → {title}",
+                        "group": "settings",
+                    }
+                )
         # 自动生成 groups
         group_ids = []
         for f in fields:
@@ -313,9 +338,13 @@ async def get_workflow(name: str):
                 group_ids.append(gid)
         groups = []
         if "images" in group_ids:
-            groups.append({"id": "images", "name": "参考图片", "collapsed": False, "layout": "grid"})
+            groups.append(
+                {"id": "images", "name": "参考图片", "collapsed": False, "layout": "grid"}
+            )
         if "prompts" in group_ids:
-            groups.append({"id": "prompts", "name": "分镜提示词", "collapsed": False, "layout": "list"})
+            groups.append(
+                {"id": "prompts", "name": "分镜提示词", "collapsed": False, "layout": "list"}
+            )
         if "settings" in group_ids:
             groups.append({"id": "settings", "name": "设置", "collapsed": False, "layout": "list"})
         cfg = {"title": name.replace(".json", ""), "fields": fields, "groups": groups}
@@ -330,18 +359,34 @@ async def get_workflow(name: str):
 # 资产库（基于 AssetService）
 # ============================================================
 
+
 @router.get("/asset-library")
 async def get_asset_library():
     """列出资产库（canvas.js 期望 library.libraries 格式）"""
     from services.asset_service import get_asset_service
+
     svc = get_asset_service()
     # 构建 canvas.js 期望的 library 格式
     items = []
     for a in svc._assets.values():
-        for url in (a.urls or []):
-            items.append({"id": a.asset_id, "name": a.name, "url": url, "type": a.asset_type, "content_type": a.content_type})
+        for url in a.urls or []:
+            items.append(
+                {
+                    "id": a.asset_id,
+                    "name": a.name,
+                    "url": url,
+                    "type": a.asset_type,
+                    "content_type": a.content_type,
+                }
+            )  # noqa: E501
     library = {
-        "libraries": [{"id": "default", "name": "默认资产库", "categories": [{"id": "all", "name": "全部", "items": items}]}],
+        "libraries": [
+            {
+                "id": "default",
+                "name": "默认资产库",
+                "categories": [{"id": "all", "name": "全部", "items": items}],
+            }
+        ],  # noqa: E501
         "categories": [{"id": "all", "name": "全部"}],
         "active_library_id": "default",
     }
@@ -362,7 +407,14 @@ async def get_local_assets():
                     kind = "video"
                 elif ext in (".mp3", ".wav", ".m4a"):
                     kind = "audio"
-                files.append({"url": f"/static/director/uploads/{fname}", "name": fname, "kind": kind, "size": os.path.getsize(fpath)})
+                files.append(
+                    {
+                        "url": f"/static/director/uploads/{fname}",
+                        "name": fname,
+                        "kind": kind,
+                        "size": os.path.getsize(fpath),
+                    }
+                )  # noqa: E501
     return {"items": files, "tree": None}
 
 
@@ -370,23 +422,27 @@ async def get_local_assets():
 async def list_canvas_assets():
     """列出所有资产（同 /asset-library）"""
     from services.asset_service import get_asset_service
+
     svc = get_asset_service()
     assets = []
     for a in svc._assets.values():
-        assets.append({
-            "id": a.asset_id,
-            "name": a.name,
-            "type": a.asset_type,
-            "content_type": a.content_type,
-            "urls": a.urls or [],
-            "metadata": a.metadata,
-        })
+        assets.append(
+            {
+                "id": a.asset_id,
+                "name": a.name,
+                "type": a.asset_type,
+                "content_type": a.content_type,
+                "urls": a.urls or [],
+                "metadata": a.metadata,
+            }
+        )
     return {"assets": assets}
 
 
 # ============================================================
 # Smart Canvas API
 # ============================================================
+
 
 @router.get("/prompt-libraries")
 async def list_prompt_libraries():
@@ -409,6 +465,7 @@ async def list_smart_prompt_templates():
 # ============================================================
 
 _canvas_trash: dict = {}
+
 
 @router.get("/canvases/trash")
 async def list_trash():
@@ -458,7 +515,23 @@ async def update_canvas(canvas_id: str, request: Request):
 
     # 节点：canvas.js 节点有大量顶层字段（url, generatedOutputs, comfyParams, output 等），
     # 需要将非标准字段合并到 metadata 中保存，以便恢复时完整还原
-    _CANVAS_NODE_KNOWN_KEYS = {"id", "asset_id", "type", "node_type", "x", "y", "w", "width", "h", "height", "label", "title", "name", "metadata", "runSettings"}
+    _CANVAS_NODE_KNOWN_KEYS = {
+        "id",
+        "asset_id",
+        "type",
+        "node_type",
+        "x",
+        "y",
+        "w",
+        "width",
+        "h",
+        "height",
+        "label",
+        "title",
+        "name",
+        "metadata",
+        "runSettings",
+    }  # noqa: E501
     if "nodes" in body and isinstance(body["nodes"], list):
         mapped_nodes = []
         for n in body["nodes"]:
@@ -467,17 +540,19 @@ async def update_canvas(canvas_id: str, request: Request):
             for k, v in n.items():
                 if k not in _CANVAS_NODE_KNOWN_KEYS and v is not None:
                     meta[k] = v
-            mapped_nodes.append({
-                "node_id": n.get("id", ""),
-                "asset_id": n.get("asset_id", ""),
-                "node_type": n.get("type", n.get("node_type", "image")),
-                "x": float(n.get("x") or 0),
-                "y": float(n.get("y") or 0),
-                "width": float(n.get("w") or n.get("width") or 240),
-                "height": float(n.get("h") or n.get("height") or 180),
-                "label": n.get("label", n.get("title", n.get("name", ""))),
-                "metadata": meta,
-            })
+            mapped_nodes.append(
+                {
+                    "node_id": n.get("id", ""),
+                    "asset_id": n.get("asset_id", ""),
+                    "node_type": n.get("type", n.get("node_type", "image")),
+                    "x": float(n.get("x") or 0),
+                    "y": float(n.get("y") or 0),
+                    "width": float(n.get("w") or n.get("width") or 240),
+                    "height": float(n.get("h") or n.get("height") or 180),
+                    "label": n.get("label", n.get("title", n.get("name", ""))),
+                    "metadata": meta,
+                }
+            )
         data["nodes"] = mapped_nodes
 
     # 连线：canvas.js 用 connections，也可兼容 edges
@@ -485,20 +560,26 @@ async def update_canvas(canvas_id: str, request: Request):
     if conn_key in body and isinstance(body[conn_key], list):
         mapped_edges = []
         for i, e in enumerate(body[conn_key]):
-            mapped_edges.append({
-                "edge_id": e.get("edge_id", e.get("id", f"e_{i}")),
-                "source_id": e.get("source_id", e.get("source", "")),
-                "target_id": e.get("target_id", e.get("target", "")),
-                "source_port": e.get("source_port", e.get("sourceHandle", "output")),
-                "target_port": e.get("target_port", e.get("targetHandle", "input")),
-                "label": e.get("label", ""),
-            })
+            mapped_edges.append(
+                {
+                    "edge_id": e.get("edge_id", e.get("id", f"e_{i}")),
+                    "source_id": e.get("source_id", e.get("source", "")),
+                    "target_id": e.get("target_id", e.get("target", "")),
+                    "source_port": e.get("source_port", e.get("sourceHandle", "output")),
+                    "target_port": e.get("target_port", e.get("targetHandle", "input")),
+                    "label": e.get("label", ""),
+                }
+            )
         data["edges"] = mapped_edges
 
     # 视口
     if "viewport" in body:
         vp = body["viewport"]
-        data["viewport"] = {"x": vp.get("x", 0), "y": vp.get("y", 0), "zoom": vp.get("zoom", vp.get("scale", 1))}
+        data["viewport"] = {
+            "x": vp.get("x", 0),
+            "y": vp.get("y", 0),
+            "zoom": vp.get("zoom", vp.get("scale", 1)),
+        }  # noqa: E501
 
     # 日志：canvas.js 保存 logs 字段，持久化到磁盘
     if "logs" in body and isinstance(body["logs"], list):
@@ -630,6 +711,7 @@ async def purge_canvas(canvas_id: str):
 # 文件上传
 # ============================================================
 
+
 def _copy_to_comfyui_input(fname: str, content: bytes) -> dict:
     """将上传的文件同步到 ComfyUI input 目录
 
@@ -638,6 +720,7 @@ def _copy_to_comfyui_input(fname: str, content: bytes) -> dict:
     """
     try:
         from services.comfyui_service import COMFYUI_DIR
+
         if not COMFYUI_DIR:
             return {"synced": False, "skipped": True, "reason": "ComfyUI 未配置"}
         input_dir = os.path.join(COMFYUI_DIR, "input")
@@ -654,7 +737,6 @@ def _copy_to_comfyui_input(fname: str, content: bytes) -> dict:
 async def upload_ai_reference(files: List[UploadFile] = File(...)):
     """上传参考图/视频/音频文件到持久化目录"""
     os.makedirs(_UPLOAD_DIR, exist_ok=True)
-    image_exts = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
     video_exts = {".mp4", ".webm", ".mov", ".m4v", ".flv"}
     audio_exts = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
     uploaded = []
@@ -677,13 +759,15 @@ async def upload_ai_reference(files: List[UploadFile] = File(...)):
         comfyui_sync = {"synced": False, "skipped": True, "reason": "非图片"}
         if kind == "image":
             comfyui_sync = _copy_to_comfyui_input(fname, content)
-        uploaded.append({
-            "url": f"/static/director/uploads/{fname}",
-            "name": file.filename or fname,
-            "kind": kind,
-            "mime": ct,
-            "comfyui_sync": comfyui_sync,
-        })
+        uploaded.append(
+            {
+                "url": f"/static/director/uploads/{fname}",
+                "name": file.filename or fname,
+                "kind": kind,
+                "mime": ct,
+                "comfyui_sync": comfyui_sync,
+            }
+        )
     return {"files": uploaded}
 
 
@@ -701,7 +785,10 @@ async def upload_image(files: List[UploadFile] = File(...)):
             f.write(content)
         # 同时写入 ComfyUI input（如果可用）
         try:
-            from services.comfyui_service import COMFYUI_DIR, get_comfyui_service
+            from services.comfyui_service import (
+                COMFYUI_DIR,
+                )
+
             if COMFYUI_DIR:
                 input_dir = os.path.join(COMFYUI_DIR, "input")
                 os.makedirs(input_dir, exist_ok=True)
@@ -728,6 +815,7 @@ async def upload_comfyui_image(file: UploadFile = File(...)):
         # 同时写入 ComfyUI input（如果可用）
         try:
             from services.comfyui_service import COMFYUI_DIR
+
             if COMFYUI_DIR:
                 input_dir = os.path.join(COMFYUI_DIR, "input")
                 os.makedirs(input_dir, exist_ok=True)
@@ -753,6 +841,7 @@ async def upload_ai_base64(request: Request):
     if not data:
         return {"files": []}
     import base64
+
     if "," in data:
         data = data.split(",")[1]
     try:
@@ -765,12 +854,22 @@ async def upload_ai_base64(request: Request):
     with open(os.path.join(_UPLOAD_DIR, fname), "wb") as f:
         f.write(content)
     _copy_to_comfyui_input(fname, content)
-    return {"files": [{"url": f"/static/director/uploads/{fname}", "name": name, "kind": "image", "mime": content_type}]}
+    return {
+        "files": [
+            {
+                "url": f"/static/director/uploads/{fname}",
+                "name": name,
+                "kind": "image",
+                "mime": content_type,
+            }
+        ]
+    }  # noqa: E501
 
 
 # ============================================================
 # 媒体预览
 # ============================================================
+
 
 @router.get("/media-preview")
 async def media_preview(url: str = "", w: int = 0):
@@ -788,11 +887,16 @@ async def media_preview(url: str = "", w: int = 0):
 
     # 远程 URL 需在白名单内
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     allowed_hosts = {
-        "localhost", "127.0.0.1", "0.0.0.0",
-        "www.runninghub.cn", "runninghub.cn",
-        "modelscope.cn", "www.modelscope.cn",
+        "localhost",
+        "127.0.0.1",
+        "0.0.0.0",
+        "www.runninghub.cn",
+        "runninghub.cn",
+        "modelscope.cn",
+        "www.modelscope.cn",
     }
     # 也允许 ComfyUI 自身主机名（通过环境变量配置）
     comfy_host = os.getenv("COMFYUI_HOST", "")
@@ -809,6 +913,7 @@ async def media_preview(url: str = "", w: int = 0):
 # 核心生成：ComfyUI 工作流执行（异步模式）
 # ============================================================
 
+
 @router.post("/generate")
 async def generate(request: Request):
     """核心生成接口：创建异步任务，立即返回 task_id"""
@@ -817,10 +922,11 @@ async def generate(request: Request):
     params = body.get("params", {})
     prompt_text = body.get("prompt_text", body.get("prompt", ""))
     gen_type = body.get("type", body.get("gen_type", ""))
-    refs = body.get("refs", [])
     optional_empty_nodes = body.get("optional_empty_nodes", [])
 
-    logger.info(f"[InfiniteCanvas] generate | type={gen_type} | prompt_len={len(prompt_text)} | params_keys={list(params.keys())}")
+    logger.info(
+        f"[InfiniteCanvas] generate | type={gen_type} | prompt_len={len(prompt_text)} | params_keys={list(params.keys())}"  # noqa: E501
+    )  # noqa: E501
 
     from services.comfyui_service import get_comfyui_service, COMFYUI_DIR
     import shutil  # 函数内统一导入，避免下方多处重复 import
@@ -897,9 +1003,13 @@ async def generate(request: Request):
                             if os.path.isfile(src2):
                                 os.makedirs(input_dir, exist_ok=True)
                                 shutil.copy2(src2, img_path)
-                                logger.info(f"[InfiniteCanvas] 复制资产库图片 {img_name} → ComfyUI input")
+                                logger.info(
+                                    f"[InfiniteCanvas] 复制资产库图片 {img_name} → ComfyUI input"
+                                )
                             else:
-                                logger.warning(f"[InfiniteCanvas] 图片不存在: {img_name} (上传目录+资产库+ComfyUI input均未找到)")
+                                logger.warning(
+                                    f"[InfiniteCanvas] 图片不存在: {img_name} (上传目录+资产库+ComfyUI input均未找到)"  # noqa: E501
+                                )  # noqa: E501
 
         # 检查 LoadImage 节点图片
         missing_images = []
@@ -916,20 +1026,31 @@ async def generate(request: Request):
                     os.makedirs(input_dir, exist_ok=True)
                     try:
                         from PIL import Image as PILImage
+
                         img = PILImage.new("RGBA", (64, 64), (0, 0, 0, 0))
                         img.save(placeholder_path)
                     except Exception:
-                        import struct, zlib
-                        raw = b'\x00\x00\x00\x00' * 64
+                        import struct
+                        import zlib
+
+                        raw = b"\x00\x00\x00\x00" * 64
                         compressed = zlib.compress(raw)
+
                         def png_chunk(ctype, data):
                             c = ctype + data
-                            return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
-                        with open(placeholder_path, 'wb') as pf:
-                            pf.write(b'\x89PNG\r\n\x1a\n')
-                            pf.write(png_chunk(b'IHDR', struct.pack('>IIBBBBB', 64, 64, 8, 6, 0, 0, 0)))
-                            pf.write(png_chunk(b'IDAT', compressed))
-                            pf.write(png_chunk(b'IEND', b''))
+                            return (
+                                struct.pack(">I", len(data))
+                                + c
+                                + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+                            )  # noqa: E501
+
+                        with open(placeholder_path, "wb") as pf:
+                            pf.write(b"\x89PNG\r\n\x1a\n")
+                            pf.write(
+                                png_chunk(b"IHDR", struct.pack(">IIBBBBB", 64, 64, 8, 6, 0, 0, 0))
+                            )  # noqa: E501
+                            pf.write(png_chunk(b"IDAT", compressed))
+                            pf.write(png_chunk(b"IEND", b""))
                 if input_dir:
                     ndata.setdefault("inputs", {})["image"] = placeholder_name
                 continue
@@ -939,7 +1060,9 @@ async def generate(request: Request):
             title = ndata.get("_meta", {}).get("title", nid)
             img_in_input = os.path.isfile(os.path.join(input_dir, img_name)) if input_dir else False
             img_in_upload = os.path.isfile(os.path.join(_UPLOAD_DIR, img_name))
-            img_in_output = os.path.isfile(os.path.join(output_dir, img_name)) if output_dir else False
+            img_in_output = (
+                os.path.isfile(os.path.join(output_dir, img_name)) if output_dir else False
+            )  # noqa: E501
             asset_upload_dir = UPLOADS_DIR
             img_in_asset_upload = os.path.isfile(os.path.join(asset_upload_dir, img_name))
             if img_in_input:
@@ -947,18 +1070,30 @@ async def generate(request: Request):
             elif img_in_upload:
                 if input_dir:
                     os.makedirs(input_dir, exist_ok=True)
-                    shutil.copy2(os.path.join(_UPLOAD_DIR, img_name), os.path.join(input_dir, img_name))
-                    logger.info(f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 upload→input ✓")
+                    shutil.copy2(
+                        os.path.join(_UPLOAD_DIR, img_name), os.path.join(input_dir, img_name)
+                    )  # noqa: E501
+                    logger.info(
+                        f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 upload→input ✓"
+                    )  # noqa: E501
             elif img_in_asset_upload:
                 if input_dir:
                     os.makedirs(input_dir, exist_ok=True)
-                    shutil.copy2(os.path.join(asset_upload_dir, img_name), os.path.join(input_dir, img_name))
-                    logger.info(f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 asset_upload→input ✓")
+                    shutil.copy2(
+                        os.path.join(asset_upload_dir, img_name), os.path.join(input_dir, img_name)
+                    )  # noqa: E501
+                    logger.info(
+                        f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 asset_upload→input ✓"  # noqa: E501
+                    )  # noqa: E501
             elif img_in_output:
                 if input_dir:
                     os.makedirs(input_dir, exist_ok=True)
-                    shutil.copy2(os.path.join(output_dir, img_name), os.path.join(input_dir, img_name))
-                    logger.info(f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 output→input ✓")
+                    shutil.copy2(
+                        os.path.join(output_dir, img_name), os.path.join(input_dir, img_name)
+                    )  # noqa: E501
+                    logger.info(
+                        f"[InfiniteCanvas] LoadImage node={nid} image={img_name} 复制 output→input ✓"
+                    )  # noqa: E501
             else:
                 missing_images.append(f"{title}(节点{nid}): {img_name}")
                 logger.warning(f"[InfiniteCanvas] LoadImage node={nid} image={img_name} ✗ 不存在")
@@ -973,7 +1108,10 @@ async def generate(request: Request):
     task = await gen_mgr.create_task(
         f"canvas_generate_{gen_type}" if gen_type else "canvas_generate",
         _execute_generate_task,
-        comfyui_svc, wf_data, prompt_text, gen_type,
+        comfyui_svc,
+        wf_data,
+        prompt_text,
+        gen_type,
     )
     await gen_mgr.submit_task(task.task_id)
 
@@ -992,10 +1130,13 @@ async def _execute_generate_task(comfyui_svc, wf_data, prompt_text: str, gen_typ
             prompt_id = await comfyui_svc._queue_prompt_with_retry(wf_data)
             filenames = await comfyui_svc._wait_for_completion(prompt_id, task_type="generate")
             all_filenames = filenames or []
-            logger.info(f"[InfiniteCanvas] 生成完成 | prompt_id={prompt_id[:8]} | filenames={all_filenames}")
+            logger.info(
+                f"[InfiniteCanvas] 生成完成 | prompt_id={prompt_id[:8]} | filenames={all_filenames}"
+            )  # noqa: E501
             _generated_dir = GENERATED_DIR
             for fn in all_filenames:
                 from services.comfyui_service import COMFYUI_DIR
+
                 fpath = os.path.join(COMFYUI_DIR or "", "output", fn) if COMFYUI_DIR else ""
                 if not fpath or not os.path.isfile(fpath):
                     fpath2 = os.path.join(_generated_dir, fn)
@@ -1018,6 +1159,7 @@ async def _execute_generate_task(comfyui_svc, wf_data, prompt_text: str, gen_typ
         err_msg = str(e)
         if ("Custom validation failed" in err_msg or "validation" in err_msg.lower()) and wf_data:
             from services.comfyui_service import COMFYUI_DIR
+
             missing = []
             for nid, ndata in wf_data.items():
                 if isinstance(ndata, dict) and ndata.get("class_type") == "LoadImage":
@@ -1026,11 +1168,18 @@ async def _execute_generate_task(comfyui_svc, wf_data, prompt_text: str, gen_typ
                     if img:
                         input_dir = os.path.join(COMFYUI_DIR, "input") if COMFYUI_DIR else ""
                         upload_dir = _UPLOAD_DIR
-                        exists = (os.path.isfile(os.path.join(input_dir, img)) if input_dir else False) or os.path.isfile(os.path.join(upload_dir, img))
+                        exists = (
+                            os.path.isfile(os.path.join(input_dir, img)) if input_dir else False
+                        ) or os.path.isfile(
+                            os.path.join(upload_dir, img)
+                        )  # noqa: E501
                         if not exists:
                             missing.append(f"{title}({nid}): {img}")
             if missing:
-                raise RuntimeError(f"以下 {len(missing)} 个图片文件不存在，请点击节点上的上传按钮上传：\n" + "\n".join(missing)) from e
+                raise RuntimeError(
+                    f"以下 {len(missing)} 个图片文件不存在，请点击节点上的上传按钮上传：\n"
+                    + "\n".join(missing)
+                ) from e  # noqa: E501
             raise RuntimeError("ComfyUI 图片处理异常（文件可能正在同步，请稍后重试）") from e
         raise
 
@@ -1041,7 +1190,7 @@ async def _execute_generate_task(comfyui_svc, wf_data, prompt_text: str, gen_typ
     asset_id = await _register_generated_asset(
         image_urls,
         asset_type="storyboard",
-        name=f"画布生成",
+        name="画布生成",
         prompt=prompt_text,
         gen_type=gen_type,
     )
@@ -1074,6 +1223,7 @@ async def _register_generated_asset(
         return None
     try:
         from services.asset_service import get_asset_service
+
         asset_svc = get_asset_service()
         metadata = {
             "source": "infinite_canvas",
@@ -1089,7 +1239,9 @@ async def _register_generated_asset(
             metadata=metadata,
             parent_id=source_asset_ids[0] if source_asset_ids else None,
         )
-        logger.info(f"[InfiniteCanvas] 生成结果回写资产库 | asset_id={asset.asset_id} | urls={len(image_urls)} | type={asset_type}")
+        logger.info(
+            f"[InfiniteCanvas] 生成结果回写资产库 | asset_id={asset.asset_id} | urls={len(image_urls)} | type={asset_type}"  # noqa: E501
+        )  # noqa: E501
         return asset.asset_id
     except Exception as e:
         logger.error(f"[InfiniteCanvas] 生成结果回写资产库失败: {e}", exc_info=True)
@@ -1121,6 +1273,7 @@ async def get_generate_status(task_id: str):
 # 在线图片生成（通过 ProviderService）
 # ============================================================
 
+
 @router.post("/online-image")
 async def online_image(request: Request):
     """在线图片生成：通过已配置的供应商"""
@@ -1138,13 +1291,16 @@ async def online_image(request: Request):
 
     try:
         from services.provider_service import get_provider_service
+
         svc = get_provider_service()
 
         # 将参考图列表转为 ProviderService 期望的格式：[{url: ..., type: ...}, ...]
         ref_items = []
         for r in refs:
             if isinstance(r, dict):
-                ref_items.append({"url": r.get("url", r.get("image_url", "")), "type": r.get("type", "image")})
+                ref_items.append(
+                    {"url": r.get("url", r.get("image_url", "")), "type": r.get("type", "image")}
+                )  # noqa: E501
             elif isinstance(r, str):
                 ref_items.append({"url": r, "type": "image"})
 
@@ -1165,6 +1321,7 @@ async def online_image(request: Request):
 # 视频生成（通过 ProviderService）
 # ============================================================
 
+
 @router.post("/canvas-video")
 async def canvas_video(request: Request):
     """视频生成"""
@@ -1183,13 +1340,16 @@ async def canvas_video(request: Request):
     fps = body.get("fps")
     resolution = body.get("resolution", "")
 
-    logger.info(f"[InfiniteCanvas] canvas-video | provider={provider_id} | duration={duration}s | {width}x{height} | fps={fps}")
+    logger.info(
+        f"[InfiniteCanvas] canvas-video | provider={provider_id} | duration={duration}s | {width}x{height} | fps={fps}"  # noqa: E501
+    )  # noqa: E501
 
     if not provider_id:
         return {"videos": [], "error": "未指定供应商"}
 
     try:
         from services.provider_service import get_provider_service
+
         svc = get_provider_service()
         result = await svc.generate_video(
             provider_id=provider_id,
@@ -1227,6 +1387,7 @@ async def canvas_video(request: Request):
 # LLM 对话（通过供应商）
 # ============================================================
 
+
 @router.post("/canvas-llm")
 async def canvas_llm(request: Request):
     """LLM 对话（通过 OpenAI 兼容 API）"""
@@ -1244,10 +1405,13 @@ async def canvas_llm(request: Request):
     api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
     if not api_key:
-        return {"choices": [{"message": {"content": "请设置 OPENAI_API_KEY 环境变量以使用 LLM 功能"}}]}
+        return {
+            "choices": [{"message": {"content": "请设置 OPENAI_API_KEY 环境变量以使用 LLM 功能"}}]
+        }
 
     try:
         from openai import AsyncOpenAI
+
         client = AsyncOpenAI(api_key=api_key, base_url=api_base)
         msgs = [{"role": "system", "content": system_prompt}]
         if messages:
@@ -1270,14 +1434,16 @@ async def canvas_llm(request: Request):
 
 # RunningHub 任务状态缓存（RH 任务在远程执行，本地仅缓存查询结果）
 _rh_tasks: dict = {}
-_RH_TASK_TTL = 86400    # 24 小时（RH 任务查询周期较长）
-_RH_TASK_MAX = 500      # 最大缓存条目数，防止内存泄漏
+_RH_TASK_TTL = 86400  # 24 小时（RH 任务查询周期较长）
+_RH_TASK_MAX = 500  # 最大缓存条目数，防止内存泄漏
+
 
 @router.post("/canvas-image-tasks")
 async def create_image_task(request: Request):
     body = await request.json()
     # 统一通过 GenTaskManager 管理图片生成任务（替代旧的 _image_tasks 字典）
     from services.gen_task_manager import get_gen_task_manager
+
     gen_mgr = get_gen_task_manager()
     task = await gen_mgr.create_task(
         "canvas_image_generate",
@@ -1305,12 +1471,15 @@ async def _execute_image_task_via_gen(body: dict):
         raise ValueError("未指定供应商")
 
     from services.provider_service import get_provider_service
+
     svc = get_provider_service()
 
     ref_items = []
     for r in refs:
         if isinstance(r, dict):
-            ref_items.append({"url": r.get("url", r.get("image_url", "")), "type": r.get("type", "image")})
+            ref_items.append(
+                {"url": r.get("url", r.get("image_url", "")), "type": r.get("type", "image")}
+            )  # noqa: E501
         elif isinstance(r, str):
             ref_items.append({"url": r, "type": "image"})
 
@@ -1329,11 +1498,13 @@ async def _execute_image_task_via_gen(body: dict):
     image_urls = result.images or []
 
     # 生成结果回写资产库
-    source_asset_ids = [r.get("asset_id") for r in refs if isinstance(r, dict) and r.get("asset_id")]
+    source_asset_ids = [
+        r.get("asset_id") for r in refs if isinstance(r, dict) and r.get("asset_id")
+    ]  # noqa: E501
     asset_id = await _register_generated_asset(
         image_urls,
         asset_type="storyboard",
-        name=f"画布生成",
+        name="画布生成",
         prompt=prompt,
         gen_type=provider_id,
         source_asset_ids=source_asset_ids or None,
@@ -1354,7 +1525,8 @@ def _cleanup_expired_rh_tasks():
     now = time.time()
     # RH 任务缓存
     expired_rh = [
-        k for k, v in _rh_tasks.items()
+        k
+        for k, v in _rh_tasks.items()
         if v.get("status") in ("SUCCESS", "FAILED")
         and now - v.get("updated_at", v.get("created_at", 0)) > _RH_TASK_TTL
     ]
@@ -1363,7 +1535,7 @@ def _cleanup_expired_rh_tasks():
     # 超出最大缓存条目数时，淘汰最旧的条目
     if len(_rh_tasks) > _RH_TASK_MAX:
         sorted_keys = sorted(_rh_tasks.keys(), key=lambda k: _rh_tasks[k].get("created_at", 0))
-        for k in sorted_keys[:len(_rh_tasks) - _RH_TASK_MAX]:
+        for k in sorted_keys[: len(_rh_tasks) - _RH_TASK_MAX]:
             _rh_tasks.pop(k, None)
     if expired_rh:
         logger.info(f"[InfiniteCanvas] 清理过期 RH 任务缓存 | rh={len(expired_rh)}")
@@ -1374,6 +1546,7 @@ async def get_image_task(task_id: str):
     """查询图片生成任务（GET 方式，通过 GenTaskManager 查询）"""
     from services.gen_task_manager import get_gen_task_manager
     from services.task_status import to_frontend_status
+
     gen_mgr = get_gen_task_manager()
     task = gen_mgr.get_task(task_id)
     if not task:
@@ -1395,6 +1568,7 @@ async def query_image_task(request: Request):
     task_id = body.get("task_id", "")
     from services.gen_task_manager import get_gen_task_manager
     from services.task_status import to_frontend_status
+
     gen_mgr = get_gen_task_manager()
     task = gen_mgr.get_task(task_id)
     if not task:
@@ -1471,6 +1645,7 @@ def _load_library_state():
 # 模块加载时恢复状态
 _load_library_state()
 
+
 # 资产库 CRUD
 @router.post("/asset-library/libraries")
 async def create_asset_library(request: Request):
@@ -1480,23 +1655,36 @@ async def create_asset_library(request: Request):
     _save_library_state()
     return {"success": True, "library": _asset_libraries[lib_id]}
 
+
 @router.post("/asset-library/categories")
 async def create_asset_category(request: Request):
     body = await request.json()
     cat_id = f"cat_{uuid.uuid4().hex[:8]}"
-    _asset_categories[cat_id] = {"id": cat_id, "name": body.get("name", ""), "library_id": body.get("library_id", "")}
+    _asset_categories[cat_id] = {
+        "id": cat_id,
+        "name": body.get("name", ""),
+        "library_id": body.get("library_id", ""),
+    }  # noqa: E501
     _save_library_state()
     return {"success": True, "category": _asset_categories[cat_id]}
+
 
 @router.post("/asset-library/items")
 async def create_asset_item(request: Request):
     body = await request.json()
     item_id = f"item_{uuid.uuid4().hex[:8]}"
-    _asset_items[item_id] = {"id": item_id, "library_id": body.get("library_id", ""), "category_id": body.get("category_id", ""), "url": body.get("url", ""), "name": body.get("name", "")}
+    _asset_items[item_id] = {
+        "id": item_id,
+        "library_id": body.get("library_id", ""),
+        "category_id": body.get("category_id", ""),
+        "url": body.get("url", ""),
+        "name": body.get("name", ""),
+    }  # noqa: E501
     _save_library_state()
     # D6 修复：同步到 AssetService，让 React 端（资产库/VideoPage）也能使用
     try:
         from services.asset_service import get_asset_service
+
         asset_svc = get_asset_service()
         url = body.get("url", "")
         await asset_svc.create(
@@ -1514,6 +1702,7 @@ async def create_asset_item(request: Request):
         logger.warning(f"[InfiniteCanvas] 资产同步到 AssetService 失败: {e}")
     return {"success": True, "item": _asset_items[item_id]}
 
+
 @router.post("/asset-library/items/batch")
 async def batch_create_asset_items(request: Request):
     body = await request.json()
@@ -1521,12 +1710,19 @@ async def batch_create_asset_items(request: Request):
     created = []
     for item in items:
         item_id = f"item_{uuid.uuid4().hex[:8]}"
-        _asset_items[item_id] = {"id": item_id, "library_id": body.get("library_id", ""), "category_id": body.get("category_id", ""), "url": item.get("url", ""), "name": item.get("name", "")}
+        _asset_items[item_id] = {
+            "id": item_id,
+            "library_id": body.get("library_id", ""),
+            "category_id": body.get("category_id", ""),
+            "url": item.get("url", ""),
+            "name": item.get("name", ""),
+        }  # noqa: E501
         created.append(_asset_items[item_id])
     _save_library_state()
     # D6 修复：批量同步到 AssetService
     try:
         from services.asset_service import get_asset_service
+
         asset_svc = get_asset_service()
         for item in created:
             url = item.get("url", "")
@@ -1546,6 +1742,7 @@ async def batch_create_asset_items(request: Request):
         logger.warning(f"[InfiniteCanvas] 批量资产同步到 AssetService 失败: {e}")
     return {"success": True, "items": created}
 
+
 @router.post("/asset-library/items/delete")
 async def batch_delete_asset_items(request: Request):
     body = await request.json()
@@ -1553,6 +1750,7 @@ async def batch_delete_asset_items(request: Request):
         _asset_items.pop(iid, None)
     _save_library_state()
     return {"success": True}
+
 
 @router.patch("/asset-library/items/{item_id}")
 async def update_asset_item(item_id: str, request: Request):
@@ -1564,11 +1762,13 @@ async def update_asset_item(item_id: str, request: Request):
         return {"success": True, "item": _asset_items[item_id]}
     return {"success": False}
 
+
 @router.delete("/asset-library/items/{item_id}")
 async def delete_asset_item(item_id: str):
     _asset_items.pop(item_id, None)
     _save_library_state()
     return {"success": True}
+
 
 @router.post("/asset-library/workflows/upload")
 async def upload_asset_workflow(request: Request):
@@ -1608,7 +1808,15 @@ async def upload_asset_workflow(request: Request):
     for alib in _asset_libraries.values():
         items = [v for v in _asset_items.values() if v.get("library_id") == alib["id"]]
         libraries.append({**alib, "items": items})
-    return {"success": True, "workflow": {"id": created[0]["id"] if created else "", "name": created[0]["name"] if created else ""}, "library": {"libraries": libraries}}
+    return {
+        "success": True,
+        "workflow": {
+            "id": created[0]["id"] if created else "",
+            "name": created[0]["name"] if created else "",
+        },
+        "library": {"libraries": libraries},
+    }  # noqa: E501
+
 
 # 提示词库 CRUD
 @router.post("/prompt-libraries")
@@ -1619,22 +1827,31 @@ async def create_prompt_library(request: Request):
     _save_library_state()
     return {"success": True, "library": _prompt_libraries[lib_id]}
 
+
 @router.post("/prompt-libraries/categories")
 async def create_prompt_category(request: Request):
     body = await request.json()
     cat_id = f"pcat_{uuid.uuid4().hex[:8]}"
-    _prompt_categories[cat_id] = {"id": cat_id, "name": body.get("name", ""), "library_id": body.get("library_id", "")}
+    _prompt_categories[cat_id] = {
+        "id": cat_id,
+        "name": body.get("name", ""),
+        "library_id": body.get("library_id", ""),
+    }  # noqa: E501
     _save_library_state()
     return {"success": True, "category": _prompt_categories[cat_id]}
+
 
 @router.post("/prompt-libraries/items")
 async def create_prompt_item(request: Request):
     body = await request.json()
     item_id = f"pitem_{uuid.uuid4().hex[:8]}"
     _prompt_items[item_id] = {
-        "id": item_id, "library_id": body.get("library_id", ""),
-        "name": body.get("name", ""), "category": body.get("category", ""),
-        "positive": body.get("positive", ""), "negative": body.get("negative", ""),
+        "id": item_id,
+        "library_id": body.get("library_id", ""),
+        "name": body.get("name", ""),
+        "category": body.get("category", ""),
+        "positive": body.get("positive", ""),
+        "negative": body.get("negative", ""),
         "scene": body.get("scene", ""),
     }
     _save_library_state()
@@ -1644,6 +1861,7 @@ async def create_prompt_item(request: Request):
         items = [v for v in _prompt_items.values() if v.get("library_id") == plib["id"]]
         libraries.append({**plib, "items": items})
     return {"success": True, "item": _prompt_items[item_id], "library": {"libraries": libraries}}
+
 
 @router.patch("/prompt-libraries/items/{item_id}")
 async def update_prompt_item(item_id: str, request: Request):
@@ -1656,6 +1874,7 @@ async def update_prompt_item(item_id: str, request: Request):
         return {"success": True, "item": _prompt_items[item_id]}
     return {"success": False}
 
+
 @router.delete("/prompt-libraries/items/{item_id}")
 async def delete_prompt_item(item_id: str):
     _prompt_items.pop(item_id, None)
@@ -1667,6 +1886,7 @@ async def delete_prompt_item(item_id: str):
 # 其他工具端点
 # ============================================================
 
+
 @router.post("/ai/import-local-image")
 async def import_local_image(request: Request):
     """导入本地图片"""
@@ -1677,11 +1897,18 @@ async def import_local_image(request: Request):
         if os.path.isfile(p):
             fname = os.path.basename(p)
             import shutil
+
             dst = os.path.join(_UPLOAD_DIR, f"import_{uuid.uuid4().hex[:8]}_{fname}")
             os.makedirs(_UPLOAD_DIR, exist_ok=True)
             try:
                 shutil.copy2(p, dst)
-                files.append({"url": f"/static/director/uploads/{os.path.basename(dst)}", "name": fname, "kind": "image"})
+                files.append(
+                    {
+                        "url": f"/static/director/uploads/{os.path.basename(dst)}",
+                        "name": fname,
+                        "kind": "image",
+                    }
+                )  # noqa: E501
             except Exception:
                 pass
     return {"files": files}
@@ -1692,7 +1919,6 @@ async def cloud_video_upload(request: Request):
     """上传本地媒体文件到云端，返回公开可访问的 URL"""
     body = await request.json()
     url = body.get("url", "")
-    service = body.get("service", "auto")
 
     if not url:
         return {"url": "", "error": "缺少 url"}
@@ -1703,20 +1929,25 @@ async def cloud_video_upload(request: Request):
 
     try:
         from services.providers.provider_utils import output_file_from_url
+
         local_path = output_file_from_url(url)
         if not local_path or not os.path.exists(local_path):
             return {"url": "", "error": f"文件不存在: {url}"}
 
         # 尝试上传到配置的云存储
         import httpx
+
         # 检查是否有 RunningHub 可用（作为中转上传）
         from services.providers.runninghub_provider import RunningHubProvider
+
         rh = RunningHubProvider()
         if rh.is_available():
             headers = rh._headers()
             base_url = os.getenv("RUNNINGHUB_BASE_URL", "https://www.runninghub.cn")
             upload_url = f"{base_url}/task/openapi/upload"
-            async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)
+            ) as client:  # noqa: E501
                 with open(local_path, "rb") as f:
                     resp = await client.post(
                         upload_url,
@@ -1732,7 +1963,10 @@ async def cloud_video_upload(request: Request):
         # 回退：返回本地 API URL（仅本机可访问）
         if url.startswith("/"):
             return {"url": url, "expires": "local"}
-        return {"url": f"/api/comfyui/image?filename={os.path.basename(local_path)}", "expires": "local"}
+        return {
+            "url": f"/api/comfyui/image?filename={os.path.basename(local_path)}",
+            "expires": "local",
+        }  # noqa: E501
 
     except Exception as e:
         logger.error(f"[InfiniteCanvas] cloud-video/upload 失败: {e}")
@@ -1752,6 +1986,7 @@ async def runninghub_upload_asset(request: Request):
 
     try:
         from services.providers.runninghub_provider import RunningHubProvider
+
         provider = RunningHubProvider()
         if not provider.is_available():
             return {"success": False, "error": "RunningHub API Key 未配置"}
@@ -1762,7 +1997,10 @@ async def runninghub_upload_asset(request: Request):
         # 如果是本地路径，先读取文件再上传
         import httpx
         from services.providers.provider_utils import output_file_from_url
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)) as client:
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)
+        ) as client:  # noqa: E501
             upload_url = f"{base_url}/task/openapi/upload"
 
             if url.startswith("/output/") or url.startswith("/assets/"):
@@ -1777,12 +2015,21 @@ async def runninghub_upload_asset(request: Request):
                         )
                         resp.raise_for_status()
                         data = resp.json()
-                        file_name = data.get("data", {}).get("fileName", os.path.basename(local_path))
-                        return {"success": True, "data": {"fileName": file_name, "url": data.get("data", {}).get("url", "")}}
+                        file_name = data.get("data", {}).get(
+                            "fileName", os.path.basename(local_path)
+                        )  # noqa: E501
+                        return {
+                            "success": True,
+                            "data": {
+                                "fileName": file_name,
+                                "url": data.get("data", {}).get("url", ""),
+                            },
+                        }  # noqa: E501
                 return {"success": False, "error": f"文件不存在: {url}"}
             elif url.startswith(("http://", "https://")):
                 # 远程 URL：下载后上传
                 import tempfile
+
                 try:
                     dl_resp = await client.get(url, follow_redirects=True)
                     dl_resp.raise_for_status()
@@ -1800,7 +2047,13 @@ async def runninghub_upload_asset(request: Request):
                             resp.raise_for_status()
                             data = resp.json()
                             file_name = data.get("data", {}).get("fileName", fname)
-                            return {"success": True, "data": {"fileName": file_name, "url": data.get("data", {}).get("url", "")}}
+                            return {
+                                "success": True,
+                                "data": {
+                                    "fileName": file_name,
+                                    "url": data.get("data", {}).get("url", ""),
+                                },
+                            }  # noqa: E501
                     finally:
                         os.unlink(tmp_path)
                 except Exception as e:
@@ -1823,6 +2076,7 @@ async def upload_local_asset(request: Request):
 # 画布资产检查与下载
 # ============================================================
 
+
 @router.post("/canvas-assets/check")
 async def check_canvas_assets(request: Request):
     """检查资产 URL 是否存在"""
@@ -1835,6 +2089,7 @@ async def check_canvas_assets(request: Request):
             continue
         # 尝试从 URL 提取文件路径
         from urllib.parse import urlparse, parse_qs
+
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         fname = params.get("filename", [None])[0]
@@ -1854,6 +2109,7 @@ async def check_canvas_assets(request: Request):
         if not found:
             try:
                 from services.comfyui_service import COMFYUI_DIR
+
                 if COMFYUI_DIR:
                     fpath = os.path.join(COMFYUI_DIR, "output", fname)
                     if os.path.isfile(fpath):
@@ -1946,6 +2202,7 @@ async def download_canvas_assets(request: Request):
 # 提示词库批量删除
 # ============================================================
 
+
 @router.post("/prompt-libraries/items/delete")
 async def batch_delete_prompt_items(request: Request):
     """批量删除提示词条目"""
@@ -1966,6 +2223,7 @@ async def batch_delete_prompt_items(request: Request):
 # ModelScope/在线模型生成
 # ============================================================
 
+
 @router.post("/angle/generate")
 async def angle_generate(request: Request):
     """Qwen Edit 图片编辑（通过 ModelScope）"""
@@ -1976,6 +2234,7 @@ async def angle_generate(request: Request):
 
     try:
         from services.providers.modelscope_provider import ModelScopeProvider
+
         provider = ModelScopeProvider()
         if provider.is_available():
             result = await provider.generate_image(
@@ -2000,12 +2259,15 @@ async def ms_generate(request: Request):
 
     try:
         from services.providers.modelscope_provider import ModelScopeProvider
+
         provider = ModelScopeProvider()
         if provider.is_available():
             result = await provider.generate_image(
                 prompt=prompt,
                 model=model,
-                reference_images=[{"url": img, "type": "image"} for img in images] if images else [],
+                reference_images=(
+                    [{"url": img, "type": "image"} for img in images] if images else []
+                ),  # noqa: E501
             )
             image_urls = result.images or []
             # D1 修复：ModelScope 生成结果回写资产库
@@ -2027,6 +2289,7 @@ async def ms_generate(request: Request):
 # 画布工作流导入导出
 # ============================================================
 
+
 @router.post("/canvas-workflows/export")
 async def export_canvas_workflow(request: Request):
     """导出画布工作流为 JSON"""
@@ -2036,7 +2299,7 @@ async def export_canvas_workflow(request: Request):
     filename = body.get("filename", "workflow.json")
 
     from fastapi.responses import StreamingResponse
-    import io
+
     content = json.dumps({"nodes": nodes, "connections": connections}, ensure_ascii=False, indent=2)
     return StreamingResponse(
         iter([content.encode("utf-8")]),
@@ -2057,7 +2320,9 @@ async def export_workflow_to_library(request: Request):
 
     # 创建资产条目
     item_id = f"aitem_{uuid.uuid4().hex[:8]}"
-    workflow_json = json.dumps({"nodes": nodes_data, "connections": connections_data}, ensure_ascii=False, indent=2)
+    workflow_json = json.dumps(
+        {"nodes": nodes_data, "connections": connections_data}, ensure_ascii=False, indent=2
+    )  # noqa: E501
 
     # 保存工作流文件
     safe_name = name.replace("..", "").replace("/", "").replace("\\", "")
@@ -2099,6 +2364,7 @@ async def import_canvas_workflow(file: UploadFile = File(...)):
     """导入工作流（支持 JSON 和 ZIP 文件）"""
     import io
     import zipfile
+
     try:
         content = await file.read()
         fname = (file.filename or "").lower()
@@ -2121,17 +2387,23 @@ async def import_canvas_workflow(file: UploadFile = File(...)):
 
         # 格式 1: 直接 nodes/connections
         nodes = data.get("nodes", []) if isinstance(data.get("nodes"), list) else []
-        connections = data.get("connections", []) if isinstance(data.get("connections"), list) else []
+        connections = (
+            data.get("connections", []) if isinstance(data.get("connections"), list) else []
+        )  # noqa: E501
 
         # 格式 2: {workflow: {nodes, connections}}
         if not nodes and isinstance(data.get("workflow"), dict):
             wf = data["workflow"]
             nodes = wf.get("nodes", []) if isinstance(wf.get("nodes"), list) else []
-            connections = wf.get("connections", []) if isinstance(wf.get("connections"), list) else []
+            connections = (
+                wf.get("connections", []) if isinstance(wf.get("connections"), list) else []
+            )  # noqa: E501
 
         # 格式 3: {format: 'infinite-canvas-workflow', nodes, connections} 已兼容（直接读取 data.nodes）
 
-        logger.info(f"[CanvasWorkflow] 解析结果 | nodes={len(nodes)} connections={len(connections)}")
+        logger.info(
+            f"[CanvasWorkflow] 解析结果 | nodes={len(nodes)} connections={len(connections)}"
+        )
         return {"success": True, "nodes": nodes, "connections": connections}
     except Exception as e:
         logger.warning(f"[CanvasWorkflow] 导入工作流解析失败: {e}")
@@ -2141,6 +2413,7 @@ async def import_canvas_workflow(file: UploadFile = File(...)):
 # ============================================================
 # RunningHub 工作流提交
 # ============================================================
+
 
 @router.post("/runninghub/submit")
 @router.post("/runninghub/workflow-submit")
@@ -2153,6 +2426,7 @@ async def runninghub_submit(request: Request):
 
     try:
         from services.providers.runninghub_provider import RunningHubProvider
+
         provider = RunningHubProvider()
         if not provider.is_available():
             return {"success": False, "error": "RunningHub API Key 未配置"}
@@ -2180,7 +2454,10 @@ async def runninghub_submit(request: Request):
             endpoint_url = f"{base_url}/task/openapi/app/run"
 
         import httpx
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)) as client:
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)
+        ) as client:  # noqa: E501
             resp = await client.post(endpoint_url, headers=headers, json=payload)
             resp.raise_for_status()
             result = resp.json()
@@ -2212,6 +2489,7 @@ async def runninghub_query(taskId: str = ""):
 
     try:
         from services.providers.runninghub_provider import RunningHubProvider
+
         provider = RunningHubProvider()
         if not provider.is_available():
             return {"success": False, "error": "RunningHub API Key 未配置"}
@@ -2222,7 +2500,10 @@ async def runninghub_query(taskId: str = ""):
         base_url = os.getenv("RUNNINGHUB_BASE_URL", "https://www.runninghub.cn")
 
         import httpx
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)) as client:
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=20.0, read=120.0, write=60.0, pool=20.0)
+        ) as client:  # noqa: E501
             query_url = f"{base_url}/task/openapi/query"
             resp = await client.post(query_url, headers=headers, json={"taskId": taskId})
             resp.raise_for_status()
@@ -2230,10 +2511,17 @@ async def runninghub_query(taskId: str = ""):
 
         status = str(result.get("status", "")).upper()
         # 映射状态码：0=排队 1=运行 2=完成 3=成功 4=失败
-        status_map = {"0": "PENDING", "1": "RUNNING", "2": "COMPLETED", "3": "SUCCESS", "4": "FAILED"}
+        status_map = {
+            "0": "PENDING",
+            "1": "RUNNING",
+            "2": "COMPLETED",
+            "3": "SUCCESS",
+            "4": "FAILED",
+        }  # noqa: E501
         mapped_status = status_map.get(status, status)
         # 统一转为前端小写状态（succeeded/failed/pending/running）
         from services.task_status import to_frontend_status
+
         frontend_status = to_frontend_status(mapped_status)
 
         if mapped_status == "SUCCESS":
@@ -2247,12 +2535,21 @@ async def runninghub_query(taskId: str = ""):
                         if url and str(url).startswith(("http://", "https://")):
                             # 下载到本地
                             try:
-                                from services.providers.provider_utils import save_image_to_output, save_video_to_output
-                                is_video = any(ext in str(url).lower() for ext in [".mp4", ".webm", ".mov", ".avi"])
+                                from services.providers.provider_utils import (
+                                    save_image_to_output,
+                                    save_video_to_output,
+                                )  # noqa: E501
+
+                                is_video = any(
+                                    ext in str(url).lower()
+                                    for ext in [".mp4", ".webm", ".mov", ".avi"]
+                                )  # noqa: E501
                                 if is_video:
                                     local_url = await save_video_to_output(url, prefix="rh_")
                                 else:
-                                    local_url = await save_image_to_output({"type": "url", "value": url}, prefix="rh_")
+                                    local_url = await save_image_to_output(
+                                        {"type": "url", "value": url}, prefix="rh_"
+                                    )  # noqa: E501
                                 urls.append(local_url)
                             except Exception as e:
                                 logger.warning(f"RunningHub 输出下载失败: {e}")
@@ -2266,11 +2563,20 @@ async def runninghub_query(taskId: str = ""):
                 gen_type="runninghub",
             )
             _rh_tasks[taskId]["asset_id"] = rh_asset_id
-            return {"success": True, "data": {"status": frontend_status, "urls": urls, "asset_id": rh_asset_id}}
+            return {
+                "success": True,
+                "data": {"status": frontend_status, "urls": urls, "asset_id": rh_asset_id},
+            }  # noqa: E501
 
         if mapped_status == "FAILED":
-            fail_reason = result.get("failReason") or result.get("data", {}).get("failReason", "任务失败")
-            _rh_tasks[taskId] = {"status": "FAILED", "failReason": fail_reason, "updated_at": time.time()}
+            fail_reason = result.get("failReason") or result.get("data", {}).get(
+                "failReason", "任务失败"
+            )  # noqa: E501
+            _rh_tasks[taskId] = {
+                "status": "FAILED",
+                "failReason": fail_reason,
+                "updated_at": time.time(),
+            }  # noqa: E501
             return {"success": True, "data": {"status": frontend_status, "failReason": fail_reason}}
 
         _rh_tasks[taskId] = {"status": mapped_status, "updated_at": time.time()}
@@ -2284,6 +2590,7 @@ async def runninghub_query(taskId: str = ""):
 # ============================================================
 # 资产库 PATCH/DELETE 端点补充
 # ============================================================
+
 
 @router.patch("/asset-library/libraries/{library_id}")
 async def update_asset_library(library_id: str, request: Request):
@@ -2325,6 +2632,7 @@ async def delete_asset_category(category_id: str):
 # 提示词库 PATCH/DELETE 端点补充
 # ============================================================
 
+
 @router.patch("/prompt-libraries/categories/{category_id}")
 async def update_prompt_category(category_id: str, request: Request):
     body = await request.json()
@@ -2347,6 +2655,7 @@ async def delete_prompt_category(category_id: str):
 # QC 质检报告查询 / 强制发布留痕 端点
 # ============================================================
 
+
 def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
     """从资产 metadata 或落盘 JSON 读取 QC 报告。
 
@@ -2355,6 +2664,7 @@ def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
       - 被质检的视频资产 asset_id（报告文件名含该 id）
     """
     from services.asset_service import get_asset_service
+
     svc = get_asset_service()
     # 1) 直接命中 qc_report 资产
     asset = svc._assets.get(asset_id)
@@ -2364,6 +2674,7 @@ def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
             return meta.get("qc")
     # 2) 按视频资产 id 在落盘目录找 qc_report_{asset_id}.json
     import os
+
     qc_dir = QC_DIR
     cand = os.path.join(qc_dir, f"qc_report_{asset_id}.json")
     if os.path.exists(cand):
@@ -2380,7 +2691,9 @@ def _read_qc_report(asset_id: str) -> Optional[Dict[str, Any]]:
         return report
     # 3) 在资产库里反查 name 匹配的 qc_report
     for a in svc._assets.values():
-        if getattr(a, "asset_type", "") == "qc_report" and getattr(a, "name", "").endswith(f"qc_report_{asset_id}.json"):
+        if getattr(a, "asset_type", "") == "qc_report" and getattr(a, "name", "").endswith(
+            f"qc_report_{asset_id}.json"
+        ):  # noqa: E501
             meta = getattr(a, "metadata", None) or {}
             if "qc" in meta:
                 return meta.get("qc")
@@ -2404,6 +2717,7 @@ async def qc_force_publish(request: Request):
     返回更新后的 gate 结果。
     """
     import os
+
     body = await request.json()
     asset_id = body.get("asset_id", "")
     if not asset_id:
@@ -2444,6 +2758,7 @@ async def qc_force_publish(request: Request):
         pass
     # 回写报告元数据（若资产仍在内存）
     from services.asset_service import get_asset_service
+
     svc = get_asset_service()
     asset = svc._assets.get(asset_id)
     if asset is not None:
@@ -2461,6 +2776,7 @@ async def get_qc_history(asset_id: str):
     以及基于首末两次的对比结论（趋势、维度变化、是否从拦截→通过等）。
     """
     import os
+
     qc_dir = QC_DIR
     history_path = os.path.join(qc_dir, f"qc_history_{asset_id}.json")
     if not os.path.exists(history_path):
@@ -2506,7 +2822,9 @@ def _build_qc_comparison(history: List[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "first_ts": first.get("ts"),
         "last_ts": last.get("ts"),
-        "score_delta": round(float(last.get("total_score", 0)) - float(first.get("total_score", 0)), 1),
+        "score_delta": round(
+            float(last.get("total_score", 0)) - float(first.get("total_score", 0)), 1
+        ),  # noqa: E501
         "dimension_delta": diff,
         "blocked_from": bool(first.get("blocked")),
         "blocked_to": bool(last.get("blocked")),

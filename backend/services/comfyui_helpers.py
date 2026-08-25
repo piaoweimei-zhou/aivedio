@@ -4,9 +4,8 @@ ComfyUI 服务 — 共享工具与常量
 模块级常量、内存/显存监控、参考图分析、视觉缓存、
 工作流输入处理工具函数与数据类（ComfyUIConfig / ComfyUIGenResult / StoryboardStepResult）。
 """
+
 from services.paths import GENERATED_DIR  # noqa: F401（再导出兼容）
-
-
 
 """
 ComfyUI 服务
@@ -15,34 +14,15 @@ ComfyUI 服务
 支持 Z-Image 瑶光版（文生图）和 Qwen Image Edit（图生图）
 """
 
-import asyncio
-import json
-import logging
-import os
-import re
-import shutil
-import signal
-import subprocess
-import sys
-import tempfile
-import time
-from collections import OrderedDict
-from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable, Awaitable, Tuple
-from dataclasses import dataclass
+import asyncio  # noqa: E402
+import json  # noqa: E402
+import logging  # noqa: E402
+import os  # noqa: E402
+import shutil  # noqa: E402
+import time  # noqa: E402
+from typing import Dict, Any, Optional, List, Callable, Tuple  # noqa: E402
+from dataclasses import dataclass  # noqa: E402
 
-import aiohttp
-
-from services.workflow_builder import (
-    build_comfyui_workflow,
-    build_refinement_workflow,
-    build_standardization_workflow,
-    build_scene_multiangle_workflow,
-    STORYBOARD_TEMPLATES,
-    structured_prompt_to_comfyui_prompt,
-    _resolve_comfyui_image,
-)
-from services.qwen_workflow import YAOGUANG_DEFAULT_NEGATIVE
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +31,7 @@ def _get_ram_pct_safe() -> float:
     """安全获取系统内存使用百分比，失败返回 -1"""
     try:
         import psutil
+
         return psutil.virtual_memory().percent
     except Exception:
         return -1.0
@@ -125,9 +106,7 @@ def _crop_turnaround_to_front_view(
             new_w = (new_w // 8) * 8
             new_h = (new_h // 8) * 8
             cropped = cropped.resize((new_w, new_h), Image.LANCZOS)
-            logger.info(
-                f"[TurnaroundCrop] [{trace_id}] 缩放: {cw}x{ch} → {new_w}x{new_h}"
-            )
+            logger.info(f"[TurnaroundCrop] [{trace_id}] 缩放: {cw}x{ch} → {new_w}x{new_h}")
 
         # 保存裁剪结果（在 with 块外，避免写入已关闭的图片）
         name, _ext = os.path.splitext(filename)
@@ -168,7 +147,7 @@ async def _analyze_reference_images(
     _analyze_start = time.time()
     _ram_before = _get_ram_pct_safe()
     logger.info(
-        f"[VisionAnalyze] 开始视觉分析 | refs={len(all_ref_items)} | project={project_id[:20] if project_id else 'N/A'} | RAM_before={_ram_before:.1f}%"
+        f"[VisionAnalyze] 开始视觉分析 | refs={len(all_ref_items)} | project={project_id[:20] if project_id else 'N/A'} | RAM_before={_ram_before:.1f}%"  # noqa: E501
     )
 
     if progress_callback:
@@ -185,7 +164,7 @@ async def _analyze_reference_images(
         img_url = item.get("image_url") or item.get("url", "") or ""
         if not img_url:
             continue
-        
+
         # 构造 HTTP URL（llama.cpp 需要可访问的完整 URL）
         if img_url.startswith("/"):
             base = f"http://127.0.0.1:{backend_port}{img_url}"
@@ -213,6 +192,7 @@ async def _analyze_reference_images(
 
     try:
         from services.vision_service import get_vision_service
+
         vsvc = get_vision_service()
 
         async def _describe_one(item: Dict[str, Any]) -> None:
@@ -226,9 +206,7 @@ async def _analyze_reference_images(
                         f"[ComfyUI] 参考图视觉分析完成 ({content_type}): {visual_desc[:80]}..."
                     )
                 else:
-                    logger.info(
-                        f"[ComfyUI] 参考图视觉分析完成 ({content_type}): 无有效描述"
-                    )
+                    logger.info(f"[ComfyUI] 参考图视觉分析完成 ({content_type}): 无有效描述")
             except Exception as e:
                 logger.warning(
                     f"[ComfyUI] 单张参考图视觉分析失败 ({content_type}, {vision_url[:60]}): {e}"
@@ -240,7 +218,7 @@ async def _analyze_reference_images(
                     try:
                         pct = int(completed[0] / total * 45)  # 0~45% 留给分析阶段
                         progress_callback(
-                            f"🔍 参考图视觉分析: {completed[0]}/{total} ({asset_type})",
+                            f"🔍 参考图视觉分析: {completed[0]}/{total} ({content_type})",
                             pct,
                         )
                     except Exception:
@@ -254,7 +232,7 @@ async def _analyze_reference_images(
         _success_count = sum(1 for item in items_to_analyze if item.get("visual_desc"))
         logger.info(
             f"[VisionAnalyze] 视觉分析完成 | analyzed={_success_count}/{total}"
-            f" | elapsed={_elapsed:.1f}s | RAM={_ram_after:.1f}% (Δ={_ram_after - _ram_before:+.1f}%)"
+            f" | elapsed={_elapsed:.1f}s | RAM={_ram_after:.1f}% (Δ={_ram_after - _ram_before:+.1f}%)"  # noqa: E501
         )
 
         if progress_callback:
@@ -267,16 +245,15 @@ async def _analyze_reference_images(
                 pass
     except Exception as e:
         _elapsed = time.time() - _analyze_start
-        logger.warning(
-            f"[VisionAnalyze] 参考图视觉分析失败 | elapsed={_elapsed:.1f}s | error={e}"
-        )
+        logger.warning(f"[VisionAnalyze] 参考图视觉分析失败 | elapsed={_elapsed:.1f}s | error={e}")
         for item in items_to_analyze:
             item.pop("_vision_url", None)
         if progress_callback:
             try:
-                progress_callback(f"⚠️ 参考图分析部分失败，继续生成...", 30)
+                progress_callback("⚠️ 参考图分析部分失败，继续生成...", 30)
             except Exception:
                 pass
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Vision 分析缓存持久化（崩溃恢复 + 避免重复分析）
@@ -291,6 +268,7 @@ def _get_vision_cache_path(project_id: str) -> Optional[str]:
         return None
     try:
         from services.pipeline_manager import get_pipeline_manager
+
         mgr = get_pipeline_manager()
         project = mgr.get_project(project_id)
         if project:
@@ -316,8 +294,7 @@ def _load_vision_cache(project_id: str) -> Optional[Dict[str, str]]:
             cache = json.load(f)
         if isinstance(cache, dict) and cache:
             logger.info(
-                f"[VisionCache] 加载缓存成功 | project={project_id[:20]}"
-                f" | entries={len(cache)}"
+                f"[VisionCache] 加载缓存成功 | project={project_id[:20]}" f" | entries={len(cache)}"
             )
             return cache
     except Exception as e:
@@ -355,8 +332,7 @@ def _save_vision_cache(project_id: str, items: List[Dict[str, Any]]) -> bool:
             json.dump(cache, f, ensure_ascii=False, indent=2)
 
         logger.info(
-            f"[VisionCache] 保存缓存成功 | project={project_id[:20]}"
-            f" | entries={len(cache)}"
+            f"[VisionCache] 保存缓存成功 | project={project_id[:20]}" f" | entries={len(cache)}"
         )
         return True
     except Exception as e:
@@ -386,10 +362,7 @@ def _apply_vision_cache(
         if cached_desc:
             item["visual_desc"] = cached_desc
             applied += 1
-            logger.info(
-                f"[VisionCache] 命中缓存: {img_url[:60]}"
-                f" → {cached_desc[:50]}..."
-            )
+            logger.info(f"[VisionCache] 命中缓存: {img_url[:60]}" f" → {cached_desc[:50]}...")
     if applied:
         logger.info(f"[VisionCache] 应用缓存: {applied}/{len(items)} 条目命中")
     return applied
@@ -418,7 +391,7 @@ def _collect_all_reference_urls(
         seen.add(img_url)
         unique.append(dict(item))
 
-    for item in (reference_items or []):
+    for item in reference_items or []:
         _add(item)
 
     if shots:
@@ -438,7 +411,7 @@ def _collect_all_reference_urls(
 # 配置
 # ============================================================
 
-from services.comfyui.config import COMFYUI_DIR, COMFYUI_BASE_URL as _COMFYUI_BASE_URL
+from services.comfyui.config import COMFYUI_DIR, COMFYUI_BASE_URL as _COMFYUI_BASE_URL  # noqa: E402
 
 COMFYUI_BASE_URL = _COMFYUI_BASE_URL
 POLL_INTERVAL = 0.5
@@ -446,33 +419,34 @@ POLL_INTERVAL = 0.5
 MAX_POLL_TIME = 600  # 默认 10 分钟
 # 按任务类型的超时时间（秒）
 TASK_TIMEOUTS = {
-    'generate': 1800,
-    'refine': 600,
-    'standardize_3': 600,
-    'standardize_6': 1200,
-    'storyboard': 900,
-    'yaoguang': 180,
-    'video': 1800,  # LTX-2.3 视频生成 30 分钟
-    'tts': 300,  # TTS 音频生成 5 分钟
+    "generate": 1800,
+    "refine": 600,
+    "standardize_3": 600,
+    "standardize_6": 1200,
+    "storyboard": 900,
+    "yaoguang": 180,
+    "video": 1800,  # LTX-2.3 视频生成 30 分钟
+    "tts": 300,  # TTS 音频生成 5 分钟
 }
 
 # ComfyUI 自动启动配置（从 comfyui.config 复用，单一来源）
 # ⭐ 修复 P3：原代码重复调用 _detect_comfyui_dir() 和 os.environ.get("COMFYUI_PYTHON")
 # 改为直接从 services.comfyui.config 引用模块级常量，避免配置不一致风险
-from services.comfyui.config import COMFYUI_DIR, COMFYUI_PYTHON
 COMFYUI_SCRIPT = "main.py"
 COMFYUI_START_TIMEOUT = 60  # 秒
 
 # 内存/显存监控配置（从 comfyui.config 复用，单一来源）
-from services.comfyui.config import (
-    MEMORY_HIGH_THRESHOLD,
-    VRAM_HIGH_THRESHOLD,
-    MEMORY_CHECK_INTERVAL,
-)
-MAX_CACHE_SIZE = int(os.environ.get("COMFYUI_CACHE_SIZE", 10))  # 最大缓存图片数（⭐ V2: 降至10，因已移除内存缓存，此值仅作安全上限）
+
+MAX_CACHE_SIZE = int(
+    os.environ.get("COMFYUI_CACHE_SIZE", 10)
+)  # 最大缓存图片数（⭐ V2: 降至10，因已移除内存缓存，此值仅作安全上限）  # noqa: E501
 
 # 进程管理开关：线上部署设为 true，由 Supervisor/Systemd 管理 ComfyUI 进程
-DISABLE_PROCESS_MANAGEMENT = os.environ.get("DISABLE_PROCESS_MANAGEMENT", "false").lower() in ("true", "1", "yes")
+DISABLE_PROCESS_MANAGEMENT = os.environ.get("DISABLE_PROCESS_MANAGEMENT", "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)  # noqa: E501
 
 # 持久化生成图片目录（不受 ComfyUI output 清理影响）
 # GENERATED_DIR 由 services.paths 提供（T7 收敛）
@@ -480,10 +454,11 @@ DISABLE_PROCESS_MANAGEMENT = os.environ.get("DISABLE_PROCESS_MANAGEMENT", "false
 
 def _mem_log(label: str, context: str = "") -> float:
     """⭐ 核心内存/显存追踪日志 — 仅在关键步骤打印，格式统一便于 grep
-    
+
     输出格式: [MEM] 标签 | RAM=xx% | VRAM=xx% | Python=xxxMB | 子进程=xxxMB | 上下文
     """
     import psutil
+
     ram_pct = psutil.virtual_memory().percent
     # Python 进程自身内存
     proc = psutil.Process()
@@ -502,12 +477,15 @@ def _mem_log(label: str, context: str = "") -> float:
     vram_pct_str = "N/A"
     try:
         import subprocess as _sp
+
         _vram_result = _sp.run(
-            ['nvidia-smi', '--query-gpu=memory.used,memory.total', '--format=csv,noheader,nounits'],
-            capture_output=True, text=True, timeout=3,
+            ["nvidia-smi", "--query-gpu=memory.used,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=3,
         )
         if _vram_result.returncode == 0 and _vram_result.stdout.strip():
-            _parts = _vram_result.stdout.strip().split(',')
+            _parts = _vram_result.stdout.strip().split(",")
             if len(_parts) == 2:
                 _used = int(_parts[0].strip())
                 _total = int(_parts[1].strip())
@@ -526,6 +504,7 @@ def _mem_log(label: str, context: str = "") -> float:
 @dataclass
 class ComfyUIConfig:
     """ComfyUI 服务配置"""
+
     base_url: str = COMFYUI_BASE_URL
     comfyui_dir: str = COMFYUI_DIR or os.path.expanduser("~/ComfyUI")
     output_dir: str = ""
@@ -544,6 +523,7 @@ class ComfyUIConfig:
 @dataclass
 class ComfyUIGenResult:
     """生成结果"""
+
     image_url: str
     filename: str
     images: List[str] = None  # 多图片输出时的所有图片 URL（场景多角度专用）
@@ -571,6 +551,7 @@ class ComfyUIGenResult:
 @dataclass
 class StoryboardStepResult:
     """单个融合步骤的结果"""
+
     step_index: int
     step_name: str
     filename: str
@@ -587,36 +568,38 @@ STORYBOARD_PROGRESS_MAP = {
 }
 
 
-def _update_workflow_input(wf: Dict[str, Any], current_image: str, task_id: str = "") -> Dict[str, Any]:
+def _update_workflow_input(
+    wf: Dict[str, Any], current_image: str, task_id: str = ""
+) -> Dict[str, Any]:  # noqa: E501
     """将前一步产物注入到下一步工作流的输入节点中。
-    
+
     优先覆盖节点 11（Fish 融合场景槽位），如不存在则扫描所有 LoadImage
     节点并将第一个设为 current_image。
     current_image 是上一步 ComfyUI 输出的文件名。
-    
+
     ⭐ 关键：必须将文件从 output 目录复制到 input 目录，
     因为 ComfyUI LoadImage 节点只从 input 目录加载图片。
-    
+
     ⭐ 竞态修复：复制时添加 task_id 前缀避免并发任务覆盖同名文件。
     工作流中使用带前缀的唯一文件名，避免竞态冲突。
     """
     # 提取纯文件名（去除可能的路径）
     current_image = os.path.basename(current_image)
     logger.info(f"[V2] _update_workflow_input: current_image={current_image}, task_id={task_id}")
-    
+
     # ⭐ 竞态修复：如果提供了 task_id，为文件名添加唯一前缀避免并发覆盖
     if task_id and current_image:
         name, ext = os.path.splitext(current_image)
         unique_image = f"{name}_{task_id[:8]}{ext}"
     else:
         unique_image = current_image
-    
+
     # ⭐ 确保文件在 ComfyUI input 目录中（LoadImage 节点只读 input 目录）
     output_dir = os.path.join(COMFYUI_DIR, "output")
     input_dir = os.path.join(COMFYUI_DIR, "input")
     output_path = os.path.join(output_dir, current_image)
     input_path = os.path.join(input_dir, unique_image)
-    
+
     if not os.path.exists(input_path):
         if os.path.exists(output_path):
             try:
@@ -633,47 +616,44 @@ def _update_workflow_input(wf: Dict[str, Any], current_image: str, task_id: str 
                 )
         else:
             logger.warning(
-                f"[V2] 图片不在 output 目录: {output_path}"
-                f" | 可能已被清理或来自其他来源"
+                f"[V2] 图片不在 output 目录: {output_path}" f" | 可能已被清理或来自其他来源"
             )
     else:
         logger.info(f"[V2] 图片已在 input 目录: {unique_image}")
-    
+
     # ⭐ 使用唯一文件名替代原始文件名，避免并发竞态
     current_image = unique_image
-    
+
     # 优先使用 Fish 融合模板的第二个 LoadImage 节点（场景槽位）
     from services.workflow_builder import find_node_by_class_type
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     load_nodes.sort(key=lambda x: x[0])
-    
+
     if len(load_nodes) >= 2:
         # 第二个 LoadImage 节点 = 场景槽位
-        wf[load_nodes[1][0]]['inputs']['image'] = current_image
+        wf[load_nodes[1][0]]["inputs"]["image"] = current_image
         logger.info(f"[V2] 已更新节点{load_nodes[1][0]}图片: {current_image}")
     elif len(load_nodes) >= 1:
-        wf[load_nodes[0][0]]['inputs']['image'] = current_image
+        wf[load_nodes[0][0]]["inputs"]["image"] = current_image
         logger.info(f"[V2] _update_workflow_input 回退到节点 {load_nodes[0][0]}")
     else:
         logger.warning("[V2] _update_workflow_input 未找到任何 LoadImage 节点，工作流可能异常")
         return wf
-    
+
     # ⭐ 修复其他 LoadImage 节点中未解析的占位符值
     # Fish 融合模板中第一个和第三个 LoadImage 可能包含占位符 "stepN_output"
     for nid, ndata in load_nodes:
         if nid == load_nodes[1][0] if len(load_nodes) >= 2 else load_nodes[0][0]:
             continue  # 跳过已更新的节点
-        val = ndata['inputs'].get('image', '')
+        val = ndata["inputs"].get("image", "")
         # 检测未解析的占位符：不含图片扩展名 或 包含 "_output" 模式
         if val and (
-            not val.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))
-            or "_output" in val
+            not val.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")) or "_output" in val
         ):
-            wf[nid]['inputs']['image'] = current_image
-            logger.info(
-                f"[V2] 已修复节点{nid}占位符: \"{val}\" → {current_image}"
-            )
-    
+            wf[nid]["inputs"]["image"] = current_image
+            logger.info(f'[V2] 已修复节点{nid}占位符: "{val}" → {current_image}')
+
     return wf
 
 

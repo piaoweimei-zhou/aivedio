@@ -1,9 +1,13 @@
 """一次性验证：用 Qwen3-VL-8B 跑 export_85cbf5da.mp4 的完整 QC。
 调用 qc_service.run_qc，复用已启动的 llama-server（若未起会自动起）。
 """
-import sys, json, time
+
+import sys
+import json
+import time
+
 sys.path.insert(0, r"D:\1\2\director\backend")
-from services.qc.qc_service import run_qc, run_technical_qc
+from services.qc.qc_service import run_qc, run_technical_qc  # noqa: E402
 
 VIDEO = r"D:\1\2\director\backend\output\output\export_85cbf5da.mp4"
 

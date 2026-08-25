@@ -75,11 +75,16 @@ class PanoStage(StagePlugin):
             output_size = f"{int(parts[0]) * 2}x{parts[1]}" if len(parts) == 2 else "4096x1024"
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="pano",
                 name=f"{source.name} 全景",
                 parent_id=source.asset_id,
-                extra_metadata={"source_asset_id": source.asset_id, "prompt": prompt, "size": output_size},
+                extra_metadata={
+                    "source_asset_id": source.asset_id,
+                    "prompt": prompt,
+                    "size": output_size,
+                },  # noqa: E501
                 content_type=source.content_type,
             )
 

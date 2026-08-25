@@ -18,6 +18,7 @@
     ├── step_2: storyboard 生成（输入：step_1.concept_asset → 输出：storyboard_asset）
     └── step_3: video 生成（输入：step_2.storyboard_asset → 输出：video_asset）
 """
+
 from services.paths import BATCHES_DIR
 
 import asyncio
@@ -31,8 +32,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from services.stage_service import get_stage_service
-from services.gen_task_manager import get_gen_task_manager
-from services.asset_service import get_asset_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,23 +41,24 @@ _DEFAULT_BATCH_DIR = BATCHES_DIR
 @dataclass
 class BatchStep:
     """批量任务中的一个步骤"""
-    step_id: str                                    # 步骤唯一 ID
-    stage_id: str                                   # 执行的 Stage ID
-    name: str = ""                                  # 步骤名称
+
+    step_id: str  # 步骤唯一 ID
+    stage_id: str  # 执行的 Stage ID
+    name: str = ""  # 步骤名称
     # 输入来源：固定资产 ID 列表 / 引用前序步骤输出 / 动态解析
-    input_asset_ids: List[str] = field(default_factory=list)        # 固定输入
-    input_from_steps: List[str] = field(default_factory=list)       # 引用前序步骤的输出（step_id 列表）
-    provider_id: str = ""                           # 供应商（空=默认）
-    params: Dict[str, Any] = field(default_factory=dict)            # 阶段参数
+    input_asset_ids: List[str] = field(default_factory=list)  # 固定输入
+    input_from_steps: List[str] = field(default_factory=list)  # 引用前序步骤的输出（step_id 列表）
+    provider_id: str = ""  # 供应商（空=默认）
+    params: Dict[str, Any] = field(default_factory=dict)  # 阶段参数
     # 运行时状态
-    status: str = "pending"                         # pending/running/completed/failed/skipped
-    output_asset_id: str = ""                       # 输出资产 ID
-    gen_task_id: str = ""                           # 关联的 GenTask ID
-    prompt_id: str = ""                             # ComfyUI prompt_id（用于反查生成历史）
+    status: str = "pending"  # pending/running/completed/failed/skipped
+    output_asset_id: str = ""  # 输出资产 ID
+    gen_task_id: str = ""  # 关联的 GenTask ID
+    prompt_id: str = ""  # ComfyUI prompt_id（用于反查生成历史）
     error: str = ""
     elapsed_ms: int = 0
     retry_count: int = 0
-    max_retries: int = 0                            # 最大重试次数（0=不重试）
+    max_retries: int = 0  # 最大重试次数（0=不重试）
     started_at: float = 0.0
     completed_at: float = 0.0
 
@@ -73,19 +73,20 @@ class BatchStep:
 @dataclass
 class BatchTask:
     """批量任务"""
+
     batch_id: str
     name: str
-    project_id: str = ""                            # 所属项目
+    project_id: str = ""  # 所属项目
     steps: List[BatchStep] = field(default_factory=list)
-    status: str = "pending"                         # pending/running/completed/failed/cancelled
+    status: str = "pending"  # pending/running/completed/failed/cancelled
     current_step_index: int = 0
     created_at: float = 0.0
     updated_at: float = 0.0
     started_at: float = 0.0
     completed_at: float = 0.0
     # 配置
-    stop_on_failure: bool = True                    # 失败时是否停止后续步骤
-    auto_inherit_project: bool = True               # 自动继承项目归属
+    stop_on_failure: bool = True  # 失败时是否停止后续步骤
+    auto_inherit_project: bool = True  # 自动继承项目归属
     error: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -250,7 +251,9 @@ class BatchTaskService:
         )
         self._batches[batch_id] = batch
         self._save_batch(batch)
-        logger.info(f"[BatchTask] 创建批量任务 | id={batch_id} | name={name} | steps={len(batch_steps)}")
+        logger.info(
+            f"[BatchTask] 创建批量任务 | id={batch_id} | name={name} | steps={len(batch_steps)}"
+        )
         return batch
 
     async def get(self, batch_id: str) -> Optional[BatchTask]:
@@ -264,6 +267,7 @@ class BatchTaskService:
         if not batch:
             return None
         from services.dag_executor import get_dag_structure
+
         return get_dag_structure(batch.steps)
 
     async def list_batches(
@@ -330,7 +334,9 @@ class BatchTaskService:
 
     async def _dry_run(self, batch: BatchTask) -> bool:
         """预检模式：验证 DAG 结构 + Provider 可用性，不执行"""
-        from services.dag_executor import topological_sort, get_dag_structure
+        from services.dag_executor import (
+            topological_sort,
+        )
         from services.provider_service import get_provider_service
 
         logger.info(f"[BatchTask] dry-run 预检 | id={batch.batch_id}")
@@ -339,8 +345,7 @@ class BatchTaskService:
         try:
             layers = topological_sort(batch.steps)
             logger.info(
-                f"[BatchTask] DAG 结构合法 | {len(layers)} 层 | "
-                f"{len(batch.steps)} 步骤"
+                f"[BatchTask] DAG 结构合法 | {len(layers)} 层 | " f"{len(batch.steps)} 步骤"
             )
         except ValueError as e:
             batch.error = f"DAG 结构错误: {e}"
@@ -355,8 +360,7 @@ class BatchTaskService:
         if not check_result["ok"]:
             unavailable = check_result["unavailable"]
             error_lines = [
-                f"  • {u['step_id']} ({u['stage_id']}): {u['reason']}"
-                for u in unavailable[:5]
+                f"  • {u['step_id']} ({u['stage_id']}): {u['reason']}" for u in unavailable[:5]
             ]
             batch.error = (
                 f"Provider 预检失败：{len(unavailable)} 个步骤的 provider 不可用\n"
@@ -378,14 +382,12 @@ class BatchTaskService:
         type_errors = self._validate_step_asset_types(batch)
         if type_errors:
             error_lines = [f"  • {e}" for e in type_errors[:10]]
-            batch.error = (
-                f"步骤间资产类型校验失败：{len(type_errors)} 个错误\n"
-                + "\n".join(error_lines)
+            batch.error = f"步骤间资产类型校验失败：{len(type_errors)} 个错误\n" + "\n".join(
+                error_lines
             )
             self._save_batch(batch)
             logger.warning(
-                f"[BatchTask] 资产类型校验失败 | id={batch.batch_id} | "
-                f"{len(type_errors)} 错误"
+                f"[BatchTask] 资产类型校验失败 | id={batch.batch_id} | " f"{len(type_errors)} 错误"
             )
             return False
 
@@ -443,8 +445,6 @@ class BatchTaskService:
 
     async def _run_batch_dag(self, batch_id: str):
         """DAG 执行引擎：拓扑排序 + 并行执行 + 超时 + 失败终止"""
-        from services.dag_executor import DagExecutor, get_dag_structure
-        from services import ws_service
         from services.structured_logging import set_trace_id, clear_trace_id
 
         batch = self._batches.get(batch_id)
@@ -460,8 +460,11 @@ class BatchTaskService:
 
     async def _run_batch_dag_impl(self, batch_id: str, batch):
         """_run_batch_dag 的实际实现（trace_id 已设置）"""
-        from services.dag_executor import DagExecutor, get_dag_structure
+        from services.dag_executor import (
+            DagExecutor,
+        )
         from services import ws_service
+
         await ws_service.notify_batch_started(batch_id, len(batch.steps))
 
         stage_svc = get_stage_service()
@@ -495,8 +498,12 @@ class BatchTaskService:
                 if step.retry_count >= step.max_retries:
                     completed = sum(1 for s in batch.steps if s.status == "completed")
                     await ws_service.notify_step_failed(
-                        batch_id, step.step_id, step.stage_id, step.error,
-                        completed, len(batch.steps),
+                        batch_id,
+                        step.step_id,
+                        step.stage_id,
+                        step.error,
+                        completed,
+                        len(batch.steps),
                     )
                 return False
 
@@ -508,10 +515,21 @@ class BatchTaskService:
             # ⭐ 修复 P0 #1：从前序步骤继承关键参数（避免每个阶段"重新开始"）
             # 仅继承用户未显式设置的参数，且仅继承跨阶段通用参数
             _INHERITABLE_KEYS = {
-                "prompt", "size", "resolution", "aspect_ratio",
-                "width", "height", "steps", "cfg", "seed",
-                "duration", "fps", "frame_count",
-                "content_type", "style", "model",
+                "prompt",
+                "size",
+                "resolution",
+                "aspect_ratio",
+                "width",
+                "height",
+                "steps",
+                "cfg",
+                "seed",
+                "duration",
+                "fps",
+                "frame_count",
+                "content_type",
+                "style",
+                "model",
             }
             for prev_step_id in step.input_from_steps:
                 prev_step = next((s for s in batch.steps if s.step_id == prev_step_id), None)
@@ -547,8 +565,12 @@ class BatchTaskService:
                     # 通知步骤完成
                     completed = sum(1 for s in batch.steps if s.status == "completed")
                     await ws_service.notify_step_completed(
-                        batch_id, step.step_id, step.stage_id,
-                        step.output_asset_id, completed, len(batch.steps),
+                        batch_id,
+                        step.step_id,
+                        step.stage_id,
+                        step.output_asset_id,
+                        completed,
+                        len(batch.steps),
                     )
                     return True
                 else:
@@ -562,16 +584,19 @@ class BatchTaskService:
                 step.status = "failed"
                 step.error = str(e)
                 logger.error(
-                    f"[BatchTask-DAG] 步骤异常 | batch={batch_id} "
-                    f"step={step.step_id} error={e}"
+                    f"[BatchTask-DAG] 步骤异常 | batch={batch_id} " f"step={step.step_id} error={e}"
                 )
 
             # 仅在最终失败时通知前端（避免重试中 UI 闪烁）
             if step.retry_count >= step.max_retries:
                 completed = sum(1 for s in batch.steps if s.status == "completed")
                 await ws_service.notify_step_failed(
-                    batch_id, step.step_id, step.stage_id, step.error,
-                    completed, len(batch.steps),
+                    batch_id,
+                    step.step_id,
+                    step.stage_id,
+                    step.error,
+                    completed,
+                    len(batch.steps),
                 )
             return False
 
@@ -597,7 +622,9 @@ class BatchTaskService:
                 )
                 # 通知批量任务完成
                 await ws_service.notify_batch_completed(
-                    batch_id, result.completed_steps, result.total_steps,
+                    batch_id,
+                    result.completed_steps,
+                    result.total_steps,
                     result.elapsed_ms,
                 )
             else:
@@ -614,8 +641,11 @@ class BatchTaskService:
                 )
                 # 通知批量任务失败
                 await ws_service.notify_batch_failed(
-                    batch_id, result.failed_step_id, result.error,
-                    result.completed_steps, result.total_steps,
+                    batch_id,
+                    result.failed_step_id,
+                    result.error,
+                    result.completed_steps,
+                    result.total_steps,
                 )
 
         except asyncio.CancelledError:
@@ -644,7 +674,9 @@ class BatchTaskService:
         for ref_step_id in step.input_from_steps:
             ref_step = next((s for s in batch.steps if s.step_id == ref_step_id), None)
             if not ref_step:
-                logger.warning(f"[BatchTask] 引用步骤不存在 | step={step.step_id} ref={ref_step_id}")
+                logger.warning(
+                    f"[BatchTask] 引用步骤不存在 | step={step.step_id} ref={ref_step_id}"
+                )
                 return None
             if ref_step.status != "completed" or not ref_step.output_asset_id:
                 logger.warning(

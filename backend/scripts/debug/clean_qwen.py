@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """清理 workflow_core_qwen.py 剩余 flake8 违规"""
+
 import io
 
 fp = "services/workflow_core_qwen.py"

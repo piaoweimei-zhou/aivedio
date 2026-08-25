@@ -150,7 +150,7 @@ class ComfyUIClient:
                 f"{self.base_url}/queue",
                 json={"clear": True},
                 timeout=aiohttp.ClientTimeout(total=5),
-            ) as resp:
+            ):
                 pass
         except Exception as e:
             logger.warning(f"[ComfyUI] 清空队列失败: {e}")
@@ -177,9 +177,7 @@ class ComfyUIClient:
             if resp.status != 200:
                 text = await resp.text()
                 logger.error(f"[ComfyUI] 提交失败 | status={resp.status} | body={text[:500]}")
-                raise RuntimeError(
-                    f"ComfyUI 提交失败 ({resp.status}): {text[:300]}"
-                )
+                raise RuntimeError(f"ComfyUI 提交失败 ({resp.status}): {text[:300]}")
             data = await resp.json()
 
             # 检查 node_errors（ComfyUI 验证失败时返回 200 但包含 node_errors）
@@ -244,9 +242,7 @@ class ComfyUIClient:
                 # 先查历史（生成完成后）
                 session = self.get_http_session()
                 url = f"{self.base_url}/history/{prompt_id}"
-                async with session.get(
-                    url, timeout=aiohttp.ClientTimeout(total=10)
-                ) as resp:
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
                     if resp.status == 200:
                         consecutive_failures = 0
                         data = await resp.json()
@@ -261,14 +257,16 @@ class ComfyUIClient:
                                 error_msgs = []
                                 for msg in status_messages[:5]:
                                     if isinstance(msg, (list, tuple)) and len(msg) >= 2:
-                                        event_name, msg_data = msg[0], msg[1]
+                                        msg_data = msg[1]
                                         if isinstance(msg_data, dict):
                                             exc_msg = msg_data.get("exception_message", "")
                                             exc_type = msg_data.get("exception_type", "")
                                             node_id = msg_data.get("node_id", "")
                                             node_type = msg_data.get("node_type", "")
                                             error_msgs.append(
-                                                f"[{node_type}#{node_id}] {exc_type}: {exc_msg}"[:200]
+                                                f"[{node_type}#{node_id}] {exc_type}: {exc_msg}"[
+                                                    :200
+                                                ]  # noqa: E501
                                             )
                                         else:
                                             error_msgs.append(str(msg_data)[:200])
@@ -280,18 +278,16 @@ class ComfyUIClient:
                                     f"[ComfyUI] 执行错误详情 | status={status_str}"
                                     f" | messages={status_messages[:3]}"
                                 )
-                                raise RuntimeError(
-                                    f"ComfyUI 执行错误: {'; '.join(error_msgs)}"
-                                )
+                                raise RuntimeError(f"ComfyUI 执行错误: {'; '.join(error_msgs)}")
 
                         # 兼容旧版 errors 字段
                         errors = history.get("errors", [])
                         if errors:
                             error_msgs = [str(e)[:200] for e in errors[:5]]
-                            logger.error(f"[ComfyUI] 执行错误详情(errors字段) | errors={errors[:5]}")
-                            raise RuntimeError(
-                                f"ComfyUI 执行错误: {'; '.join(error_msgs)}"
+                            logger.error(
+                                f"[ComfyUI] 执行错误详情(errors字段) | errors={errors[:5]}"
                             )
+                            raise RuntimeError(f"ComfyUI 执行错误: {'; '.join(error_msgs)}")
 
                         # 收集所有 SaveImage 节点的输出
                         outputs = history.get("outputs", {})
@@ -383,7 +379,7 @@ class ComfyUIClient:
             # - 60s+：5.0s（长任务减少请求）
             # - 连接失败时：退避到 max 5s
             if consecutive_failures > 0:
-                poll_interval = min(POLL_INTERVAL * (1.5 ** consecutive_failures), 5.0)
+                poll_interval = min(POLL_INTERVAL * (1.5**consecutive_failures), 5.0)
             elif elapsed < 10:
                 poll_interval = POLL_INTERVAL  # 0.5s
             elif elapsed < 30:
@@ -397,8 +393,7 @@ class ComfyUIClient:
             elapsed += poll_interval
 
         raise TimeoutError(
-            f"ComfyUI 生成超时 ({max_time}s, task={task_type})，"
-            f"prompt_id={prompt_id[:8]}"
+            f"ComfyUI 生成超时 ({max_time}s, task={task_type})，" f"prompt_id={prompt_id[:8]}"
         )
 
     # ── 显存管理 ──────────────────────────────────────────────
@@ -438,7 +433,9 @@ class ComfyUIClient:
                             "vram_total": vram_total,
                             "vram_free": vram_free,
                             "vram_used": vram_total - vram_free,
-                            "vram_pct": (vram_total - vram_free) / vram_total * 100 if vram_total else 0,
+                            "vram_pct": (
+                                (vram_total - vram_free) / vram_total * 100 if vram_total else 0
+                            ),  # noqa: E501
                         }
                 return {}
         except Exception:

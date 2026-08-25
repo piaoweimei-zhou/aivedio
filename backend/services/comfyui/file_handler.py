@@ -12,9 +12,7 @@ import logging
 import os
 import shutil
 import time
-from collections import OrderedDict
-from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +167,9 @@ class ComfyUIFileHandler:
             try:
                 shutil.copy2(output_path, input_path)
                 _ref_elapsed = (time.time() - _ref_t0) * 1000
-                logger.info(f"[REFIMG] output复制 | file={fname} | src={output_path} | elapsed={_ref_elapsed:.0f}ms")
+                logger.info(
+                    f"[REFIMG] output复制 | file={fname} | src={output_path} | elapsed={_ref_elapsed:.0f}ms"  # noqa: E501
+                )  # noqa: E501
                 return fname
             except Exception as e:
                 logger.warning(f"[ComfyUI] output 复制失败: {e}")
@@ -183,9 +183,7 @@ class ComfyUIFileHandler:
                 dl_url += f"&subfolder={subfolder}"
             session = self._get_http_session()
             if session:
-                async with session.get(
-                    dl_url, timeout=aiohttp.ClientTimeout(total=30)
-                ) as resp:
+                async with session.get(dl_url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
                     if resp.status == 200:
                         data = await resp.read()
                         with open(input_path, "wb") as f:
@@ -244,8 +242,7 @@ class ComfyUIFileHandler:
                             if os.path.isfile(exact):
                                 shutil.copy2(exact, input_path)
                                 logger.info(
-                                    f"[ComfyUI] 从项目目录精确匹配: {fname}"
-                                    f" ← {stage}/images/"
+                                    f"[ComfyUI] 从项目目录精确匹配: {fname}" f" ← {stage}/images/"
                                 )
                                 return fname
                             # 模糊匹配
@@ -259,9 +256,7 @@ class ComfyUIFileHandler:
                                             f" ← {stage}/images/{f}"
                                         )
                                         return fname
-                    logger.warning(
-                        f"[ComfyUI] 项目目录也找不到: {fname} (project={project_id})"
-                    )
+                    logger.warning(f"[ComfyUI] 项目目录也找不到: {fname} (project={project_id})")
             except Exception as e:
                 logger.warning(f"[ComfyUI] 项目目录搜索失败: {e}")
 
@@ -283,9 +278,7 @@ class ComfyUIFileHandler:
                     try:
                         os.makedirs(input_dir, exist_ok=True)
                         shutil.copy2(_cand, input_path)
-                        logger.info(
-                            f"[ComfyUI] 从持久化目录复制 | {fname} ← {_cand}"
-                        )
+                        logger.info(f"[ComfyUI] 从持久化目录复制 | {fname} ← {_cand}")
                         return fname
                     except Exception as e:
                         logger.warning(f"[ComfyUI] 持久化目录复制失败: {e}")
@@ -353,9 +346,7 @@ class ComfyUIFileHandler:
             max_w = max(s[0] for s in valid_sizes)
             max_h = max(s[1] for s in valid_sizes)
 
-            logger.info(
-                f"[ComfyUI] 参考图尺寸不一致，标准化到 {max_w}×{max_h}"
-            )
+            logger.info(f"[ComfyUI] 参考图尺寸不一致，标准化到 {max_w}×{max_h}")
 
             # 标准化每张图
             result = []

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import io
 import json
 import os
 import re
@@ -42,16 +41,23 @@ QC_HOST = "127.0.0.1"
 # 本地多模态模型自动探测：优先 Qwen3-VL-8B（Q4_K_M，已下），回退 Qwen2.5-VL-7B
 _MODEL_CANDIDATES = [
     # (主模型路径, mmproj路径, 展示名)
-    (r"D:\models\qwen3-vl-8b\Qwen3VL-8B-Instruct-Q4_K_M.gguf",
-     r"D:\models\qwen3-vl-8b\mmproj-Qwen3VL-8B-Instruct-F16.gguf",
-     "Qwen3-VL-8B-Instruct-Q4_K_M (local llama.cpp)"),
-    (r"D:\models\qwen3-vl-8b\Qwen3VL-8B-Instruct-Q8_0.gguf",
-     r"D:\models\qwen3-vl-8b\mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
-     "Qwen3-VL-8B-Instruct-Q8_0 (local llama.cpp)"),
-    (r"D:\models\qwen2.5-vl\Qwen2.5-VL-7B-Instruct-Q8_0.gguf",
-     r"D:\models\qwen2.5-vl\mmproj-Qwen2.5-VL-7B-Instruct-Q8_0.gguf",
-     "Qwen2.5-VL-7B-Instruct-Q8_0 (local llama.cpp)"),
+    (
+        r"D:\models\qwen3-vl-8b\Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+        r"D:\models\qwen3-vl-8b\mmproj-Qwen3VL-8B-Instruct-F16.gguf",
+        "Qwen3-VL-8B-Instruct-Q4_K_M (local llama.cpp)",
+    ),
+    (
+        r"D:\models\qwen3-vl-8b\Qwen3VL-8B-Instruct-Q8_0.gguf",
+        r"D:\models\qwen3-vl-8b\mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
+        "Qwen3-VL-8B-Instruct-Q8_0 (local llama.cpp)",
+    ),
+    (
+        r"D:\models\qwen2.5-vl\Qwen2.5-VL-7B-Instruct-Q8_0.gguf",
+        r"D:\models\qwen2.5-vl\mmproj-Qwen2.5-VL-7B-Instruct-Q8_0.gguf",
+        "Qwen2.5-VL-7B-Instruct-Q8_0 (local llama.cpp)",
+    ),
 ]
+
 
 def _resolve_model() -> tuple[str, str, str]:
     """返回 (主模型路径, mmproj路径, 展示名)，优先已下载的本地模型。"""
@@ -61,20 +67,21 @@ def _resolve_model() -> tuple[str, str, str]:
     # 都没下则默认指向 8B Q4_KM（报错信息更明确）
     return _MODEL_CANDIDATES[0][0], _MODEL_CANDIDATES[0][1], _MODEL_CANDIDATES[0][2]
 
+
 MAIN_MODEL, MMPROJ, MODEL_DISPLAY = _resolve_model()
 
 # 100 分制权重（画质/配音/构图客观走 cv2+ffmpeg 客观质检，语义维度走 AI 语义打分；
 # 版权不占权重，作风险提示+一票否决）
 # 维度总数 8：quality/consistency/lip_sync/composition/composition_cv/rhythm/voice/compliance
 WEIGHTS: Dict[str, int] = {
-    "quality": 18,        # 画质清晰度（cv2 客观：黑屏/模糊/分辨率/时长）
-    "consistency": 16,    # 人物一致性（跨镜头，语义）
-    "lip_sync": 12,       # 口型同步（语义）
-    "composition": 14,    # 构图与美学（语义）
+    "quality": 18,  # 画质清晰度（cv2 客观：黑屏/模糊/分辨率/时长）
+    "consistency": 16,  # 人物一致性（跨镜头，语义）
+    "lip_sync": 12,  # 口型同步（语义）
+    "composition": 14,  # 构图与美学（语义）
     "composition_cv": 8,  # 构图客观分（cv2：三分法对齐/边缘清晰度/主体亮度，客观不依赖模型）
-    "rhythm": 10,         # 节奏与完播（语义）
-    "voice": 12,          # 配音质量（ffmpeg 客观：响度/静音占比/采样率/削波；不依赖模型）
-    "compliance": 10,     # 平台合规（低俗/政治/医疗/标题党，语义+本地关键词）
+    "rhythm": 10,  # 节奏与完播（语义）
+    "voice": 12,  # 配音质量（ffmpeg 客观：响度/静音占比/采样率/削波；不依赖模型）
+    "compliance": 10,  # 平台合规（低俗/政治/医疗/标题党，语义+本地关键词）
 }
 
 # 平台规则：高风险语义关键词分级（中文语境，兜底用；AI 语义理解才是主）。
@@ -84,15 +91,36 @@ WEIGHTS: Dict[str, int] = {
 #   soft   —— 轻度风险，仅提示，不扣分不拦截
 COMPLIANCE_RULES: Dict[str, str] = {
     # hard
-    "政治": "hard", "领导人": "hard", "色情": "hard", "低俗": "hard",
-    "暴力": "hard", "血腥": "hard", "赌博": "hard", "毒品": "hard",
+    "政治": "hard",
+    "领导人": "hard",
+    "色情": "hard",
+    "低俗": "hard",
+    "暴力": "hard",
+    "血腥": "hard",
+    "赌博": "hard",
+    "毒品": "hard",
     # medium
-    "医疗": "medium", "功效": "medium", "治愈": "medium", "减肥": "medium",
-    "丰胸": "medium", "贷款": "medium", "投资": "medium", "保本": "medium",
-    "封建迷信": "medium", "算命": "medium", "风水": "medium",
-    "二维码": "medium", "微信号": "medium", "加微信": "medium", "私聊": "medium",
-    "私信": "medium", "加私信": "medium", "诱导": "medium", "关注": "medium",
-    "加好友": "medium", "联系方式": "medium",
+    "医疗": "medium",
+    "功效": "medium",
+    "治愈": "medium",
+    "减肥": "medium",
+    "丰胸": "medium",
+    "贷款": "medium",
+    "投资": "medium",
+    "保本": "medium",
+    "封建迷信": "medium",
+    "算命": "medium",
+    "风水": "medium",
+    "二维码": "medium",
+    "微信号": "medium",
+    "加微信": "medium",
+    "私聊": "medium",
+    "私信": "medium",
+    "加私信": "medium",
+    "诱导": "medium",
+    "关注": "medium",
+    "加好友": "medium",
+    "联系方式": "medium",
     # soft（仅提示）
     "标题党": "soft",
 }
@@ -102,9 +130,22 @@ COMPLIANCE_RULES: Dict[str, str] = {
 # "王者荣耀"/"原神"等游戏名非必然侵权）已移除，避免对正常内容误杀。
 # 匹配用【双向子串】——品牌词是命中短语子串，或短语是品牌词子串。
 COPYRIGHT_RISK_BRANDS = [
-    "迪士尼", "漫威", "皮克斯", "宝可梦", "Pokémon", "米老鼠", "Hello Kitty",
-    "哆啦A梦", "名侦探柯南", "麦当劳", "肯德基", "Nike", "Adidas",
-    "喜羊羊", "熊出没", "小猪佩奇",
+    "迪士尼",
+    "漫威",
+    "皮克斯",
+    "宝可梦",
+    "Pokémon",
+    "米老鼠",
+    "Hello Kitty",
+    "哆啦A梦",
+    "名侦探柯南",
+    "麦当劳",
+    "肯德基",
+    "Nike",
+    "Adidas",
+    "喜羊羊",
+    "熊出没",
+    "小猪佩奇",
 ]
 
 # 合规扣分：命中 medium 时合规维度额外扣的分（在模型合规分基础上叠加惩罚）
@@ -131,6 +172,7 @@ SYSTEM_PROMPT = (
 # ----------------------------------------------------------------------------
 # 数据结构
 # ----------------------------------------------------------------------------
+
 
 @dataclass
 class QcResult:
@@ -176,6 +218,7 @@ class QcResult:
 # 1. cv2 客观质检（不依赖模型）
 # ----------------------------------------------------------------------------
 
+
 def _probe_video(path: str) -> Dict[str, Any]:
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
@@ -215,10 +258,23 @@ def _probe_video(path: str) -> Dict[str, Any]:
     bitrate = 0
     try:
         import subprocess
+
         out = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "v:0",
-             "-show_entries", "stream=bit_rate", "-of", "json", path],
-            capture_output=True, text=True, timeout=20,
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=bit_rate",
+                "-of",
+                "json",
+                path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
         )
         _info = json.loads(out.stdout or "{}")
         _streams = _info.get("streams") or []
@@ -259,12 +315,25 @@ def _audio_probe(path: str) -> Dict[str, Any]:
     返回 {has_audio, voice(0-100 客观配音分), audio_metrics{...}}。不依赖任何模型。
     """
     import subprocess
+
     try:
         # 1) 探测音轨（含原始采样率与码率）
         probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "a:0",
-             "-show_entries", "stream=codec_type,sample_rate,channels,bit_rate", "-of", "json", path],
-            capture_output=True, text=True, timeout=30,
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=codec_type,sample_rate,channels,bit_rate",
+                "-of",
+                "json",
+                path,
+            ],  # noqa: E501
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         info = json.loads(probe.stdout or "{}")
         streams = info.get("streams", [])
@@ -286,13 +355,30 @@ def _audio_probe(path: str) -> Dict[str, Any]:
     # 2) 抽单声道 16bit PCM 算客观指标
     import tempfile
     import struct
+
     try:
         with tempfile.NamedTemporaryFile(suffix=".pcm", delete=False) as tf:
             pcm_path = tf.name
         subprocess.run(
-            ["ffmpeg", "-y", "-v", "error", "-i", path, "-vn",
-             "-ac", "1", "-ar", "16000", "-f", "s16le", pcm_path],
-            capture_output=True, text=True, timeout=60,
+            [
+                "ffmpeg",
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                path,
+                "-vn",
+                "-ac",
+                "1",
+                "-ar",
+                "16000",
+                "-f",
+                "s16le",
+                pcm_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
         with open(pcm_path, "rb") as f:
             raw = f.read()
@@ -363,6 +449,7 @@ def _composition_cv_probe(path: str) -> Dict[str, Any]:
     返回 {composition_cv(0-100), compo_metrics{...}}。
     """
     import numpy as np
+
     cap = cv2.VideoCapture(path)
     if not cap.isOpened():
         return {"composition_cv": 0, "compo_metrics": {"note": "无法解码"}}
@@ -385,7 +472,7 @@ def _composition_cv_probe(path: str) -> Dict[str, Any]:
             # 用梯度幅值找显著区域中心点
             gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
             gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
-            mag = (gx ** 2 + gy ** 2) ** 0.5
+            mag = (gx**2 + gy**2) ** 0.5
             # 显著点质心
             ys, xs = np.where(mag > np.percentile(mag, 85))
             if len(xs) > 0:
@@ -489,9 +576,21 @@ def _start_server() -> bool:
         return True  # 已在运行
 
     _SERVER_PROC = subprocess.Popen(
-        [LLAMA_SERVER, "-m", MAIN_MODEL, "--mmproj", MMPROJ,
-         "--port", str(QC_PORT), "-ngl", "99", "--host", QC_HOST],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        [
+            LLAMA_SERVER,
+            "-m",
+            MAIN_MODEL,
+            "--mmproj",
+            MMPROJ,
+            "--port",
+            str(QC_PORT),
+            "-ngl",
+            "99",
+            "--host",
+            QC_HOST,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     # 等就绪
     for _ in range(60):
@@ -522,6 +621,7 @@ def _stop_server() -> None:
 # ----------------------------------------------------------------------------
 # 3. Qwen2.5-VL 语义打分
 # ----------------------------------------------------------------------------
+
 
 def _extract_frames(video_path: str, max_frames: int = 6, target_width: int = 768) -> List[str]:
     """从视频均匀抽帧，返回 base64 JPEG 列表（llama.cpp 不支持 video_url，需转多图）。"""
@@ -556,16 +656,17 @@ def _build_messages(video_path: str, caption: str) -> List[Dict[str, Any]]:
     frames = _extract_frames(video_path)
     if frames:
         for b64 in frames:
-            content.append({
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
-            })
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
+                }
+            )
     txt = "请审核这段视频（以上为关键帧序列）。"
     if caption:
         txt += f"\n视频文案/字幕：{caption}"
     content.append({"type": "text", "text": txt})
-    return [{"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": content}]
+    return [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": content}]
 
 
 def _call_qwen(messages: List[Dict[str, Any]], timeout: int = 180) -> Optional[Dict[str, Any]]:
@@ -589,7 +690,9 @@ def _call_qwen(messages: List[Dict[str, Any]], timeout: int = 180) -> Optional[D
     return None
 
 
-async def _call_qwen_async(messages: List[Dict[str, Any]], timeout: int = 180) -> Optional[Dict[str, Any]]:
+async def _call_qwen_async(
+    messages: List[Dict[str, Any]], timeout: int = 180
+) -> Optional[Dict[str, Any]]:  # noqa: E501
     """异步版本：模型推理（常达 1-3 分钟）期间释放事件循环，避免占用 to_thread 线程池。"""
     url = f"http://{QC_HOST}:{QC_PORT}/v1/chat/completions"
     payload = {
@@ -653,8 +756,9 @@ def _server_healthy() -> bool:
     return False
 
 
-def run_semantic_qc(video_path: str, caption: str = "",
-                    manage_server: bool = False) -> Dict[str, Any]:
+def run_semantic_qc(
+    video_path: str, caption: str = "", manage_server: bool = False
+) -> Dict[str, Any]:
     """调用本地 llama-server 做语义质检，返回原始语义评分 dict。
 
     manage_server=False（默认）：不托管 server，直接调用【调用方已起的常驻】llama-server
@@ -685,8 +789,9 @@ def run_semantic_qc(video_path: str, caption: str = "",
             _stop_server()
 
 
-async def run_semantic_qc_async(video_path: str, caption: str = "",
-                                 manage_server: bool = False) -> Dict[str, Any]:
+async def run_semantic_qc_async(
+    video_path: str, caption: str = "", manage_server: bool = False
+) -> Dict[str, Any]:
     """异步语义质检：抽帧（CPU 密集）丢线程池，模型推理（长 I/O）走异步，
     全程不长时间占用 to_thread 线程池，支持多视频并发 QC。"""
     if not manage_server:
@@ -726,8 +831,9 @@ _SEM_MAP = {
 }
 
 
-def aggregate(technical: Dict[str, Any], semantic: Dict[str, Any],
-              threshold: float = 60.0) -> QcResult:
+def aggregate(
+    technical: Dict[str, Any], semantic: Dict[str, Any], threshold: float = 60.0
+) -> QcResult:
     res = QcResult()
     res.technical = technical
 
@@ -767,7 +873,9 @@ def aggregate(technical: Dict[str, Any], semantic: Dict[str, Any],
             # 无真实口型依据 → 不采信模型的乐观分，降为保守 60 并提示
             if res.dimensions["lip_sync"] >= 75:
                 res.dimensions["lip_sync"] = 60
-                res.notes.append("lip_sync 无真实口型依据（图生视频/音频异常），已从模型分降为保守分 60")
+                res.notes.append(
+                    "lip_sync 无真实口型依据（图生视频/音频异常），已从模型分降为保守分 60"
+                )
     # 语义总分乐观校准：若模型给的分普遍≥80 而客观维度明显低于此（如画质差），
     # 说明模型宽松，总分将自动被低客观维度拉低（无需额外惩罚，靠权重体现）。
 
@@ -829,8 +937,14 @@ def aggregate(technical: Dict[str, Any], semantic: Dict[str, Any],
 # 对外主入口
 # ----------------------------------------------------------------------------
 
-def run_qc(video_path: str, caption: str = "", threshold: float = 60.0,
-           use_semantic: bool = True, manage_server: bool = False) -> QcResult:
+
+def run_qc(
+    video_path: str,
+    caption: str = "",
+    threshold: float = 60.0,
+    use_semantic: bool = True,
+    manage_server: bool = False,
+) -> QcResult:
     """完整质检：技术 + 语义（按需）。返回 QcResult。
 
     manage_server=False（默认）：语义审核调用【调用方已起的常驻】llama-server，
@@ -851,12 +965,18 @@ def run_qc(video_path: str, caption: str = "", threshold: float = 60.0,
             semantic.setdefault("compliance_hits", []).extend(hits)
     if not semantic:
         technical.setdefault("issues", []).append(
-            "语义质检未返回有效结果（常驻 llama-server 不可达或未启用 useSemantic），仅画质分有效")
+            "语义质检未返回有效结果（常驻 llama-server 不可达或未启用 useSemantic），仅画质分有效"
+        )
     return aggregate(technical, semantic, threshold)
 
 
-async def run_qc_async(video_path: str, caption: str = "", threshold: float = 60.0,
-                       use_semantic: bool = True, manage_server: bool = False) -> QcResult:
+async def run_qc_async(
+    video_path: str,
+    caption: str = "",
+    threshold: float = 60.0,
+    use_semantic: bool = True,
+    manage_server: bool = False,
+) -> QcResult:
     """真正的异步质检流程（供 stage 调用）：
     - 技术质检（cv2，CPU 密集）offload 线程池，不阻塞事件循环
     - 语义质检：抽帧 offload 线程池 + 模型推理走异步 httpx（长 I/O 释放事件循环）
@@ -875,5 +995,6 @@ async def run_qc_async(video_path: str, caption: str = "", threshold: float = 60
             semantic.setdefault("compliance_hits", []).extend(hits)
     if not semantic:
         technical.setdefault("issues", []).append(
-            "语义质检未返回有效结果（常驻 llama-server 不可达或未启用 useSemantic），仅画质分有效")
+            "语义质检未返回有效结果（常驻 llama-server 不可达或未启用 useSemantic），仅画质分有效"
+        )
     return aggregate(technical, semantic, threshold)

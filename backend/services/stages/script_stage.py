@@ -100,8 +100,7 @@ class ScriptStage(StagePlugin):
         video_type = params.get("video_type", "full_ai_short")
         if video_type not in _VIDEO_TYPE_TEMPLATES:
             return self._error_result(
-                f"不支持的 video_type: {video_type}，"
-                f"可选: {list(_VIDEO_TYPE_TEMPLATES.keys())}"
+                f"不支持的 video_type: {video_type}，" f"可选: {list(_VIDEO_TYPE_TEMPLATES.keys())}"
             )
         template = _VIDEO_TYPE_TEMPLATES[video_type]
 
@@ -234,8 +233,7 @@ class ScriptStage(StagePlugin):
                 "usage": (result.metadata or {}).get("usage", {}),
                 "acts_count": len(script_data.get("acts", [])),
                 "tts_texts_count": sum(
-                    len(act.get("tts_texts", []))
-                    for act in script_data.get("acts", [])
+                    len(act.get("tts_texts", [])) for act in script_data.get("acts", [])
                 ),
             },
             content_type="",
@@ -287,12 +285,8 @@ class ScriptStage(StagePlugin):
             f"4. 幕数：{acts} 幕\n"
             f"5. 角色：{chars_str}\n"
             f"6. 目标用户：{audience_str}\n"
-            f"7. 情感基调：{template['tone']}"
-            + (f"，{tone_extra}" if tone_extra else "")
-            + "\n"
-            f"8. 结尾钩子方式：{hook_desc}"
-            + style_block
-            + "\n"
+            f"7. 情感基调：{template['tone']}" + (f"，{tone_extra}" if tone_extra else "") + "\n"
+            f"8. 结尾钩子方式：{hook_desc}" + style_block + "\n"
             "输出要求：返回严格的 JSON 对象，结构如下：\n"
             "{\n"
             '  "title": "视频标题（吸引眼球，含数字/疑问/反差）",\n'
@@ -300,22 +294,22 @@ class ScriptStage(StagePlugin):
             '  "hook": "结尾钩子文案",\n'
             '  "characters": [\n'
             '    {"name": "角色名", "desc": "外貌/性格/服饰描述（用于后续AI生图）", "role": "主角/配角/旁白"}\n'
-            '  ],\n'
+            "  ],\n"
             '  "covers": [\n'
-            '    {"title": "封面大字", "subtitle": "副标题", "layout": "top_title/bottom_title/split_compare"}\n'
-            '  ],\n'
+            '    {"title": "封面大字", "subtitle": "副标题", "layout": "top_title/bottom_title/split_compare"}\n'  # noqa: E501
+            "  ],\n"
             '  "acts": [\n'
-            '    {\n'
+            "    {\n"
             '      "act": 1,\n'
             '      "scene": "场景描述（用于AI场景生图）",\n'
             '      "narration": "旁白/字幕文本",\n'
             '      "dialogues": [\n'
             '        {"character": "角色名", "line": "台词"}\n'
-            '      ],\n'
+            "      ],\n"
             '      "tts_texts": ["本幕配音文本1", "本幕配音文本2"],\n'
             '      "duration_seconds": 10\n'
-            '    }\n'
-            '  ]\n'
+            "    }\n"
+            "  ]\n"
             "}\n\n"
             "约束：\n"
             "- 字幕简洁有力，每幕字幕≤30字\n"
@@ -372,7 +366,7 @@ class ScriptStage(StagePlugin):
             first = text.find("{")
             last = text.rfind("}")
             if first >= 0 and last > first:
-                data = json.loads(text[first:last + 1])
+                data = json.loads(text[first : last + 1])
                 if isinstance(data, dict):
                     return data
         except Exception:
@@ -382,6 +376,7 @@ class ScriptStage(StagePlugin):
     async def _save_script_json(self, script_data: Dict[str, Any]) -> tuple:
         """持久化剧本 JSON 文件，返回 (url, local_path)"""
         from services.providers.provider_utils import output_path_for, output_url_for
+
         filename = f"script_{uuid.uuid4().hex[:8]}_{int(time.time())}.json"
         path = output_path_for(filename, "output")
         with open(path, "w", encoding="utf-8") as f:

@@ -7,6 +7,7 @@ ComfyUI 工作流构建器 — 角色类工作流
 from services.workflow_helpers import (
     _load_workflow_template,
     _resolve_comfyui_image,
+    _resolve_template_asset,
     _set_filename_prefix,
     _set_ksampler_params,
     find_first_node_by_class_type,
@@ -14,19 +15,13 @@ from services.workflow_helpers import (
     find_node_by_class_type,
 )
 
-import copy
-import json
 import logging
-import os
-import re
 import time
 import random
-import shutil
-from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
-from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
+
 
 def build_costume_change_workflow(
     reference_images: Dict[str, str],
@@ -61,33 +56,34 @@ def build_costume_change_workflow(
     scene_file = _resolve_comfyui_image(reference_images.get("scene", ""))
     prop_file = _resolve_comfyui_image(reference_images.get("prop", ""))
 
-    load_nodes = find_node_by_class_type(wf, 'LoadImage')
+    load_nodes = find_node_by_class_type(wf, "LoadImage")
     # 按节点 ID 排序，确保顺序稳定（节点 10=角色, 11=场景, 12=道具）
     load_nodes.sort(key=lambda x: x[0])
     if len(load_nodes) >= 1 and char_file:
-        wf[load_nodes[0][0]]['inputs']['image'] = char_file
+        wf[load_nodes[0][0]]["inputs"]["image"] = char_file
     if len(load_nodes) >= 2 and scene_file:
-        wf[load_nodes[1][0]]['inputs']['image'] = scene_file
+        wf[load_nodes[1][0]]["inputs"]["image"] = scene_file
     if len(load_nodes) >= 3 and prop_file:
-        wf[load_nodes[2][0]]['inputs']['image'] = prop_file
+        wf[load_nodes[2][0]]["inputs"]["image"] = prop_file
     elif len(load_nodes) >= 3 and scene_file:
-        wf[load_nodes[2][0]]['inputs']['image'] = scene_file
+        wf[load_nodes[2][0]]["inputs"]["image"] = scene_file
 
     # 注入提示词 — 通过 class_type 查找 QwenImageEditPlusAdvance 节点
-    nid, ndata = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance')
-    if nid and ndata and 'prompt' in ndata.get('inputs', {}):
-        wf[nid]['inputs']['prompt'] = prompt_text
+    nid, ndata = find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
+    if nid and ndata and "prompt" in ndata.get("inputs", {}):
+        wf[nid]["inputs"]["prompt"] = prompt_text
 
     # 注入种子和参数
-    wf = _set_ksampler_params(wf, denoise=1.0, cfg_scale=1.0, seed=actual_seed,
-                               steps=4, scheduler="beta57")
+    wf = _set_ksampler_params(
+        wf, denoise=1.0, cfg_scale=1.0, seed=actual_seed, steps=4, scheduler="beta57"
+    )
 
     # 尺寸覆写（EmptyLatentImage 节点）
     if width and height:
-        nid, ndata = find_first_node_by_class_type(wf, 'EmptyLatentImage')
+        nid, ndata = find_first_node_by_class_type(wf, "EmptyLatentImage")
         if nid and ndata:
-            wf[nid]['inputs']['width'] = width
-            wf[nid]['inputs']['height'] = height
+            wf[nid]["inputs"]["width"] = width
+            wf[nid]["inputs"]["height"] = height
 
     wf = _set_filename_prefix(wf, f"{filename_prefix}_{actual_seed}")
 
@@ -99,8 +95,12 @@ def build_costume_change_workflow(
         "cfg": 1.0,
     }
 
-    logger.info(f"[WorkflowBuilder][分镜换装] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}")
+    logger.info(
+        f"[WorkflowBuilder][分镜换装] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)}"
+    )
     return [wf], ["分镜换装"], metadata
+
+
 def build_multi_frame_workflow(
     reference_image: str,
     prompt_text: str,
@@ -142,35 +142,35 @@ def build_multi_frame_workflow(
 
     # 注入参考图（LoadImage 节点）
     ref_file = _resolve_comfyui_image(reference_image)
-    nid, ndata = find_first_node_by_class_type(wf, 'LoadImage')
+    nid, ndata = find_first_node_by_class_type(wf, "LoadImage")
     if nid and ndata and ref_file:
-        wf[nid]['inputs']['image'] = ref_file
+        wf[nid]["inputs"]["image"] = ref_file
 
     # 注入提示词（TextEncodeQwenImageEditPlus 正向编码）
-    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, 'QwenImageEditPlusAdvance')
+    nid_enc, enc_data = find_first_node_by_class_type_contains(wf, "QwenImageEditPlusAdvance")
     if nid_enc and enc_data:
         if per_frame_prompts and len(per_frame_prompts) > 0:
-            wf[nid_enc]['inputs']['prompt'] = "\n".join(per_frame_prompts)
+            wf[nid_enc]["inputs"]["prompt"] = "\n".join(per_frame_prompts)
             logger.info(f"[WorkflowBuilder][多帧分镜] 注入 {len(per_frame_prompts)} 帧提示词")
         elif prompt_text:
-            wf[nid_enc]['inputs']['prompt'] = prompt_text
+            wf[nid_enc]["inputs"]["prompt"] = prompt_text
 
     # 注入种子（KSampler 节点）
-    nid_ks, ks_data = find_first_node_by_class_type(wf, 'KSampler')
+    nid_ks, ks_data = find_first_node_by_class_type(wf, "KSampler")
     if nid_ks and ks_data:
-        wf[nid_ks]['inputs']['seed'] = actual_seed
+        wf[nid_ks]["inputs"]["seed"] = actual_seed
 
     # 尺寸覆写（EmptyLatentImage 节点）
     if width and height:
-        nid, ndata = find_first_node_by_class_type(wf, 'EmptyLatentImage')
+        nid, ndata = find_first_node_by_class_type(wf, "EmptyLatentImage")
         if nid and ndata:
-            wf[nid]['inputs']['width'] = width
-            wf[nid]['inputs']['height'] = height
+            wf[nid]["inputs"]["width"] = width
+            wf[nid]["inputs"]["height"] = height
 
     # 设置输出前缀（SaveImage 节点）
-    nid_save, save_data = find_first_node_by_class_type(wf, 'SaveImage')
+    nid_save, save_data = find_first_node_by_class_type(wf, "SaveImage")
     if nid_save and save_data:
-        wf[nid_save]['inputs']['filename_prefix'] = f"{filename_prefix}_{actual_seed}"
+        wf[nid_save]["inputs"]["filename_prefix"] = f"{filename_prefix}_{actual_seed}"
 
     frame_count = len(per_frame_prompts) if per_frame_prompts else 1
     metadata = {
@@ -180,8 +180,12 @@ def build_multi_frame_workflow(
         "next_scene_lora": True,
     }
 
-    logger.info(f"[WorkflowBuilder][多帧分镜] 构建完成 | elapsed={time.time()-_t0:.3f}s | frames={frame_count} | nodes={len(wf)}")
+    logger.info(
+        f"[WorkflowBuilder][多帧分镜] 构建完成 | elapsed={time.time()-_t0:.3f}s | frames={frame_count} | nodes={len(wf)}"  # noqa: E501
+    )  # noqa: E501
     return [wf], ["多帧分镜"], metadata
+
+
 def build_3view_workflow(
     reference_image: str,
     seed: Optional[int] = None,
@@ -208,25 +212,27 @@ def build_3view_workflow(
 
     # 注入参考图（LoadImage 节点）
     ref_file = _resolve_comfyui_image(reference_image)
-    nid_load, _ = find_first_node_by_class_type(wf, 'LoadImage')
+    nid_load, _ = find_first_node_by_class_type(wf, "LoadImage")
     if nid_load and ref_file:
-        wf[nid_load]['inputs']['image'] = ref_file
+        wf[nid_load]["inputs"]["image"] = ref_file
         logger.info(f"[WorkflowBuilder][3视图] LoadImage节点{nid_load} 注入图片: {ref_file}")
     elif not ref_file:
         logger.warning(f"[WorkflowBuilder][3视图] 参考图路径为空: {reference_image}")
 
     # 注入 seed 到所有 KSampler 节点（3个视角共用同一 seed）
-    ksampler_nodes = find_node_by_class_type(wf, 'KSampler')
+    ksampler_nodes = find_node_by_class_type(wf, "KSampler")
     for nid, ndata in ksampler_nodes:
-        old_seed = ndata['inputs'].get('seed', '?')
-        ndata['inputs']['seed'] = actual_seed
+        old_seed = ndata["inputs"].get("seed", "?")
+        ndata["inputs"]["seed"] = actual_seed
         logger.info(f"[WorkflowBuilder][3视图] KSampler({nid}) seed {old_seed}→{actual_seed}")
 
     # 设置所有 SaveImage 节点的 filename_prefix
-    save_nodes = find_node_by_class_type(wf, 'SaveImage')
+    save_nodes = find_node_by_class_type(wf, "SaveImage")
     for nid, ndata in save_nodes:
-        ndata['inputs']['filename_prefix'] = f"{filename_prefix}_{actual_seed}"
-    logger.info(f"[WorkflowBuilder][3视图] 设置{len(save_nodes)}个SaveImage节点 prefix={filename_prefix}_{actual_seed}")
+        ndata["inputs"]["filename_prefix"] = f"{filename_prefix}_{actual_seed}"
+    logger.info(
+        f"[WorkflowBuilder][3视图] 设置{len(save_nodes)}个SaveImage节点 prefix={filename_prefix}_{actual_seed}"  # noqa: E501
+    )  # noqa: E501
 
     metadata = {
         "template": "3view",
@@ -235,8 +241,12 @@ def build_3view_workflow(
         "view_count": 3,
     }
 
-    logger.info(f"[WorkflowBuilder][3视图] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)} | ksamplers={len(ksampler_nodes)}")
+    logger.info(
+        f"[WorkflowBuilder][3视图] 构建完成 | elapsed={time.time()-_t0:.3f}s | nodes={len(wf)} | ksamplers={len(ksampler_nodes)}"  # noqa: E501
+    )  # noqa: E501
     return [wf], ["三视图生成"], metadata
+
+
 def build_multi_person_workflow(
     char_a_image: str,
     char_b_image: str,
@@ -334,21 +344,23 @@ def build_multi_person_workflow(
             wf.pop(cn_id, None)
         if "70" in wf:
             wf["70"]["inputs"]["positive"] = ["60", 0]
-        logger.info(f"[WorkflowBuilder][多人分镜] ControlNet已禁用（缺少深度/姿态图或use_controlnet=False）")
+        logger.info(
+            "[WorkflowBuilder][多人分镜] ControlNet已禁用（缺少深度/姿态图或use_controlnet=False）"
+        )
     elif skip_depth_cn:
         # 仅移除深度ControlNet，姿态ControlNet直连TextEncode
         for cn_id in ["50", "52"]:
             wf.pop(cn_id, None)
         if "53" in wf:
             wf["53"]["inputs"]["conditioning"] = ["60", 0]
-        logger.info(f"[WorkflowBuilder][多人分镜] 深度ControlNet已禁用（缺少深度图）")
+        logger.info("[WorkflowBuilder][多人分镜] 深度ControlNet已禁用（缺少深度图）")
     elif skip_pose_cn:
         # 仅移除姿态ControlNet，KSampler positive 连深度ControlNet输出
         for cn_id in ["51", "53"]:
             wf.pop(cn_id, None)
         if "70" in wf:
             wf["70"]["inputs"]["positive"] = ["52", 0]
-        logger.info(f"[WorkflowBuilder][多人分镜] 姿态ControlNet已禁用（缺少姿态图）")
+        logger.info("[WorkflowBuilder][多人分镜] 姿态ControlNet已禁用（缺少姿态图）")
 
     # 设置输出前缀
     wf = _set_filename_prefix(wf, f"{filename_prefix}_{actual_seed}")

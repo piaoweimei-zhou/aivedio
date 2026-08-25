@@ -30,8 +30,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
-import statistics
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -72,6 +70,7 @@ TOPIC_POOL = [
 # steps 构造（复现前端 OneClickVideoPage.tsx buildSteps 规则，模式 B）
 # ----------------------------------------------------------------------------
 
+
 def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dict[str, Any]]:
     """复现前端 buildSteps（OneClickVideoPage.tsx:1093-1227）的同构 steps 序列。
 
@@ -88,67 +87,74 @@ def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dic
 
     # 1) concept —— 角色
     s_concept_char = "s1_concept_character1"
-    steps.append({
-        "step_id": s_concept_char,
-        "stage_id": "concept",
-        "name": "概念图-角色",
-        "provider_id": "comfyui",
-        "params": {
-            "prompt": character_prompt,
-            "negative_prompt": "low quality, blurry, deformed, ugly",
-            "content_type": "character",
-            "width": 768,
-            "height": 1024,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [],
-    })
+    steps.append(
+        {
+            "step_id": s_concept_char,
+            "stage_id": "concept",
+            "name": "概念图-角色",
+            "provider_id": "comfyui",
+            "params": {
+                "prompt": character_prompt,
+                "negative_prompt": "low quality, blurry, deformed, ugly",
+                "content_type": "character",
+                "width": 768,
+                "height": 1024,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [],
+        }
+    )
 
     # 2) concept —— 场景
     s_concept_scene = "s2_concept_scene1"
-    steps.append({
-        "step_id": s_concept_scene,
-        "stage_id": "concept",
-        "name": "概念图-场景",
-        "provider_id": "comfyui",
-        "params": {
-            "prompt": scene_prompt,
-            "negative_prompt": "low quality, blurry, deformed, ugly",
-            "content_type": "scene",
-            "width": 1024,
-            "height": 1024,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [],
-    })
+    steps.append(
+        {
+            "step_id": s_concept_scene,
+            "stage_id": "concept",
+            "name": "概念图-场景",
+            "provider_id": "comfyui",
+            "params": {
+                "prompt": scene_prompt,
+                "negative_prompt": "low quality, blurry, deformed, ugly",
+                "content_type": "scene",
+                "width": 1024,
+                "height": 1024,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [],
+        }
+    )
 
     # 3) angle（角色多视图，条件触发）
     s_angle = "s3_angle_character1"
-    steps.append({
-        "step_id": s_angle,
-        "stage_id": "angle",
-        "name": "三视图-角色",
-        "provider_id": "comfyui",
-        "params": {
-            "prompt": f"Multi-angle views of: {character_prompt}",
-            "seed": 0,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [s_concept_char],
-    })
+    steps.append(
+        {
+            "step_id": s_angle,
+            "stage_id": "angle",
+            "name": "三视图-角色",
+            "provider_id": "comfyui",
+            "params": {
+                "prompt": f"Multi-angle views of: {character_prompt}",
+                "seed": 0,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [s_concept_char],
+        }
+    )
 
     # 4) video（图生视频，模式 B：ref 两张概念图）
     video_deps = [s_concept_char, s_concept_scene, s_angle]
-    reference_image_files: List[str] = []  # 真实环境应由 concept 输出资产注入；此处留空由 backend 解析 input_from_steps
-    seg_count = 4
+    reference_image_files: List[str] = (
+        []
+    )  # 真实环境应由 concept 输出资产注入；此处留空由 backend 解析 input_from_steps
     # ⭐ P2/P3 修复：每镜画面 prompt 融合该镜台词的动作语义 + 剧情连贯（含前情），
     #   让 H3 画面 DiT 与音频 DiT 对齐内容，消除"念了踩落叶、画面却没踩落叶"的声画脱节
     #   ⭐ 每镜时长按台词长度动态估算（P3：消除长台词被压进固定时长导致的语速突快）
     tts_texts = [
-        f"清晨，一只小橘猫打着伞走进森林。",
-        f"它踩着落叶，听着雨滴打在伞面上清脆作响。",
-        f"远处忽然传来一声鹿鸣，它好奇地停下脚步。",
-        f"最后，它把伞递给一只躲雨的小狐狸，转身离去。",
+        "清晨，一只小橘猫打着伞走进森林。",
+        "它踩着落叶，听着雨滴打在伞面上清脆作响。",
+        "远处忽然传来一声鹿鸣，它好奇地停下脚步。",
+        "最后，它把伞递给一只躲雨的小狐狸，转身离去。",
     ]
     segment_prompts = [
         f"{topic}，清晨的森林，小橘猫撑着伞走进林间小路，画面里有落叶和树木",
@@ -160,10 +166,7 @@ def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dic
     _cjk_speed = 4.2  # 每秒约 4.2 个汉字（自然旁白语速）
     _min_seg = 4.0
     _max_seg = 6.5
-    seg_durations = [
-        max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2))
-        for t in tts_texts
-    ]
+    seg_durations = [max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2)) for t in tts_texts]
     video_params: Dict[str, Any] = {
         "prompt": topic,
         "duration": 8,
@@ -186,74 +189,80 @@ def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dic
         "tts_volume": 1.0,
     }
     s_video = "s4_video"
-    steps.append({
-        "step_id": s_video,
-        "stage_id": "video",
-        "name": "视频生成",
-        # 关键：前端 buildSteps 对 video 步骤硬编码 provider_id='minimax_h3'
-        # （与 concept/angle 用 comfyui 不同），H3 提供方负责解析 model→workflow。
-        "provider_id": "minimax_h3",
-        "params": video_params,
-        "input_asset_ids": [],
-        "input_from_steps": video_deps,
-    })
+    steps.append(
+        {
+            "step_id": s_video,
+            "stage_id": "video",
+            "name": "视频生成",
+            # 关键：前端 buildSteps 对 video 步骤硬编码 provider_id='minimax_h3'
+            # （与 concept/angle 用 comfyui 不同），H3 提供方负责解析 model→workflow。
+            "provider_id": "minimax_h3",
+            "params": video_params,
+            "input_asset_ids": [],
+            "input_from_steps": video_deps,
+        }
+    )
 
     # 5) subtitle（字幕，条件触发）
     # ⭐ P1 修复：字幕文本用真实台词（与 video 步骤 tts_texts 一致），
     #   不带显式时间戳 → subtitle_stage._build_timeline 按语速自动估算并压缩到全片时长，
     #   消除"占位文本 + 写死 0~8s 时间轴导致后半段无字幕"的问题
     s_subtitle = "s5_subtitle"
-    steps.append({
-        "step_id": s_subtitle,
-        "stage_id": "subtitle",
-        "name": "字幕叠加",
-        "provider_id": "local",
-        "params": {
-            "subtitle_texts": [
-                {"text": t} for t in tts_texts if t and t.strip()
-            ],
-            "keywords": ["治愈", "日常"],
-            "margin_v": "0.13",
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [s_video],
-    })
+    steps.append(
+        {
+            "step_id": s_subtitle,
+            "stage_id": "subtitle",
+            "name": "字幕叠加",
+            "provider_id": "local",
+            "params": {
+                "subtitle_texts": [{"text": t} for t in tts_texts if t and t.strip()],
+                "keywords": ["治愈", "日常"],
+                "margin_v": "0.13",
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [s_video],
+        }
+    )
 
     # 6) hook_overlay（钩子，条件触发）
     s_hook = "s6_hook"
-    steps.append({
-        "step_id": s_hook,
-        "stage_id": "hook_overlay",
-        "name": "钩子文案叠加",
-        "provider_id": "local",
-        "params": {
-            "hook_text": "最后 3 秒看到结局",
-            "sub_text": "关注我看后续",
-            "duration": 4,
-            "position": "bottom",
-            "margin": None,
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [s_subtitle],
-    })
+    steps.append(
+        {
+            "step_id": s_hook,
+            "stage_id": "hook_overlay",
+            "name": "钩子文案叠加",
+            "provider_id": "local",
+            "params": {
+                "hook_text": "最后 3 秒看到结局",
+                "sub_text": "关注我看后续",
+                "duration": 4,
+                "position": "bottom",
+                "margin": None,
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [s_subtitle],
+        }
+    )
 
     # 7) export（平台导出，条件触发）
     s_export = "s7_export"
-    steps.append({
-        "step_id": s_export,
-        "stage_id": "export",
-        "name": "导出成片 抖音规格 (1080x1920)",
-        "provider_id": "local",
-        "params": {
-            "resolution": "1080x1920",
-            "format": "mp4",
-            "codec": "libx264",
-            "bitrate": "8M",
-            "name": f"成片_抖音_1080x1920_{topic[:8]}",
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [s_hook],
-    })
+    steps.append(
+        {
+            "step_id": s_export,
+            "stage_id": "export",
+            "name": "导出成片 抖音规格 (1080x1920)",
+            "provider_id": "local",
+            "params": {
+                "resolution": "1080x1920",
+                "format": "mp4",
+                "codec": "libx264",
+                "bitrate": "8M",
+                "name": f"成片_抖音_1080x1920_{topic[:8]}",
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [s_hook],
+        }
+    )
 
     return steps
 
@@ -261,6 +270,7 @@ def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dic
 # ----------------------------------------------------------------------------
 # 单次运行驱动
 # ----------------------------------------------------------------------------
+
 
 def classify_error(err_text: Optional[str]) -> str:
     """将 step.error 文本归类，供 Pareto 分析。"""
@@ -308,7 +318,9 @@ async def run_once(
             return run_record
         body = r.json()
         # 后端返回结构: {"success": True, "batch": {"batch_id": ...}}
-        batch_id = (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        batch_id = (
+            (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        )  # noqa: E501
         if not batch_id:
             run_record["error"] = f"create_no_id: {r.text[:300]}"
             run_record["batch_status"] = "create_failed"
@@ -318,7 +330,9 @@ async def run_once(
         # 2) 可选 dry-run 预检
         if not skip_dry_run:
             try:
-                dr = await client.post(f"{host}/api/director/batches/{batch_id}/dry-run", timeout=30)
+                dr = await client.post(
+                    f"{host}/api/director/batches/{batch_id}/dry-run", timeout=30
+                )  # noqa: E501
                 run_record["dry_run_status"] = dr.status_code
             except Exception:
                 run_record["dry_run_status"] = "error"
@@ -341,7 +355,9 @@ async def run_once(
                     continue
                 detail = g.json()
                 last_detail = detail
-                bstatus = (detail.get("status") or detail.get("batch", {}).get("status") or "").lower()
+                bstatus = (
+                    detail.get("status") or detail.get("batch", {}).get("status") or ""
+                ).lower()  # noqa: E501
                 if bstatus in BATCH_TERMINAL:
                     run_record["batch_status"] = bstatus
                     break
@@ -354,20 +370,24 @@ async def run_once(
         # 5) 采集 step 明细
         if last_detail is None:
             try:
-                last_detail = (await client.get(f"{host}/api/director/batches/{batch_id}", timeout=30)).json()
+                last_detail = (
+                    await client.get(f"{host}/api/director/batches/{batch_id}", timeout=30)
+                ).json()  # noqa: E501
             except Exception:
                 last_detail = {}
-        step_list = (last_detail.get("steps") or last_detail.get("batch", {}).get("steps") or [])
+        step_list = last_detail.get("steps") or last_detail.get("batch", {}).get("steps") or []
         for s in step_list:
-            run_record["steps"].append({
-                "step_id": s.get("step_id"),
-                "stage_id": s.get("stage_id"),
-                "status": s.get("status"),
-                "elapsed_ms": s.get("elapsed_ms", 0),
-                "error": s.get("error"),
-                "output_asset_id": s.get("output_asset_id"),
-                "error_class": classify_error(s.get("error")),
-            })
+            run_record["steps"].append(
+                {
+                    "step_id": s.get("step_id"),
+                    "stage_id": s.get("stage_id"),
+                    "status": s.get("status"),
+                    "elapsed_ms": s.get("elapsed_ms", 0),
+                    "error": s.get("error"),
+                    "output_asset_id": s.get("output_asset_id"),
+                    "error_class": classify_error(s.get("error")),
+                }
+            )
     except Exception as e:  # 绝不抛未捕获异常
         run_record["error"] = f"exception: {type(e).__name__}: {str(e)[:300]}"
         run_record["batch_status"] = "exception"
@@ -377,6 +397,7 @@ async def run_once(
 # ----------------------------------------------------------------------------
 # 聚合统计
 # ----------------------------------------------------------------------------
+
 
 def _pct(values: List[float], p: float) -> float:
     if not values:
@@ -444,8 +465,16 @@ def aggregate(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
                 global_err[ec] = global_err.get(ec, 0) + 1
 
     # 最大失效率环节
-    worst = max(per_stage.items(), key=lambda kv: kv[1]["success_rate"]) if per_stage else ("", {"success_rate": 1})
-    worst_stage = min(per_stage.items(), key=lambda kv: kv[1]["success_rate"]) if per_stage else ("", {"success_rate": 1})
+    worst = (
+        max(per_stage.items(), key=lambda kv: kv[1]["success_rate"])
+        if per_stage
+        else ("", {"success_rate": 1})
+    )  # noqa: E501
+    worst_stage = (
+        min(per_stage.items(), key=lambda kv: kv[1]["success_rate"])
+        if per_stage
+        else ("", {"success_rate": 1})
+    )  # noqa: E501
 
     return {
         "run_count": run_count,
@@ -462,7 +491,10 @@ def aggregate(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
 # 从磁盘已有 batch 聚合（不重跑，用于「复用已完成批次」产出基线）
 # ----------------------------------------------------------------------------
 
-def _load_run_from_batch_json(path: Path, include_running: bool = False) -> Optional[Dict[str, Any]]:
+
+def _load_run_from_batch_json(
+    path: Path, include_running: bool = False
+) -> Optional[Dict[str, Any]]:  # noqa: E501
     """读取单个 batch JSON，转换为与 run_once 同构的 run_record。"""
     try:
         d = json.loads(path.read_text(encoding="utf-8"))
@@ -473,9 +505,13 @@ def _load_run_from_batch_json(path: Path, include_running: bool = False) -> Opti
         return None
     steps = d.get("steps", [])
     rec = {
-        "created_at": datetime.fromtimestamp(
-            d.get("created_at") or d.get("updated_at") or 0, tz=timezone.utc
-        ).isoformat() if (d.get("created_at") or d.get("updated_at")) else None,
+        "created_at": (
+            datetime.fromtimestamp(
+                d.get("created_at") or d.get("updated_at") or 0, tz=timezone.utc
+            ).isoformat()
+            if (d.get("created_at") or d.get("updated_at"))
+            else None
+        ),
         "batch_id": d.get("batch_id"),
         "batch_status": bstatus,
         "steps": [],
@@ -483,27 +519,33 @@ def _load_run_from_batch_json(path: Path, include_running: bool = False) -> Opti
         "timeout": False,
     }
     for s in steps:
-        rec["steps"].append({
-            "step_id": s.get("step_id"),
-            "stage_id": s.get("stage_id"),
-            "status": s.get("status"),
-            "elapsed_ms": s.get("elapsed_ms", 0),
-            "error": s.get("error"),
-            "output_asset_id": s.get("output_asset_id"),
-            "error_class": classify_error(s.get("error")),
-        })
+        rec["steps"].append(
+            {
+                "step_id": s.get("step_id"),
+                "stage_id": s.get("stage_id"),
+                "status": s.get("status"),
+                "elapsed_ms": s.get("elapsed_ms", 0),
+                "error": s.get("error"),
+                "output_asset_id": s.get("output_asset_id"),
+                "error_class": classify_error(s.get("error")),
+            }
+        )
     return rec
 
 
 def _norm(s: str) -> str:
     import unicodedata
+
     return unicodedata.normalize("NFC", (s or "").strip())
 
 
-def collect_disk_runs(batch_dir: Path, batch_ids: Optional[List[str]],
-                      name_filter: str = "基线测量",
-                      video_provider: Optional[str] = None,
-                      only_completed: bool = False) -> List[Dict[str, Any]]:
+def collect_disk_runs(
+    batch_dir: Path,
+    batch_ids: Optional[List[str]],
+    name_filter: str = "基线测量",
+    video_provider: Optional[str] = None,
+    only_completed: bool = False,
+) -> List[Dict[str, Any]]:
     """从磁盘扫描 batch 文件，构造 run_record 列表。
 
     - batch_ids 非空：仅加载这些 id（可带/不带 batch_ 前缀与 .json 后缀）
@@ -531,7 +573,9 @@ def collect_disk_runs(batch_dir: Path, batch_ids: Optional[List[str]],
         if name_filter and _norm(d.get("name")) != _norm(name_filter):
             continue
         if video_provider:
-            vids = [s.get("provider_id") for s in d.get("steps", []) if s.get("stage_id") == "video"]
+            vids = [
+                s.get("provider_id") for s in d.get("steps", []) if s.get("stage_id") == "video"
+            ]  # noqa: E501
             if video_provider not in vids:
                 continue
         if only_completed:
@@ -548,19 +592,26 @@ def collect_disk_runs(batch_dir: Path, batch_ids: Optional[List[str]],
 # 主流程
 # ----------------------------------------------------------------------------
 
+
 def print_summary(agg: Dict[str, Any]) -> None:
     print("\n" + "=" * 60)
     print("一键成片基线测量小结")
     print("=" * 60)
     print(f"运行次数: {agg['run_count']}")
-    print(f"全链路成功率: {agg['full_chain_success_rate'] * 100:.1f}% "
-          f"({agg['full_chain_success']}/{agg['run_count']})")
-    print(f"最大失效率环节: {agg['worst_stage']['stage_id']} "
-          f"({agg['worst_stage']['success_rate'] * 100:.1f}%)")
+    print(
+        f"全链路成功率: {agg['full_chain_success_rate'] * 100:.1f}% "
+        f"({agg['full_chain_success']}/{agg['run_count']})"
+    )
+    print(
+        f"最大失效率环节: {agg['worst_stage']['stage_id']} "
+        f"({agg['worst_stage']['success_rate'] * 100:.1f}%)"
+    )
     print("-" * 60)
     print(f"{'环节':<14}{'成功率':>9}{'P50(s)':>9}{'P95(s)':>9}{'失败数':>8}")
     for sid, d in agg["per_stage"].items():
-        print(f"{sid:<14}{d['success_rate']*100:>8.1f}%{d['latency_p50_s']:>9}{d['latency_p95_s']:>9}{d['failed']:>8}")
+        print(
+            f"{sid:<14}{d['success_rate']*100:>8.1f}%{d['latency_p50_s']:>9}{d['latency_p95_s']:>9}{d['failed']:>8}"  # noqa: E501
+        )  # noqa: E501
     print("-" * 60)
     print("全局错误分布:", agg["global_error_distribution"])
     print("=" * 60)
@@ -593,20 +644,23 @@ async def main_async(args: argparse.Namespace) -> None:
             return
     # --- 模式 B：实时驱动 N 次 ---
     else:
-        steps_template = build_oneclick_steps(args.provider, args.topic or TOPIC_POOL[0])
         runs = []
         timeout_per_batch = args.timeout
         async with httpx.AsyncClient() as client:
             for i in range(args.runs):
                 topic = args.topic or TOPIC_POOL[i % len(TOPIC_POOL)]
                 steps = build_oneclick_steps(args.provider, topic)
-                print(f"[run {i+1}/{args.runs}] topic={topic[:20]!r} provider={args.provider} steps={len(steps)}")
+                print(
+                    f"[run {i+1}/{args.runs}] topic={topic[:20]!r} provider={args.provider} steps={len(steps)}"  # noqa: E501
+                )  # noqa: E501
                 rec = await run_once(client, host, steps, timeout_per_batch, args.skip_dry_run)
                 runs.append(rec)
                 n_steps = len(rec["steps"])
                 ok = sum(1 for s in rec["steps"] if s["status"] == "completed")
-                print(f"    -> batch={rec['batch_id']} status={rec['batch_status']} "
-                      f"steps_ok={ok}/{n_steps} timeout={rec['timeout']}")
+                print(
+                    f"    -> batch={rec['batch_id']} status={rec['batch_status']} "
+                    f"steps_ok={ok}/{n_steps} timeout={rec['timeout']}"
+                )
 
     agg = aggregate(runs)
     print_summary(agg)
@@ -617,13 +671,19 @@ async def main_async(args: argparse.Namespace) -> None:
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "host": host,
-            "provider": args.provider if not (args.from_disk or args.batch_id) else (
-                args.disk_video_provider or "mixed"),
+            "provider": (
+                args.provider
+                if not (args.from_disk or args.batch_id)
+                else (args.disk_video_provider or "mixed")
+            ),
             "runs": args.runs if not (args.from_disk or args.batch_id) else len(runs),
             "timeout_per_batch_s": args.timeout,
             "skip_dry_run": args.skip_dry_run,
-            "source": "live" if not (args.from_disk or args.batch_id) else (
-                "disk:explicit_ids" if args.batch_id else "disk:scan"),
+            "source": (
+                "live"
+                if not (args.from_disk or args.batch_id)
+                else ("disk:explicit_ids" if args.batch_id else "disk:scan")
+            ),
             "note": "零重试基线（steps 不传 max_retries），用于校准 Phase 0 重试阈值/指标口径/门禁阈值",
         },
         "aggregate": agg,
@@ -637,24 +697,45 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="一键成片真实成功率基线测量工具")
     p.add_argument("--host", default=DEFAULT_HOST, help=f"后端地址 (默认 {DEFAULT_HOST})")
     p.add_argument("--runs", type=int, default=DEFAULT_RUNS, help=f"运行次数 (默认 {DEFAULT_RUNS})")
-    p.add_argument("--provider", default=DEFAULT_PROVIDER,
-                   help="video 步骤使用供应商 comfyui/volcengine/jimeng/... (默认 comfyui)")
-    p.add_argument("--provider-key", default=None, help="供应商 key（若后端需显式传，留空走默认配置）")
+    p.add_argument(
+        "--provider",
+        default=DEFAULT_PROVIDER,
+        help="video 步骤使用供应商 comfyui/volcengine/jimeng/... (默认 comfyui)",
+    )
+    p.add_argument(
+        "--provider-key", default=None, help="供应商 key（若后端需显式传，留空走默认配置）"
+    )
     p.add_argument("--topic", default=None, help="固定测试主题；留空则用内置主题池轮换")
     p.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="单批硬超时秒 (默认 1200)")
     p.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="报告输出目录")
     p.add_argument("--skip-dry-run", action="store_true", help="跳过 dry-run 预检")
     # 从磁盘聚合（不重跑）
-    p.add_argument("--from-disk", action="store_true",
-                   help="从磁盘已有 batch JSON 聚合（不实时重跑）。配合 --disk-video-provider / --only-completed 过滤")
-    p.add_argument("--batch-id", nargs="*", default=None,
-                   help="显式指定要聚合的 batch id 列表（可带/不带 batch_ 前缀与 .json 后缀）")
-    p.add_argument("--disk-name-filter", default="基线测量",
-                   help="--from-disk 扫描时按 batch.name 过滤 (默认 '基线测量')")
-    p.add_argument("--disk-video-provider", default="minimax_h3",
-                   help="--from-disk 扫描时仅纳入 video 步骤用该 provider 的批次 (默认 minimax_h3)")
-    p.add_argument("--only-completed", action="store_true",
-                   help="仅纳入全 step completed 的批次（排除 failed/running/pending）")
+    p.add_argument(
+        "--from-disk",
+        action="store_true",
+        help="从磁盘已有 batch JSON 聚合（不实时重跑）。配合 --disk-video-provider / --only-completed 过滤",
+    )
+    p.add_argument(
+        "--batch-id",
+        nargs="*",
+        default=None,
+        help="显式指定要聚合的 batch id 列表（可带/不带 batch_ 前缀与 .json 后缀）",
+    )
+    p.add_argument(
+        "--disk-name-filter",
+        default="基线测量",
+        help="--from-disk 扫描时按 batch.name 过滤 (默认 '基线测量')",
+    )
+    p.add_argument(
+        "--disk-video-provider",
+        default="minimax_h3",
+        help="--from-disk 扫描时仅纳入 video 步骤用该 provider 的批次 (默认 minimax_h3)",
+    )
+    p.add_argument(
+        "--only-completed",
+        action="store_true",
+        help="仅纳入全 step completed 的批次（排除 failed/running/pending）",
+    )
     return p.parse_args()
 
 

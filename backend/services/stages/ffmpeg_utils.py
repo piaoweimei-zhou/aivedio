@@ -1,4 +1,5 @@
 """ffmpeg/ffprobe 本地处理工具（字幕烧录、钩子叠加等后处理阶段共用）"""
+
 import asyncio
 import logging
 import os
@@ -27,7 +28,8 @@ async def check_ffmpeg() -> None:
     """检查 ffmpeg 是否可用，不可用抛 RuntimeError"""
     try:
         proc = await asyncio.create_subprocess_exec(
-            _ffmpeg_bin(), "-version",
+            _ffmpeg_bin(),
+            "-version",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -41,7 +43,8 @@ async def check_ffmpeg() -> None:
 async def run_ffmpeg(args: List[str]) -> None:
     """执行 ffmpeg，失败抛 RuntimeError"""
     proc = await asyncio.create_subprocess_exec(
-        _ffmpeg_bin(), *args,
+        _ffmpeg_bin(),
+        *args,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -53,14 +56,22 @@ async def run_ffmpeg(args: List[str]) -> None:
 async def get_video_duration(path: str) -> float:
     """获取视频时长（秒）"""
     proc = await asyncio.create_subprocess_exec(
-        _ffprobe_bin(), "-v", "error", "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1", path,
+        _ffprobe_bin(),
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        path,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
-        raise RuntimeError(f"ffprobe 获取时长失败: {stderr.decode('utf-8', errors='replace')[:300]}")
+        raise RuntimeError(
+            f"ffprobe 获取时长失败: {stderr.decode('utf-8', errors='replace')[:300]}"
+        )
     try:
         return float(stdout.decode().strip())
     except ValueError:
@@ -70,15 +81,24 @@ async def get_video_duration(path: str) -> float:
 async def get_video_size(path: str):
     """获取视频宽高 (width, height)"""
     proc = await asyncio.create_subprocess_exec(
-        _ffprobe_bin(), "-v", "error", "-select_streams", "v:0",
-        "-show_entries", "stream=width,height",
-        "-of", "csv=s=x:p=0", path,
+        _ffprobe_bin(),
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=width,height",
+        "-of",
+        "csv=s=x:p=0",
+        path,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await proc.communicate()
     if proc.returncode != 0:
-        raise RuntimeError(f"ffprobe 获取尺寸失败: {stderr.decode('utf-8', errors='replace')[:300]}")
+        raise RuntimeError(
+            f"ffprobe 获取尺寸失败: {stderr.decode('utf-8', errors='replace')[:300]}"
+        )
     try:
         w, h = stdout.decode().strip().split("x")
         return int(w), int(h)
@@ -92,8 +112,11 @@ async def resolve_local_video(url: str) -> str:
 
     if url.startswith(("http://", "https://")):
         import httpx
+
         temp_path = output_path_for(f"temp_{uuid.uuid4().hex[:8]}.mp4", "temp")
-        async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=20.0, read=300.0)) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(20.0, connect=20.0, read=300.0)
+        ) as client:  # noqa: E501
             resp = await client.get(url)
             resp.raise_for_status()
             with open(temp_path, "wb") as f:

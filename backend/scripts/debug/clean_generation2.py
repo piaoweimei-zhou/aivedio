@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """清理 generation/vision 剩余违规（F401 + E501，不再碰 F541）"""
+
 import io
 import subprocess
 import sys
@@ -11,9 +12,19 @@ io.open("services/comfyui_generation.py", "w", encoding="utf-8", newline="").wri
 print("1) generation F401 re 删除")
 
 # 2) vision.py: 按 flake8 输出清理 F401/F811（动态生成删除列表）
-r = subprocess.run([sys.executable, "-m", "flake8",
-                    "services/comfyui_generation_vision.py", "--max-line-length=100"],
-                   capture_output=True, text=True, encoding="utf-8", errors="ignore")
+r = subprocess.run(
+    [
+        sys.executable,
+        "-m",
+        "flake8",
+        "services/comfyui_generation_vision.py",
+        "--max-line-length=100",
+    ],
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+    errors="ignore",
+)
 f401_lines = {}
 f811_lines = []
 for ln in r.stdout.splitlines():
@@ -28,8 +39,13 @@ print(f"2) vision F401×{len(f401_lines)}, F811×{len(f811_lines)}")
 
 # 3) E501 加 noqa（两文件）
 def fix_e501(fp):
-    rr = subprocess.run([sys.executable, "-m", "flake8", fp, "--max-line-length=100"],
-                        capture_output=True, text=True, encoding="utf-8", errors="ignore")
+    rr = subprocess.run(
+        [sys.executable, "-m", "flake8", fp, "--max-line-length=100"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+    )
     e501 = set()
     for ln in rr.stdout.splitlines():
         if ": E501 " in ln and ":101:" in ln:

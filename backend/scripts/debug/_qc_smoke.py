@@ -7,7 +7,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.qc.qc_service import run_qc_async
+from services.qc.qc_service import run_qc_async  # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output", "qc_smoke_test.mp4")
 
@@ -36,7 +36,7 @@ async def main():
 
     # 含 medium 级敏感词，验证本地关键词兜底 + 语义分
     caption = "关注领取福利，加私信获取更多，今天聊聊AI视频制作"
-    res = await run_qc_async(OUT, caption=caption, threshold=60.0, use_semantic=True, manage_server=False)
+    res = await run_qc_async(OUT, caption=caption, threshold=60.0, use_semantic=True, manage_server=False)  # noqa: E501
     d = res.to_dict()
     print("=== QC RESULT ===")
     print("total_score   :", d["total_score"])

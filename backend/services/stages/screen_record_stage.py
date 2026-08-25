@@ -19,7 +19,7 @@ import os
 import platform
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.stage_service import StageDef, StagePlugin
@@ -57,7 +57,7 @@ class ScreenRecordStage(StagePlugin):
         output_name = params.get("name", f"录屏_{int(start)}")
 
         logger.info(
-            f"[ScreenRecordStage] mode={mode} | duration={duration}s | fps={fps} | name={output_name}"
+            f"[ScreenRecordStage] mode={mode} | duration={duration}s | fps={fps} | name={output_name}"  # noqa: E501
         )
 
         try:
@@ -177,7 +177,7 @@ class ScreenRecordStage(StagePlugin):
         elif system == "Darwin":
             # macOS avfoundation: "1:0" 表示屏幕索引1 + 音频0
             args += ["-f", "avfoundation", "-framerate", str(fps)]
-            args += ["-i", params.get("avfoundation_input", "1:0")]
+            args += ["-i", display or "1:0"]
             if region:
                 x, y, w, h = self._parse_region(region)
                 args += ["-filter:v", f"crop={w}:{h}:{x}:{y}"]
@@ -189,11 +189,16 @@ class ScreenRecordStage(StagePlugin):
 
         # ── 时长 + 输出编码 ────────────────────────────────
         args += [
-            "-t", str(duration),
-            "-c:v", "libx264",
-            "-preset", "ultrafast",  # 录屏实时性优先
-            "-crf", "23",
-            "-pix_fmt", "yuv420p",
+            "-t",
+            str(duration),
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",  # 录屏实时性优先
+            "-crf",
+            "23",
+            "-pix_fmt",
+            "yuv420p",
             output_file,
         ]
 
@@ -214,14 +219,17 @@ class ScreenRecordStage(StagePlugin):
             raise RuntimeError(f"ffmpeg 录屏输出文件未生成: {output_file}")
 
         url = output_url_for(os.path.basename(output_file), "output")
-        logger.info(f"[ScreenRecordStage] 录屏文件已保存 | path={output_file} | size={os.path.getsize(output_file)} bytes")
+        logger.info(
+            f"[ScreenRecordStage] 录屏文件已保存 | path={output_file} | size={os.path.getsize(output_file)} bytes"  # noqa: E501
+        )  # noqa: E501
         return url
 
     async def _check_ffmpeg(self, ffmpeg: str):
         """检查 ffmpeg 是否可用"""
         try:
             proc = await asyncio.create_subprocess_exec(
-                ffmpeg, "-version",
+                ffmpeg,
+                "-version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -263,7 +271,10 @@ async def list_windows_async() -> List[Dict[str, str]]:
             "Select-Object MainWindowTitle, ProcessName | ConvertTo-Json"
         )
         proc = await asyncio.create_subprocess_exec(
-            "powershell", "-NoProfile", "-Command", ps_script,
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            ps_script,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -272,6 +283,7 @@ async def list_windows_async() -> List[Dict[str, str]]:
             return []
 
         import json
+
         text = stdout.decode("utf-8", errors="replace").strip()
         if not text:
             return []

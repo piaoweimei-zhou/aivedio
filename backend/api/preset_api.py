@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/director/presets", tags=["导演工作台-预设
 
 # ==================== Request Models ====================
 
+
 class CreatePresetRequest(BaseModel):
     name: str
     stage_id: str
@@ -55,6 +56,7 @@ class SetDefaultRequest(BaseModel):
 
 
 # ==================== Endpoints ====================
+
 
 @router.get("")
 async def list_presets(

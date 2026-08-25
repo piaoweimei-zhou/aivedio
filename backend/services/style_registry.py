@@ -128,10 +128,7 @@ _DEFAULT_STYLE_ID = "wanggan_vivid"
 
 def list_styles() -> List[Dict[str, Any]]:
     """返回全部风格（含默认标记）"""
-    return [
-        {**style, "is_default": sid == _DEFAULT_STYLE_ID}
-        for sid, style in _STYLES.items()
-    ]
+    return [{**style, "is_default": sid == _DEFAULT_STYLE_ID} for sid, style in _STYLES.items()]
 
 
 def get_style(style_id: Optional[str]) -> Optional[Dict[str, Any]]:

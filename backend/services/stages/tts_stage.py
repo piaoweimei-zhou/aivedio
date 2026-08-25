@@ -4,8 +4,8 @@ TTS 音频生成阶段
 基于 Qwen3-TTS 工作流，从文本生成语音。
 支持音色设计（voice_design）和音色克隆（voice_clone）两种模式。
 """
+
 import logging
-import time
 from typing import Any, Dict, List
 
 from services.asset_service import AssetRef, AssetProduceResult
@@ -66,7 +66,8 @@ class TtsStage(StagePlugin):
             )
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="audio",
                 name=f"TTS_{mode}",
                 extra_metadata={

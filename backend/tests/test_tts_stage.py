@@ -1,4 +1,5 @@
 """TTS 音频生成阶段单元测试"""
+
 import os
 import sys
 
@@ -6,8 +7,8 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.provider_service import ProviderResult
-from services.stages.tts_stage import TtsStage
+from services.provider_service import ProviderResult  # noqa: E402
+from services.stages.tts_stage import TtsStage  # noqa: E402
 
 
 @pytest.fixture
@@ -19,6 +20,7 @@ def make_fake_comfyui(result):
     class Fake:
         async def generate_tts_audio(self, **kw):
             return result
+
     return Fake()
 
 
@@ -80,12 +82,16 @@ async def test_tts_forwards_ref_audio(stage, monkeypatch):
             return fake_result()
 
     patch_env(monkeypatch, Fake())
-    res = await stage.execute([], "comfyui", {
-        "text": "克隆测试",
-        "mode": "voice_clone",
-        "ref_audio_url": "http://x/ref.wav",
-        "ref_text": "参考文本",
-    })
+    res = await stage.execute(
+        [],
+        "comfyui",
+        {
+            "text": "克隆测试",
+            "mode": "voice_clone",
+            "ref_audio_url": "http://x/ref.wav",
+            "ref_text": "参考文本",
+        },
+    )
     assert captured["mode"] == "voice_clone"
     assert captured["ref_audio_url"] == "http://x/ref.wav"
     assert captured["ref_text"] == "参考文本"

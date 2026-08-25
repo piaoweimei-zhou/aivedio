@@ -9,7 +9,7 @@ import asyncio
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import httpx
 
@@ -17,10 +17,8 @@ from services.provider_service import ProviderPlugin, ProviderResult
 from services.providers.provider_utils import (
     bearer_auth,
     extract_image_from_response,
-    get_api_key,
     output_file_from_url,
     parse_size,
-    reference_to_data_url,
     save_image_to_output,
     save_video_to_output,
 )
@@ -49,7 +47,9 @@ class RunningHubProvider(ProviderPlugin):
         return os.getenv("RUNNINGHUB_WALLET_API_KEY", "").strip()
 
     def _headers(self, use_wallet: bool = False) -> Dict[str, str]:
-        api_key = self._get_wallet_key() if use_wallet and self._get_wallet_key() else self._get_api_key()
+        api_key = (
+            self._get_wallet_key() if use_wallet and self._get_wallet_key() else self._get_api_key()
+        )  # noqa: E501
         if not api_key:
             raise ValueError("未配置 RunningHub API Key")
         return {
@@ -64,7 +64,7 @@ class RunningHubProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         headers = self._headers()
@@ -79,7 +79,9 @@ class RunningHubProvider(ProviderPlugin):
 
         # 参考图上传
         image_urls = []
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=300.0, write=180.0, pool=20.0)) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=20.0, read=300.0, write=180.0, pool=20.0)
+        ) as client:  # noqa: E501
             for ref in (reference_images or [])[:10]:
                 url = ref.get("url", "")
                 if not url:
@@ -155,7 +157,9 @@ class RunningHubProvider(ProviderPlugin):
                                 if url and str(url).startswith(("http://", "https://")):
                                     urls.append(url)
                     if urls:
-                        local_url = await save_image_to_output({"type": "url", "value": urls[0]}, prefix="rh_")
+                        local_url = await save_image_to_output(
+                            {"type": "url", "value": urls[0]}, prefix="rh_"
+                        )  # noqa: E501
                         elapsed = int((time.time() - start) * 1000)
                         return ProviderResult(
                             image_url=local_url,
@@ -187,7 +191,7 @@ class RunningHubProvider(ProviderPlugin):
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         headers = self._headers(use_wallet=True)

@@ -25,9 +25,9 @@ from services.providers.provider_utils import output_path_for, output_url_for
 logger = logging.getLogger(__name__)
 
 # ASS 颜色格式：&HAABBGGRR
-_DEFAULT_FONT_COLOR = "FFFFFF"       # 白
+_DEFAULT_FONT_COLOR = "FFFFFF"  # 白
 _DEFAULT_HIGHLIGHT_COLOR = "00FFFF"  # 黄
-_DEFAULT_OUTLINE_COLOR = "141414"    # 深色描边
+_DEFAULT_OUTLINE_COLOR = "141414"  # 深色描边
 
 _CJK_MIN = 0x4E00
 _CJK_MAX = 0x9FFF
@@ -88,12 +88,18 @@ class SubtitleStage(StagePlugin):
             output_file = output_path_for(f"sub_{uuid.uuid4().hex[:8]}.mp4", "output")
             # 用相对路径避免 Windows 冒号/反斜杠被滤镜解析器误读
             rel_ass = os.path.relpath(ass_file).replace("\\", "/")
-            await ffmpeg_utils.run_ffmpeg([
-                "-y", "-i", local_video,
-                "-vf", f"ass={rel_ass}",
-                "-c:a", "copy",
-                output_file,
-            ])
+            await ffmpeg_utils.run_ffmpeg(
+                [
+                    "-y",
+                    "-i",
+                    local_video,
+                    "-vf",
+                    f"ass={rel_ass}",
+                    "-c:a",
+                    "copy",
+                    output_file,
+                ]
+            )
 
             out_url = output_url_for(os.path.basename(output_file), "output")
             new_asset = await self._register_asset_direct(
@@ -138,7 +144,7 @@ class SubtitleStage(StagePlugin):
                         if len(sub) > 18:
                             # 无标点可切：按字符数硬切
                             for i in range(0, len(sub), 18):
-                                lines.append(sub[i:i + 18])
+                                lines.append(sub[i : i + 18])
                         else:
                             lines.append(sub)
                 else:
@@ -166,11 +172,13 @@ class SubtitleStage(StagePlugin):
         timeline: List[Dict[str, Any]] = []
         cursor = 0.5
         for item, dur in zip(subtitle_texts, durations):
-            timeline.append({
-                "text": item.get("text", ""),
-                "start": round(cursor, 2),
-                "end": round(cursor + dur, 2),
-            })
+            timeline.append(
+                {
+                    "text": item.get("text", ""),
+                    "start": round(cursor, 2),
+                    "end": round(cursor + dur, 2),
+                }
+            )
             cursor += dur
         return timeline
 
@@ -186,7 +194,9 @@ class SubtitleStage(StagePlugin):
         font_name = params.get("font_name", "Microsoft YaHei")
         font_size = int(params.get("font_size", 0) or max(48, int(width * 0.07)))
         font_color = str(params.get("font_color", _DEFAULT_FONT_COLOR)).lstrip("#").upper()
-        highlight_color = str(params.get("highlight_color", _DEFAULT_HIGHLIGHT_COLOR)).lstrip("#").upper()
+        highlight_color = (
+            str(params.get("highlight_color", _DEFAULT_HIGHLIGHT_COLOR)).lstrip("#").upper()
+        )  # noqa: E501
         outline = int(params.get("outline", max(3, width // 200)))
         margin_v_raw = params.get("margin_v", 0.12)
         try:
@@ -207,8 +217,8 @@ class SubtitleStage(StagePlugin):
             "ScaledBorderAndShadow: yes\n"
             "\n"
             "[V4+ Styles]\n"
-            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,{font_name},{font_size},&H00{font_color},&H000000FF,&H00{_DEFAULT_OUTLINE_COLOR},&H80000000,-1,0,0,0,100,100,0,0,1,{outline},2,2,{int(width*0.04)},{int(width*0.04)},{margin_v},1\n"
+            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"  # noqa: E501
+            f"Style: Default,{font_name},{font_size},&H00{font_color},&H000000FF,&H00{_DEFAULT_OUTLINE_COLOR},&H80000000,-1,0,0,0,100,100,0,0,1,{outline},2,2,{int(width*0.04)},{int(width*0.04)},{margin_v},1\n"  # noqa: E501
             "\n"
             "[Events]\n"
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
@@ -230,7 +240,9 @@ class SubtitleStage(StagePlugin):
             kw_esc = kw.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
             if not kw_esc:
                 continue
-            text = text.replace(kw_esc, f"{{\\c&H{highlight_color}&}}{kw_esc}{{\\c&H{font_color}&}}")
+            text = text.replace(
+                kw_esc, f"{{\\c&H{highlight_color}&}}{kw_esc}{{\\c&H{font_color}&}}"
+            )  # noqa: E501
         return text
 
     def _ass_time(self, seconds: float) -> str:

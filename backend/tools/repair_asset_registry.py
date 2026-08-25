@@ -14,7 +14,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import sys
 from urllib.parse import parse_qs, urlparse
 

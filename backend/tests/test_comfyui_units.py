@@ -4,6 +4,7 @@
 覆盖拆分新文件中可脱离 ComfyUI 服务的纯函数/静态方法，
 确保 mixin 拆分的逻辑正确性有测试保护。
 """
+
 from services.comfyui_generation import ComfyUIGenerationMixin
 from services.comfyui_generation_vision import ComfyUIGenerationVisionMixin, _project_prefix
 from services.comfyui_storyboard_batch import ComfyUIStoryboardBatchMixin

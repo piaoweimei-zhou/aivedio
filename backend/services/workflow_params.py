@@ -20,16 +20,17 @@
     injector.inject({"width": 1280, "steps": 30, "cfg": 2.5})
     result = injector.workflow
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from services.video_time import resolve_video_duration
 from services.video_resolution import resolve_video_resolution
 
-
 # ============================================================
 # Phase 1: 参数 Schema 定义
 # ============================================================
+
 
 @dataclass
 class ParamSpec:
@@ -38,16 +39,17 @@ class ParamSpec:
     声明一个参数与工作流节点的绑定关系，以及类型约束。
     替代 config.json 中"只声明字段名、靠数字推断节点"的脆弱模式。
     """
-    name: str                                    # 参数名（如 width/steps/cfg/prompt）
-    node_id: str                                 # 绑定的 ComfyUI 节点 ID
-    field: str                                   # 节点 inputs 中的字段名
-    type: str = "string"                         # int/float/string/image/select
-    default: Any = None                          # 默认值
-    min: Optional[Union[int, float]] = None      # 最小值
-    max: Optional[Union[int, float]] = None      # 最大值
-    required: bool = False                       # 是否必填
-    choices: Optional[List[Any]] = None          # 可选值列表（select 类型）
-    description: str = ""                        # 描述
+
+    name: str  # 参数名（如 width/steps/cfg/prompt）
+    node_id: str  # 绑定的 ComfyUI 节点 ID
+    field: str  # 节点 inputs 中的字段名
+    type: str = "string"  # int/float/string/image/select
+    default: Any = None  # 默认值
+    min: Optional[Union[int, float]] = None  # 最小值
+    max: Optional[Union[int, float]] = None  # 最大值
+    required: bool = False  # 是否必填
+    choices: Optional[List[Any]] = None  # 可选值列表（select 类型）
+    description: str = ""  # 描述
 
     def validate(self, value: Any) -> Any:
         """校验并转换参数值"""
@@ -87,8 +89,9 @@ class WorkflowSchema:
 
     一个声明文件覆盖工作流所有可覆写参数，代码自动生成注入逻辑。
     """
-    name: str                                    # 工作流名称
-    template: str                                # 工作流 JSON 文件名
+
+    name: str  # 工作流名称
+    template: str  # 工作流 JSON 文件名
     params: Dict[str, ParamSpec] = field(default_factory=dict)
     ui_groups: List[Dict[str, Any]] = field(default_factory=list)
     # 视频参数派生规则（如 duration = frame_count / fps）
@@ -109,6 +112,7 @@ class WorkflowSchema:
 # ============================================================
 # Phase 2: 参数注入引擎
 # ============================================================
+
 
 class ParamInjector:
     """参数注入引擎
@@ -177,6 +181,7 @@ class ParamInjector:
 # Phase 3: 视频生成统一 DTO
 # ============================================================
 
+
 @dataclass
 class VideoGenerationParams:
     """统一视频生成参数——所有视频路径都用这个
@@ -185,6 +190,7 @@ class VideoGenerationParams:
     支持 width/height/resolution/aspect_ratio 互通，
     支持 frame_count/duration/fps 互通。
     """
+
     prompt: str = ""
     # 尺寸（三选一，自动转换）
     width: Optional[int] = None
@@ -209,12 +215,16 @@ class VideoGenerationParams:
         """自动解析尺寸和时间参数"""
         # 尺寸统一：若未指定 width/height，则从 resolution + aspect_ratio 推导
         self.width, self.height = resolve_video_resolution(
-            width=self.width, height=self.height,
-            resolution=self.resolution, aspect_ratio=self.aspect_ratio,
+            width=self.width,
+            height=self.height,
+            resolution=self.resolution,
+            aspect_ratio=self.aspect_ratio,
         )
         # 时间统一：frame_count / duration / fps 互转
         self.duration, self.frame_count, self.fps = resolve_video_duration(
-            duration=self.duration, frame_count=self.frame_count, fps=self.fps,
+            duration=self.duration,
+            frame_count=self.frame_count,
+            fps=self.fps,
         )
 
     @classmethod
@@ -234,11 +244,26 @@ class VideoGenerationParams:
             steps=params.get("steps", 20),
             reference_images=params.get("reference_images", []),
             background_image=params.get("background_image"),
-            extra={k: v for k, v in params.items()
-                   if k not in {"prompt", "width", "height", "resolution",
-                                "aspect_ratio", "frame_count", "duration", "fps",
-                                "seed", "cfg", "steps", "reference_images",
-                                "background_image"}},
+            extra={
+                k: v
+                for k, v in params.items()
+                if k
+                not in {
+                    "prompt",
+                    "width",
+                    "height",
+                    "resolution",
+                    "aspect_ratio",
+                    "frame_count",
+                    "duration",
+                    "fps",
+                    "seed",
+                    "cfg",
+                    "steps",
+                    "reference_images",
+                    "background_image",
+                }
+            },
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -264,87 +289,159 @@ class VideoGenerationParams:
 # 5 个核心工作流 Schema 注册表
 # ============================================================
 
+
 def _build_schemas() -> Dict[str, WorkflowSchema]:
     """构建核心工作流 schema 注册表"""
 
     schemas: Dict[str, WorkflowSchema] = {}
 
     # 1. 最终文生图（KSampler + EmptyLatentImage）
-    schemas["最终文生图"] = WorkflowSchema(
-        name="最终文生图",
-        template="最终文生图.json",
-    ).add_param(ParamSpec("prompt", "41", "text", "string", required=False, description="正向提示词")) \
-     .add_param(ParamSpec("negative", "32", "text", "string", default="", description="负向提示词")) \
-     .add_param(ParamSpec("width", "34", "width", "int", default=1080, min=512, max=4096)) \
-     .add_param(ParamSpec("height", "34", "height", "int", default=1920, min=512, max=4096)) \
-     .add_param(ParamSpec("steps", "28", "steps", "int", default=25, min=1, max=100)) \
-     .add_param(ParamSpec("cfg", "28", "cfg", "float", default=2.0, min=0.5, max=10.0)) \
-     .add_param(ParamSpec("seed", "28", "seed", "int", default=-1)) \
-     .add_param(ParamSpec("sampler", "28", "sampler_name", "select", default="res_multistep",
-                          choices=["res_multistep", "euler", "euler_ancestral", "dpmpp_2m", "dpmpp_sde"])) \
-     .add_param(ParamSpec("denoise", "28", "denoise", "float", default=1.0, min=0.0, max=1.0))
+    schemas["最终文生图"] = (
+        WorkflowSchema(
+            name="最终文生图",
+            template="最终文生图.json",
+        )
+        .add_param(
+            ParamSpec("prompt", "41", "text", "string", required=False, description="正向提示词")
+        )
+        .add_param(
+            ParamSpec("negative", "32", "text", "string", default="", description="负向提示词")
+        )
+        .add_param(ParamSpec("width", "34", "width", "int", default=1080, min=512, max=4096))
+        .add_param(ParamSpec("height", "34", "height", "int", default=1920, min=512, max=4096))
+        .add_param(ParamSpec("steps", "28", "steps", "int", default=25, min=1, max=100))
+        .add_param(ParamSpec("cfg", "28", "cfg", "float", default=2.0, min=0.5, max=10.0))
+        .add_param(ParamSpec("seed", "28", "seed", "int", default=-1))
+        .add_param(
+            ParamSpec(
+                "sampler",
+                "28",
+                "sampler_name",
+                "select",
+                default="res_multistep",
+                choices=["res_multistep", "euler", "euler_ancestral", "dpmpp_2m", "dpmpp_sde"],
+            )
+        )
+        .add_param(ParamSpec("denoise", "28", "denoise", "float", default=1.0, min=0.0, max=1.0))
+    )
 
     # 2. 文生图影视级（cinematic 路径，KSampler + EmptyLatentImage）
     # ⭐ 节点 ID 与真实工作流模板「最终文生图.json」对齐：
     #    41=CLIPTextEncode(正向) 32=CLIPTextEncode(负向) 34=EmptyLatentImage 28=KSampler
     # ⭐ prompt/negative 标为非必填：workflow_builder 已手写注入含质量前缀的提示词，
     #    ParamInjector 兜底时仅校验尺寸/步数等参数，不重复注入 prompt
-    schemas["文生图影视级"] = WorkflowSchema(
-        name="文生图影视级",
-        template="最终文生图.json",
-    ).add_param(ParamSpec("prompt", "41", "text", "string", required=False, description="正向提示词")) \
-     .add_param(ParamSpec("negative", "32", "text", "string", default="", description="负向提示词")) \
-     .add_param(ParamSpec("width", "34", "width", "int", default=1080, min=512, max=4096)) \
-     .add_param(ParamSpec("height", "34", "height", "int", default=1920, min=512, max=4096)) \
-     .add_param(ParamSpec("steps", "28", "steps", "int", default=25, min=1, max=100)) \
-     .add_param(ParamSpec("cfg", "28", "cfg", "float", default=2.0, min=0.5, max=10.0)) \
-     .add_param(ParamSpec("seed", "28", "seed", "int", default=-1)) \
-     .add_param(ParamSpec("sampler", "28", "sampler_name", "select", default="res_multistep",
-                          choices=["res_multistep", "euler", "euler_ancestral", "dpmpp_2m", "dpmpp_sde"])) \
-     .add_param(ParamSpec("denoise", "28", "denoise", "float", default=1.0, min=0.0, max=1.0))
+    schemas["文生图影视级"] = (
+        WorkflowSchema(
+            name="文生图影视级",
+            template="最终文生图.json",
+        )
+        .add_param(
+            ParamSpec("prompt", "41", "text", "string", required=False, description="正向提示词")
+        )
+        .add_param(
+            ParamSpec("negative", "32", "text", "string", default="", description="负向提示词")
+        )
+        .add_param(ParamSpec("width", "34", "width", "int", default=1080, min=512, max=4096))
+        .add_param(ParamSpec("height", "34", "height", "int", default=1920, min=512, max=4096))
+        .add_param(ParamSpec("steps", "28", "steps", "int", default=25, min=1, max=100))
+        .add_param(ParamSpec("cfg", "28", "cfg", "float", default=2.0, min=0.5, max=10.0))
+        .add_param(ParamSpec("seed", "28", "seed", "int", default=-1))
+        .add_param(
+            ParamSpec(
+                "sampler",
+                "28",
+                "sampler_name",
+                "select",
+                default="res_multistep",
+                choices=["res_multistep", "euler", "euler_ancestral", "dpmpp_2m", "dpmpp_sde"],
+            )
+        )
+        .add_param(ParamSpec("denoise", "28", "denoise", "float", default=1.0, min=0.0, max=1.0))
+    )
 
     # 3. LTX-2.3 视频通用路径（video_only）
-    schemas["LTX-2.3_video_only"] = WorkflowSchema(
-        name="LTX-2.3_video_only",
-        template="LTX-2.3_video_only.json",
-    ).add_param(ParamSpec("global_prompt", "99", "global_prompt", "string", required=True, description="全局场景描述")) \
-     .add_param(ParamSpec("local_prompts", "99", "local_prompts", "string", default="", description="分镜描述")) \
-     .add_param(ParamSpec("width", "43", "value", "int", default=1280, min=256, max=4096)) \
-     .add_param(ParamSpec("height", "44", "value", "int", default=720, min=256, max=4096)) \
-     .add_param(ParamSpec("frame_count", "28", "frame_count", "int", default=41, min=1)) \
-     .add_param(ParamSpec("total_length", "50", "value", "int", default=361, min=1, description="总帧数")) \
-     .add_param(ParamSpec("fps", "7", "frame_rate", "int", default=24, min=1, max=60)) \
-     .add_param(ParamSpec("seed", "15", "noise_seed", "int", default=-1)) \
-     .add_param(ParamSpec("cfg", "37", "cfg", "float", default=1.0, min=0.1, max=10.0)) \
-     .add_param(ParamSpec("video_fps", "19", "fps", "int", default=24, min=1, max=60, description="输出视频帧率"))
+    schemas["LTX-2.3_video_only"] = (
+        WorkflowSchema(
+            name="LTX-2.3_video_only",
+            template="LTX-2.3_video_only.json",
+        )
+        .add_param(
+            ParamSpec(
+                "global_prompt",
+                "99",
+                "global_prompt",
+                "string",
+                required=True,
+                description="全局场景描述",
+            )
+        )
+        .add_param(
+            ParamSpec(
+                "local_prompts", "99", "local_prompts", "string", default="", description="分镜描述"
+            )
+        )
+        .add_param(ParamSpec("width", "43", "value", "int", default=1280, min=256, max=4096))
+        .add_param(ParamSpec("height", "44", "value", "int", default=720, min=256, max=4096))
+        .add_param(ParamSpec("frame_count", "28", "frame_count", "int", default=41, min=1))
+        .add_param(
+            ParamSpec(
+                "total_length", "50", "value", "int", default=361, min=1, description="总帧数"
+            )
+        )
+        .add_param(ParamSpec("fps", "7", "frame_rate", "int", default=24, min=1, max=60))
+        .add_param(ParamSpec("seed", "15", "noise_seed", "int", default=-1))
+        .add_param(ParamSpec("cfg", "37", "cfg", "float", default=1.0, min=0.1, max=10.0))
+        .add_param(
+            ParamSpec(
+                "video_fps",
+                "19",
+                "fps",
+                "int",
+                default=24,
+                min=1,
+                max=60,
+                description="输出视频帧率",
+            )
+        )
+    )
 
     # 4. LTX-2.3 MSR 多角色视频
-    schemas["LTX-2.3_MSR"] = WorkflowSchema(
-        name="LTX-2.3_MSR",
-        template="LTX-2.3_MSR_sample_workflow_V2.json",
-    ).add_param(ParamSpec("global_prompt", "99", "global_prompt", "string", required=True)) \
-     .add_param(ParamSpec("local_prompts", "99", "local_prompts", "string", default="")) \
-     .add_param(ParamSpec("width", "43", "value", "int", default=1280, min=256, max=4096)) \
-     .add_param(ParamSpec("height", "44", "value", "int", default=720, min=256, max=4096)) \
-     .add_param(ParamSpec("frame_count", "28", "frame_count", "int", default=41, min=1)) \
-     .add_param(ParamSpec("total_length", "50", "value", "int", default=361, min=1)) \
-     .add_param(ParamSpec("fps", "7", "frame_rate", "int", default=24, min=1, max=60)) \
-     .add_param(ParamSpec("seed", "15", "noise_seed", "int", default=-1)) \
-     .add_param(ParamSpec("cfg", "37", "cfg", "float", default=3.0, min=0.1, max=10.0)) \
-     .add_param(ParamSpec("video_fps", "19", "fps", "int", default=24, min=1, max=60))
+    schemas["LTX-2.3_MSR"] = (
+        WorkflowSchema(
+            name="LTX-2.3_MSR",
+            template="LTX-2.3_MSR_sample_workflow_V2.json",
+        )
+        .add_param(ParamSpec("global_prompt", "99", "global_prompt", "string", required=True))
+        .add_param(ParamSpec("local_prompts", "99", "local_prompts", "string", default=""))
+        .add_param(ParamSpec("width", "43", "value", "int", default=1280, min=256, max=4096))
+        .add_param(ParamSpec("height", "44", "value", "int", default=720, min=256, max=4096))
+        .add_param(ParamSpec("frame_count", "28", "frame_count", "int", default=41, min=1))
+        .add_param(ParamSpec("total_length", "50", "value", "int", default=361, min=1))
+        .add_param(ParamSpec("fps", "7", "frame_rate", "int", default=24, min=1, max=60))
+        .add_param(ParamSpec("seed", "15", "noise_seed", "int", default=-1))
+        .add_param(ParamSpec("cfg", "37", "cfg", "float", default=3.0, min=0.1, max=10.0))
+        .add_param(ParamSpec("video_fps", "19", "fps", "int", default=24, min=1, max=60))
+    )
 
     # 5. 1人分镜（多提示词分镜工作流）
-    schemas["1人分镜"] = WorkflowSchema(
-        name="1人分镜",
-        template="1人分镜.json",
-    ).add_param(ParamSpec("prompt_1", "1199", "prompt", "string", required=True, description="分镜1提示词")) \
-     .add_param(ParamSpec("prompt_2", "1625", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_3", "2023", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_4", "2048", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_5", "2072", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_6", "2094", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_7", "2172", "prompt", "string", default="")) \
-     .add_param(ParamSpec("prompt_8", "2210", "prompt", "string", default=""))
+    schemas["1人分镜"] = (
+        WorkflowSchema(
+            name="1人分镜",
+            template="1人分镜.json",
+        )
+        .add_param(
+            ParamSpec(
+                "prompt_1", "1199", "prompt", "string", required=True, description="分镜1提示词"
+            )
+        )
+        .add_param(ParamSpec("prompt_2", "1625", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_3", "2023", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_4", "2048", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_5", "2072", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_6", "2094", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_7", "2172", "prompt", "string", default=""))
+        .add_param(ParamSpec("prompt_8", "2210", "prompt", "string", default=""))
+    )
 
     return schemas
 

@@ -10,9 +10,8 @@ import io
 import logging
 import os
 import re
-import time
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
 from services.paths import GENERATED_DIR, OUTPUT_DIR, UPLOADS_DIR
@@ -22,6 +21,7 @@ logger = logging.getLogger(__name__)
 # ============================================================
 # API Key 管理
 # ============================================================
+
 
 def provider_key_env(provider_id: str) -> str:
     """供应商 API Key 的环境变量名"""
@@ -52,6 +52,7 @@ def bearer_auth(api_key: str) -> str:
 # ============================================================
 # 尺寸解析
 # ============================================================
+
 
 def parse_size(size: str) -> Tuple[int, int]:
     """解析尺寸字符串 '1024x1024' → (1024, 1024)"""
@@ -148,7 +149,9 @@ async def save_video_to_output(
     filename = f"{prefix}{uuid.uuid4().hex[:10]}.mp4"
     path = output_path_for(filename, category)
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=20.0, read=600.0, write=60.0, pool=20.0)) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=20.0, read=600.0, write=60.0, pool=20.0)
+        ) as client:  # noqa: E501
             response = await client.get(url)
             response.raise_for_status()
             with open(path, "wb") as f:
@@ -162,6 +165,7 @@ async def save_video_to_output(
 # ============================================================
 # 参考图处理
 # ============================================================
+
 
 def reference_to_data_url(ref: Dict[str, Any], max_size: int = 1536) -> str:
     """
@@ -185,6 +189,7 @@ def reference_to_data_url(ref: Dict[str, Any], max_size: int = 1536) -> str:
 
     try:
         from PIL import Image
+
         with Image.open(local_path) as img:
             img.load()
             w, h = img.size
@@ -206,7 +211,12 @@ def reference_to_data_url(ref: Dict[str, Any], max_size: int = 1536) -> str:
         with open(local_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode("ascii")
         ext = os.path.splitext(local_path)[1].lower()
-        mime_map = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+        mime_map = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".webp": "image/webp",
+        }  # noqa: E501
         mime = mime_map.get(ext, "image/png")
         return f"data:{mime};base64,{encoded}"
     except Exception:
@@ -231,16 +241,17 @@ def output_file_from_url(url: str) -> Optional[str]:
 
     # 1. /output/{category}/{filename}
     if clean.startswith("/output/"):
-        rel = clean[len("/output/"):]
+        rel = clean[len("/output/") :]
         return os.path.join(OUTPUT_DIR, rel)
     if clean.startswith("/assets/output/"):
-        rel = clean[len("/assets/output/"):]
+        rel = clean[len("/assets/output/") :]
         return os.path.join(OUTPUT_DIR, "output", rel)
 
     # 2. /api/comfyui/image?filename=xxx — 解析 filename + subfolder
     #    到持久化目录 GENERATED_DIR（含 subfolder 子目录）与 ComfyUI output 目录查找
     if clean == "/api/comfyui/image":
         from urllib.parse import urlparse, parse_qs
+
         parsed = urlparse(str(url))
         params = parse_qs(parsed.query)
         filename = (params.get("filename", [""])[0] or "").strip()
@@ -280,19 +291,19 @@ def output_file_from_url(url: str) -> Optional[str]:
 
     # 3. /static/director/uploads/xxx
     if clean.startswith("/static/director/uploads/"):
-        rel = clean[len("/static/director/uploads/"):]
+        rel = clean[len("/static/director/uploads/") :]
         _upload_dir = UPLOADS_DIR
         return os.path.join(_upload_dir, rel)
 
     # 4. /data/generated/xxx
     if clean.startswith("/data/generated/"):
-        rel = clean[len("/data/generated/"):]
+        rel = clean[len("/data/generated/") :]
         _gen_dir = GENERATED_DIR
         return os.path.join(_gen_dir, rel)
 
     # 5. /data/uploads/xxx
     if clean.startswith("/data/uploads/"):
-        rel = clean[len("/data/uploads/"):]
+        rel = clean[len("/data/uploads/") :]
         _upload_dir = UPLOADS_DIR
         return os.path.join(_upload_dir, rel)
     return None
@@ -304,8 +315,16 @@ def output_file_from_url(url: str) -> Optional[str]:
 
 # OpenAI 响应中常见的图片输出键名
 IMAGE_OUTPUT_KEY_HINTS = [
-    "url", "image_url", "imageUrl", "output_url", "outputUrl",
-    "image", "images", "output", "result", "data",
+    "url",
+    "image_url",
+    "imageUrl",
+    "output_url",
+    "outputUrl",
+    "image",
+    "images",
+    "output",
+    "result",
+    "data",
 ]
 IMAGE_BASE64_KEY_HINTS = ["b64_json", "b64", "base64", "image_data"]
 IMAGE_CONTAINER_KEY_HINTS = ["data", "output", "results", "images", "items"]
@@ -332,7 +351,9 @@ def extract_image_from_response(data: Any) -> Dict[str, Any]:
                     return {
                         "type": "b64",
                         "value": inline["data"],
-                        "mime_type": inline.get("mimeType") or inline.get("mime_type") or "image/png",
+                        "mime_type": inline.get("mimeType")
+                        or inline.get("mime_type")
+                        or "image/png",  # noqa: E501
                     }
 
     # OpenAI 标准格式
@@ -375,10 +396,18 @@ def _extract_image_recursive(value: Any, depth: int) -> Optional[Dict[str, Any]]
     for key in IMAGE_BASE64_KEY_HINTS:
         item = value.get(key)
         if isinstance(item, str) and item.strip():
-            return {"type": "b64", "value": item.strip(), "mime_type": value.get("mime_type") or "image/png"}
+            return {
+                "type": "b64",
+                "value": item.strip(),
+                "mime_type": value.get("mime_type") or "image/png",
+            }  # noqa: E501
     for key in IMAGE_OUTPUT_KEY_HINTS:
         item = value.get(key)
-        if isinstance(item, str) and item.strip() and (item.startswith(("http://", "https://", "/output/", "/assets/"))):
+        if (
+            isinstance(item, str)
+            and item.strip()
+            and (item.startswith(("http://", "https://", "/output/", "/assets/")))
+        ):  # noqa: E501
             return {"type": "url", "value": item}
         found = _extract_image_recursive(item, depth + 1)
         if found:

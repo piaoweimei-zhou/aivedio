@@ -1,11 +1,12 @@
 """MiniMax H3 供应商单元测试（不依赖 ComfyUI/GPU）"""
+
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.provider_service import get_provider_service, reset_provider_service
-from services.providers.minimax_provider import MinimaxProvider
+from services.provider_service import get_provider_service, reset_provider_service  # noqa: E402
+from services.providers.minimax_provider import MinimaxProvider  # noqa: E402
 
 
 def test_provider_registered_with_video_capability():
@@ -31,10 +32,10 @@ def test_available_providers_contains_minimax():
         reset_provider_service()
 
 
-import asyncio
-import unittest.mock as mock
+import asyncio  # noqa: E402
+import unittest.mock as mock  # noqa: E402
 
-from services.provider_service import ProviderResult
+from services.provider_service import ProviderResult  # noqa: E402
 
 
 def test_generate_video_routes_to_service():
@@ -54,12 +55,14 @@ def test_generate_video_routes_to_service():
             return _FakeResult()
 
     with mock.patch("services.comfyui_service.get_comfyui_service", return_value=_FakeSvc()):
-        res: ProviderResult = asyncio.run(provider.generate_video(
-            prompt="夕阳下的湖面",
-            duration=5.0,
-            aspect_ratio="9:16",
-            seed=7,
-        ))
+        res: ProviderResult = asyncio.run(
+            provider.generate_video(
+                prompt="夕阳下的湖面",
+                duration=5.0,
+                aspect_ratio="9:16",
+                seed=7,
+            )
+        )
 
     assert captured["prompt"] == "夕阳下的湖面"
     assert captured["width"] == 480
@@ -74,5 +77,6 @@ def test_generate_video_routes_to_service():
 
 def test_comfyui_mixin_present():
     from services.comfyui_service import ComfyUIService
+
     # 组合类应具备 MiniMax 方法（避免运行时 missing attribute）
     assert hasattr(ComfyUIService, "generate_minimax_h3")

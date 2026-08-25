@@ -30,6 +30,7 @@ PromptEntry 模型：
 - usage_count: 使用次数
 - created_at / updated_at
 """
+
 from services.paths import PROMPTS_DIR
 
 import json
@@ -52,10 +53,11 @@ _VAR_PATTERN = re.compile(r"\{(\w+)\}")
 @dataclass
 class PromptVariable:
     """提示词变量定义"""
-    name: str                           # 变量名
-    default: str = ""                   # 默认值
-    description: str = ""               # 变量说明
-    required: bool = False              # 是否必填
+
+    name: str  # 变量名
+    default: str = ""  # 默认值
+    description: str = ""  # 变量说明
+    required: bool = False  # 是否必填
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -68,19 +70,20 @@ class PromptVariable:
 @dataclass
 class PromptEntry:
     """提示词条目"""
+
     prompt_id: str
     name: str
-    content: str                                     # 提示词内容（支持 {variable}）
-    category: str = "custom"                         # action/dialogue/scene/transition/style/custom
-    stage_id: str = ""                               # 绑定阶段（空=通用）
+    content: str  # 提示词内容（支持 {variable}）
+    category: str = "custom"  # action/dialogue/scene/transition/style/custom
+    stage_id: str = ""  # 绑定阶段（空=通用）
     variables: List[Dict[str, Any]] = field(default_factory=list)  # 变量定义
-    tags: List[str] = field(default_factory=list)    # 标签
-    project_id: str = ""                             # 所属项目（空=全局）
-    quality_score: float = 0.0                       # 质量评分 0-5
-    usage_count: int = 0                             # 使用次数
-    description: str = ""                            # 提示词说明
-    is_default: bool = False                         # 是否为项目+阶段的默认提示词
-    version: int = 1                                 # 当前版本号
+    tags: List[str] = field(default_factory=list)  # 标签
+    project_id: str = ""  # 所属项目（空=全局）
+    quality_score: float = 0.0  # 质量评分 0-5
+    usage_count: int = 0  # 使用次数
+    description: str = ""  # 提示词说明
+    is_default: bool = False  # 是否为项目+阶段的默认提示词
+    version: int = 1  # 当前版本号
     created_at: float = 0.0
     updated_at: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -160,7 +163,8 @@ class PromptService:
         if keyword:
             kw = keyword.lower()
             prompts = [
-                p for p in prompts
+                p
+                for p in prompts
                 if kw in p.name.lower() or kw in p.content.lower() or kw in p.description.lower()
             ]
 
@@ -215,13 +219,14 @@ class PromptService:
         if not entry.variables:
             extracted = entry.extract_variables()
             entry.variables = [
-                {"name": v, "default": "", "description": "", "required": False}
-                for v in extracted
+                {"name": v, "default": "", "description": "", "required": False} for v in extracted
             ]
 
         self._prompts[prompt_id] = entry
         self._save(entry)
-        logger.info(f"[Prompt] 创建提示词 | id={prompt_id} | name={name} | vars={len(entry.variables)}")
+        logger.info(
+            f"[Prompt] 创建提示词 | id={prompt_id} | name={name} | vars={len(entry.variables)}"
+        )
         return entry
 
     def update(self, prompt_id: str, updates: Dict[str, Any]) -> Optional[PromptEntry]:
@@ -242,10 +247,12 @@ class PromptService:
                 extracted = entry.extract_variables()
                 existing_names = {v.get("name") for v in entry.variables}
                 new_vars = [v for v in extracted if v not in existing_names]
-                entry.variables.extend([
-                    {"name": v, "default": "", "description": "", "required": False}
-                    for v in new_vars
-                ])
+                entry.variables.extend(
+                    [
+                        {"name": v, "default": "", "description": "", "required": False}
+                        for v in new_vars
+                    ]
+                )
         if "category" in updates:
             entry.category = updates["category"]
         if "stage_id" in updates:
@@ -279,11 +286,12 @@ class PromptService:
         try:
             history_file = self._history_dir / f"{entry.prompt_id}_v{entry.version}.json"
             history_file.write_text(
-                json.dumps(entry.to_dict(), ensure_ascii=False, indent=2),
-                encoding="utf-8"
+                json.dumps(entry.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
             )
         except Exception as e:
-            logger.warning(f"[Prompt] 保存历史版本失败 | id={entry.prompt_id} | v={entry.version} | error={e}")
+            logger.warning(
+                f"[Prompt] 保存历史版本失败 | id={entry.prompt_id} | v={entry.version} | error={e}"
+            )  # noqa: E501
 
     def get_history(self, prompt_id: str) -> List[Dict[str, Any]]:
         """获取提示词的所有历史版本"""
@@ -293,13 +301,15 @@ class PromptService:
         for path in self._history_dir.glob(f"{prompt_id}_v*.json"):
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
-                versions.append({
-                    "version": data.get("version", 0),
-                    "content": data.get("content", ""),
-                    "name": data.get("name", ""),
-                    "updated_at": data.get("updated_at", 0),
-                    "file": path.name,
-                })
+                versions.append(
+                    {
+                        "version": data.get("version", 0),
+                        "content": data.get("content", ""),
+                        "name": data.get("name", ""),
+                        "updated_at": data.get("updated_at", 0),
+                        "file": path.name,
+                    }
+                )
             except Exception:
                 continue
         # 按版本号降序
@@ -328,7 +338,9 @@ class PromptService:
             old_entry.updated_at = time.time()
             self._prompts[prompt_id] = old_entry
             self._save(old_entry)
-            logger.info(f"[Prompt] 回滚 | id={prompt_id} | 恢复到 v{version} | 新版本 v{old_entry.version}")
+            logger.info(
+                f"[Prompt] 回滚 | id={prompt_id} | 恢复到 v{version} | 新版本 v{old_entry.version}"
+            )
             return old_entry
         except Exception as e:
             logger.warning(f"[Prompt] 回滚失败 | id={prompt_id} | v={version} | error={e}")
@@ -352,10 +364,12 @@ class PromptService:
 
         # 取消该项目+阶段的其他默认提示词
         for p in self._prompts.values():
-            if (p.project_id == project_id
+            if (
+                p.project_id == project_id
                 and p.stage_id == stage_id
                 and p.is_default
-                and p.prompt_id != prompt_id):
+                and p.prompt_id != prompt_id
+            ):
                 p.is_default = False
                 self._save(p)
 
@@ -363,7 +377,9 @@ class PromptService:
         entry.project_id = project_id
         entry.stage_id = stage_id
         self._save(entry)
-        logger.info(f"[Prompt] 设置默认 | id={prompt_id} | project={project_id} | stage={stage_id or '全局'}")
+        logger.info(
+            f"[Prompt] 设置默认 | id={prompt_id} | project={project_id} | stage={stage_id or '全局'}"
+        )  # noqa: E501
         return True
 
     def get_default(self, project_id: str, stage_id: str = "") -> Optional[PromptEntry]:
@@ -377,27 +393,19 @@ class PromptService:
         """
         # 1. 项目 + 阶段
         for p in self._prompts.values():
-            if (p.project_id == project_id
-                and p.stage_id == stage_id
-                and p.is_default):
+            if p.project_id == project_id and p.stage_id == stage_id and p.is_default:
                 return p
         # 2. 项目 + 通用
         for p in self._prompts.values():
-            if (p.project_id == project_id
-                and p.stage_id == ""
-                and p.is_default):
+            if p.project_id == project_id and p.stage_id == "" and p.is_default:
                 return p
         # 3. 全局 + 阶段
         for p in self._prompts.values():
-            if (p.project_id == ""
-                and p.stage_id == stage_id
-                and p.is_default):
+            if p.project_id == "" and p.stage_id == stage_id and p.is_default:
                 return p
         # 4. 全局 + 通用
         for p in self._prompts.values():
-            if (p.project_id == ""
-                and p.stage_id == ""
-                and p.is_default):
+            if p.project_id == "" and p.stage_id == "" and p.is_default:
                 return p
         return None
 
@@ -467,7 +475,9 @@ class PromptService:
         entry.usage_count += 1
         self._save(entry)
 
-        logger.info(f"[Prompt] 解析提示词 | id={prompt_id} | vars={len(var_map)} | result_len={len(resolved)}")
+        logger.info(
+            f"[Prompt] 解析提示词 | id={prompt_id} | vars={len(var_map)} | result_len={len(resolved)}"
+        )  # noqa: E501
         return resolved, entry
 
     def resolve_content(

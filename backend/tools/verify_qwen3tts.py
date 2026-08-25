@@ -29,20 +29,22 @@ VOICE_DESC = "成年女性，温柔亲切，语速适中，普通话标准"
 
 
 def build_steps(text: str) -> List[Dict[str, Any]]:
-    return [{
-        "step_id": "s1_tts",
-        "stage_id": "tts",
-        "name": "TTS 音色设计（Qwen3TTS）",
-        "provider_id": "comfyui",
-        "params": {
-            "text": text,
-            "mode": "voice_design",
-            "voice_description": VOICE_DESC,
-            "language": "Auto",
-        },
-        "input_asset_ids": [],
-        "input_from_steps": [],
-    }]
+    return [
+        {
+            "step_id": "s1_tts",
+            "stage_id": "tts",
+            "name": "TTS 音色设计（Qwen3TTS）",
+            "provider_id": "comfyui",
+            "params": {
+                "text": text,
+                "mode": "voice_design",
+                "voice_description": VOICE_DESC,
+                "language": "Auto",
+            },
+            "input_asset_ids": [],
+            "input_from_steps": [],
+        }
+    ]
 
 
 async def run(host: str, text: str) -> int:
@@ -55,7 +57,9 @@ async def run(host: str, text: str) -> int:
         r = await client.post(f"{host}/api/director/batches", json=payload)
         r.raise_for_status()
         body = r.json()
-        batch_id = (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        batch_id = (
+            (body.get("batch") or {}).get("batch_id") or body.get("id") or body.get("batch_id")
+        )  # noqa: E501
         print(f"batch={batch_id} steps={len(steps)}")
         if not batch_id:
             print(f"创建失败: {json.dumps(body, ensure_ascii=False)[:500]}")

@@ -1,14 +1,14 @@
 """全量验证：资产注册表中所有 URL 均可访问（迁移后后台查看资产不受影响）"""
 
 import json
-import os
-import sys
+import os  # noqa: E402
+import sys  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
-import main  # noqa: F401
+import main  # noqa: E402
 
 client = TestClient(main.app)
 
@@ -23,7 +23,7 @@ fail = []
 checked_urls = set()
 
 for a in items:
-    for u in (a.get("urls") or []):
+    for u in a.get("urls") or []:
         if "filename=" not in u:
             continue
         if u in checked_urls:

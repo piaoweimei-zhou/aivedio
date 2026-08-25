@@ -1,5 +1,4 @@
 """stage_service 单元测试：阶段定义 / 输入校验 / 注册解析 / 辅助函数"""
-import pytest
 
 from services.asset_service import AssetProduceResult, AssetRef
 from services.stage_service import (

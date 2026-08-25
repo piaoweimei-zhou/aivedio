@@ -23,12 +23,14 @@ from typing import Any, Dict, List, Optional
 
 from services.asset_service import AssetRef, AssetProduceResult, get_asset_service
 from services.asset_organizer import organize_asset_files
-from services.provider_service import ProviderResult, get_provider_service
+from services.provider_service import get_provider_service
 
 logger = logging.getLogger(__name__)
 
 # 当前阶段的 project_id 上下文（ContextVar 替代实例属性，避免并发竞态）
-_current_project_id_var: ContextVar[Optional[str]] = ContextVar("_current_project_id_var", default=None)
+_current_project_id_var: ContextVar[Optional[str]] = ContextVar(
+    "_current_project_id_var", default=None
+)  # noqa: E501
 # 最近一次 ComfyUI 调用的 prompt_id（ContextVar 替代 stage 实例属性，避免同层并行竞态）
 _last_prompt_id_var: ContextVar[str] = ContextVar("_last_prompt_id_var", default="")
 
@@ -36,22 +38,27 @@ _last_prompt_id_var: ContextVar[str] = ContextVar("_last_prompt_id_var", default
 # 阶段定义
 # ============================================================
 
+
 @dataclass
 class StageDef:
     """阶段定义 — 描述一个生产阶段的元信息"""
-    stage_id: str                         # 唯一标识
-    name: str                             # 显示名
-    input_types: List[str]                # 输入资产类型（生产阶段维度）
-    output_type: str                      # 输出资产类型
-    default_provider: str                 # 默认供应商
-    supported_providers: List[str]        # 支持的供应商列表
-    description: str = ""                 # 阶段描述
-    input_content_types: List[str] = field(default_factory=list)  # 输入内容类型（character/scene/prop），空=不限制
+
+    stage_id: str  # 唯一标识
+    name: str  # 显示名
+    input_types: List[str]  # 输入资产类型（生产阶段维度）
+    output_type: str  # 输出资产类型
+    default_provider: str  # 默认供应商
+    supported_providers: List[str]  # 支持的供应商列表
+    description: str = ""  # 阶段描述
+    input_content_types: List[str] = field(
+        default_factory=list
+    )  # 输入内容类型（character/scene/prop），空=不限制  # noqa: E501
 
 
 # ============================================================
 # 阶段插件基类
 # ============================================================
+
 
 class StagePlugin(ABC):
     """阶段插件基类 — 每个生产阶段实现此接口"""
@@ -207,9 +214,11 @@ class StagePlugin(ABC):
         （由 StageService.execute 设置 ContextVar，避免单例实例属性的并发竞态）
         """
         metadata = extra_metadata or {}
-        metadata.setdefault("provider_id", result.provider_id if hasattr(result, 'provider_id') else "")
-        metadata.setdefault("seed", result.seed if hasattr(result, 'seed') else 0)
-        metadata.setdefault("elapsed_ms", result.elapsed_ms if hasattr(result, 'elapsed_ms') else 0)
+        metadata.setdefault(
+            "provider_id", result.provider_id if hasattr(result, "provider_id") else ""
+        )  # noqa: E501
+        metadata.setdefault("seed", result.seed if hasattr(result, "seed") else 0)
+        metadata.setdefault("elapsed_ms", result.elapsed_ms if hasattr(result, "elapsed_ms") else 0)
 
         # 捕获 prompt_id（供 StageService.execute 提取到 AssetProduceResult）
         # 使用 ContextVar 避免同层并行步骤竞态（stage 实例是单例）
@@ -387,6 +396,7 @@ BUILTIN_STAGES = {
 # StageService
 # ============================================================
 
+
 class StageService:
     """阶段路由服务 — 管理所有生产阶段"""
 
@@ -417,7 +427,7 @@ class StageService:
             "multi_person": "services.stages.multi_person_stage:MultiPersonStage",
             "layered_render": "services.stages.layered_render_stage:LayeredRenderStage",
             "batch_storyboard": "services.stages.batch_storyboard_stage:BatchStoryboardStage",
-            "template_batch_extract": "services.stages.template_batch_extract_stage:TemplateBatchExtractStage",
+            "template_batch_extract": "services.stages.template_batch_extract_stage:TemplateBatchExtractStage",  # noqa: E501
             "template_clean": "services.stages.template_clean_stage:TemplateCleanStage",
             "template_pose": "services.stages.template_pose_stage:TemplatePoseStage",
             "script": "services.stages.script_stage:ScriptStage",
@@ -431,6 +441,7 @@ class StageService:
         }
 
         import importlib
+
         for stage_id, cls_path in _STAGE_CLS_MAP.items():
             try:
                 module_path, cls_name = cls_path.rsplit(":", 1)
@@ -438,7 +449,9 @@ class StageService:
                 stage_cls = getattr(module, cls_name)
                 self.register(stage_cls())
             except Exception as e:
-                logger.warning(f"[StageService] 注册阶段失败 | stage_id={stage_id} | cls={cls_path} | error={e}")
+                logger.warning(
+                    f"[StageService] 注册阶段失败 | stage_id={stage_id} | cls={cls_path} | error={e}"
+                )  # noqa: E501
 
     def register(self, stage: StagePlugin):
         """注册阶段插件"""
@@ -446,7 +459,9 @@ class StageService:
             raise ValueError(f"阶段插件 {stage.__class__.__name__} 缺少 stage_def")
         self._stages[stage.stage_def.stage_id] = stage
         self._defs[stage.stage_def.stage_id] = stage.stage_def
-        logger.info(f"[StageService] 注册阶段 | id={stage.stage_def.stage_id} name={stage.stage_def.name}")
+        logger.info(
+            f"[StageService] 注册阶段 | id={stage.stage_def.stage_id} name={stage.stage_def.name}"
+        )  # noqa: E501
 
     async def execute(
         self,
@@ -512,7 +527,7 @@ class StageService:
         # 阶段 C：若未显式传入 prompt 且无 prompt_id，自动使用项目默认提示词
         params["_stage_id_for_default"] = stage_id  # 供 _resolve_prompt_params 查找项目默认
         params = _resolve_prompt_params(params)
-        params.pop("_stage_id_for_default", None)    # 清理临时字段
+        params.pop("_stage_id_for_default", None)  # 清理临时字段
 
         # 5. 执行
         logger.info(
@@ -587,6 +602,7 @@ class StageService:
 
 _instance: Optional[StageService] = None
 
+
 def get_stage_service() -> StageService:
     global _instance
     if _instance is None:
@@ -603,6 +619,7 @@ def reset_stage_service():
 # ============================================================
 # 提示词中心集成：prompt_id → prompt 字符串自动解析
 # ============================================================
+
 
 def _resolve_prompt_params(params: Dict[str, Any]) -> Dict[str, Any]:
     """解析 params 中的 prompt_id，注入 prompt 字符串
@@ -651,6 +668,7 @@ def _resolve_prompt_params(params: Dict[str, Any]) -> Dict[str, Any]:
         if project_id:
             try:
                 from services.prompt_service import get_prompt_service
+
                 svc = get_prompt_service()
                 default_entry = svc.get_default(project_id, stage_id)
                 if default_entry:
@@ -664,13 +682,16 @@ def _resolve_prompt_params(params: Dict[str, Any]) -> Dict[str, Any]:
                     if result:
                         params["prompt"] = result[0]
                         params["_from_default_prompt"] = True
-                        logger.info(f"[StageService] 使用项目默认提示词 | project={project_id} | stage={stage_id or '通用'} | id={default_entry.prompt_id}")
+                        logger.info(
+                            f"[StageService] 使用项目默认提示词 | project={project_id} | stage={stage_id or '通用'} | id={default_entry.prompt_id}"  # noqa: E501
+                        )  # noqa: E501
             except Exception as e:
                 logger.warning(f"[StageService] 项目默认提示词解析失败（忽略）: {e}")
         return params
 
     try:
         from services.prompt_service import get_prompt_service
+
         svc = get_prompt_service()
         variables = params.get("prompt_variables") or {}
 
@@ -682,18 +703,40 @@ def _resolve_prompt_params(params: Dict[str, Any]) -> Dict[str, Any]:
                 # 仅在用户未显式传入 prompt 时注入
                 if not params.get("prompt"):
                     params["prompt"] = resolved
-                    logger.info(f"[StageService] prompt_id 解析 | id={prompt_id} | len={len(resolved)}")
+                    logger.info(
+                        f"[StageService] prompt_id 解析 | id={prompt_id} | len={len(resolved)}"
+                    )  # noqa: E501
                 # ⭐ Phase 5：合并提示词携带的生成参数（steps/cfg/width 等）
                 # 仅合并用户未显式传入的参数，避免覆盖用户选择
                 # ⭐ 修复 P1 #4：增加 stage 级白名单，防止参数跨阶段泄露
                 # （如 concept 的 steps/cfg 不应合并到 video stage）
                 stage_id = params.get("_stage_id_for_default", "")
                 _STAGE_PARAM_WHITELIST = {
-                    "concept":     {"size", "width", "height", "steps", "cfg", "seed", "content_type", "style", "model"},
-                    "storyboard":  {"size", "steps", "cfg", "template", "content_type"},
-                    "video":       {"resolution", "width", "height", "duration", "fps", "frame_count", "cfg", "seed", "model"},
-                    "refine":      {"size", "width", "height", "steps", "cfg", "seed", "denoise"},
-                    "export":      {"format", "quality", "fps"},
+                    "concept": {
+                        "size",
+                        "width",
+                        "height",
+                        "steps",
+                        "cfg",
+                        "seed",
+                        "content_type",
+                        "style",
+                        "model",
+                    },  # noqa: E501
+                    "storyboard": {"size", "steps", "cfg", "template", "content_type"},
+                    "video": {
+                        "resolution",
+                        "width",
+                        "height",
+                        "duration",
+                        "fps",
+                        "frame_count",
+                        "cfg",
+                        "seed",
+                        "model",
+                    },  # noqa: E501
+                    "refine": {"size", "width", "height", "steps", "cfg", "seed", "denoise"},
+                    "export": {"format", "quality", "fps"},
                     "batch_storyboard": {"size", "steps", "cfg", "csv_data"},
                     "multi_person": {"size", "steps", "cfg", "template"},
                 }
@@ -713,7 +756,9 @@ def _resolve_prompt_params(params: Dict[str, Any]) -> Dict[str, Any]:
                         params[k] = v
                         merged_keys.append(k)
                     if merged_keys:
-                        logger.info(f"[StageService] 提示词参数合并 | id={prompt_id} | stage={stage_id} | keys={merged_keys}")
+                        logger.info(
+                            f"[StageService] 提示词参数合并 | id={prompt_id} | stage={stage_id} | keys={merged_keys}"  # noqa: E501
+                        )  # noqa: E501
 
         # CSV 批量分镜的区域提示词
         if prompt_a_id:
@@ -767,7 +812,13 @@ def build_reference_images(
         if not url:
             continue
         atype = asset.asset_type
-        if atype in ("concept", "multi_view", "storyboard", "storyboard_multi", "storyboard_layered"):
+        if atype in (
+            "concept",
+            "multi_view",
+            "storyboard",
+            "storyboard_multi",
+            "storyboard_layered",
+        ):  # noqa: E501
             char_count += 1
             if multi_group:
                 if char_count <= 2:
@@ -785,12 +836,14 @@ def build_reference_images(
         else:
             ref_type = atype
 
-        reference_images.append({
-            "url": url,
-            "role": ref_type,
-            "type": ref_type,
-            "name": asset.name,
-        })
+        reference_images.append(
+            {
+                "url": url,
+                "role": ref_type,
+                "type": ref_type,
+                "name": asset.name,
+            }
+        )
     return reference_images
 
 

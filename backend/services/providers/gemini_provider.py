@@ -44,7 +44,7 @@ class GeminiProvider(ProviderPlugin):
 
     def _model_name(self, model: str) -> str:
         name = (model or "gemini-2.0-flash-exp").strip()
-        return name[len("models/"):] if name.startswith("models/") else name
+        return name[len("models/") :] if name.startswith("models/") else name
 
     def _endpoint_url(self, model: str) -> str:
         base = self._get_base_url()
@@ -57,6 +57,7 @@ class GeminiProvider(ProviderPlugin):
             return {"aspectRatio": "1:1", "imageSize": "2K"}
         # 推断比例
         from math import gcd
+
         g = gcd(w, h)
         ratio = f"{w // g}:{h // g}"
         # 推断分辨率
@@ -88,7 +89,7 @@ class GeminiProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         api_key = self._get_api_key()

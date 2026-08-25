@@ -7,7 +7,6 @@ OpenAI 兼容协议供应商
 文本生成：通过 /v1/chat/completions 接口，兼容 DeepSeek、通义千问、Kimi 等 OpenAI 协议。
 """
 
-import json
 import logging
 import os
 import time
@@ -20,7 +19,6 @@ from services.providers.provider_utils import (
     bearer_auth,
     extract_image_from_response,
     output_file_from_url,
-    parse_size,
     reference_to_data_url,
     save_image_to_output,
 )
@@ -45,7 +43,11 @@ class OpenAICompatProvider(ProviderPlugin):
         return bool(os.getenv("OPENAI_API_KEY") or os.getenv("COMFYUI_API_KEY"))
 
     def _get_base_url(self) -> str:
-        return os.getenv("OPENAI_BASE_URL", os.getenv("COMFYUI_BASE_URL", "https://api.openai.com")).rstrip("/")
+        return os.getenv(
+            "OPENAI_BASE_URL", os.getenv("COMFYUI_BASE_URL", "https://api.openai.com")
+        ).rstrip(
+            "/"
+        )  # noqa: E501
 
     def _get_api_key(self) -> str:
         return os.getenv("OPENAI_API_KEY") or os.getenv("COMFYUI_API_KEY") or ""
@@ -56,7 +58,7 @@ class OpenAICompatProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         start = time.time()
         base_url = self._get_base_url()
@@ -108,7 +110,14 @@ class OpenAICompatProvider(ProviderPlugin):
                     fh = open(path, "rb")
                     opened.append(fh)
                     ext = os.path.splitext(path)[1].lower()
-                    mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}.get(ext, "image/png")
+                    mime = {
+                        ".png": "image/png",
+                        ".jpg": "image/jpeg",
+                        ".jpeg": "image/jpeg",
+                        ".webp": "image/webp",
+                    }.get(
+                        ext, "image/png"
+                    )  # noqa: E501
                     files.append(("image", (os.path.basename(path), fh, mime)))
 
                 if mask_refs:
@@ -119,13 +128,20 @@ class OpenAICompatProvider(ProviderPlugin):
                         files.append(("mask", (os.path.basename(mask_path), fh, "image/png")))
 
                 data = {"model": model or "gpt-image-1", "prompt": prompt, "size": size}
-                response = await client.post(edit_url, headers={"Authorization": bearer_auth(api_key)}, data=data, files=files)
+                response = await client.post(
+                    edit_url,
+                    headers={"Authorization": bearer_auth(api_key)},
+                    data=data,
+                    files=files,
+                )  # noqa: E501
 
                 # 如果 edits 失败，回退到 generations + image_urls
                 if response.status_code >= 400:
                     # 尝试 JSON 模式
                     body = {"model": model or "gpt-image-1", "prompt": prompt, "size": size}
-                    image_urls = [reference_to_data_url(ref, max_size=1536) for ref in image_refs[:16]]
+                    image_urls = [
+                        reference_to_data_url(ref, max_size=1536) for ref in image_refs[:16]
+                    ]  # noqa: E501
                     if image_urls:
                         body["image_urls"] = image_urls
                     response = await client.post(gen_url, headers=headers, json=body)
@@ -160,7 +176,7 @@ class OpenAICompatProvider(ProviderPlugin):
         max_tokens: int = 4096,
         response_format: Optional[Dict[str, Any]] = None,
         history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """统一文本生成接口 — 调用 /v1/chat/completions
 

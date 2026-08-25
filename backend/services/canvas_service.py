@@ -7,6 +7,7 @@
 - 视口状态（缩放、平移）
 - 按项目/场景保存和恢复
 """
+
 from services.paths import CANVAS_DIR
 
 import json
@@ -23,7 +24,17 @@ logger = logging.getLogger(__name__)
 CANVAS_DATA_DIR = CANVAS_DIR  # T7: 收敛
 
 # CanvasNode 允许的字段名
-_NODE_FIELDS = {"node_id", "asset_id", "node_type", "x", "y", "width", "height", "label", "metadata"}
+_NODE_FIELDS = {
+    "node_id",
+    "asset_id",
+    "node_type",
+    "x",
+    "y",
+    "width",
+    "height",
+    "label",
+    "metadata",
+}  # noqa: E501
 _EDGE_FIELDS = {"edge_id", "source_id", "target_id", "source_port", "target_port", "label"}
 _VIEWPORT_FIELDS = {"x", "y", "zoom", "scale"}
 
@@ -31,9 +42,10 @@ _VIEWPORT_FIELDS = {"x", "y", "zoom", "scale"}
 @dataclass
 class CanvasNode:
     """画布节点"""
+
     node_id: str
     asset_id: str = ""
-    node_type: str = "image"       # image / video / text / group
+    node_type: str = "image"  # image / video / text / group
     x: float = 0.0
     y: float = 0.0
     width: float = 240.0
@@ -54,7 +66,9 @@ class CanvasNode:
         urls = self.metadata.get("urls", []) if self.metadata else []
         if not urls:
             urls = self.metadata.get("asset_urls", []) if self.metadata else []
-        result["url"] = urls[0] if urls else (self.metadata.get("url") or self.metadata.get("image_url") or "")
+        result["url"] = (
+            urls[0] if urls else (self.metadata.get("url") or self.metadata.get("image_url") or "")
+        )  # noqa: E501
         # 将 metadata 中的额外字段展开到顶层（如 comfyParams 等）
         if self.metadata:
             for k, v in self.metadata.items():
@@ -66,6 +80,7 @@ class CanvasNode:
 @dataclass
 class CanvasEdge:
     """画布连线"""
+
     edge_id: str
     source_id: str
     target_id: str
@@ -80,6 +95,7 @@ class CanvasEdge:
 @dataclass
 class CanvasViewport:
     """画布视口"""
+
     x: float = 0.0
     y: float = 0.0
     zoom: float = 1.0
@@ -94,6 +110,7 @@ class CanvasViewport:
 @dataclass
 class CanvasLayout:
     """画布布局"""
+
     canvas_id: str
     name: str = "未命名画布"
     nodes: List[CanvasNode] = field(default_factory=list)
@@ -147,7 +164,17 @@ class CanvasService:
     def _dict_to_layout(self, data: dict) -> CanvasLayout:
         """字典转 CanvasLayout"""
         # CanvasNode 的合法字段，过滤掉 canvas.js 的额外字段
-        _NODE_FIELDS = {"node_id", "asset_id", "node_type", "x", "y", "width", "height", "label", "metadata"}
+        _NODE_FIELDS = {
+            "node_id",
+            "asset_id",
+            "node_type",
+            "x",
+            "y",
+            "width",
+            "height",
+            "label",
+            "metadata",
+        }  # noqa: E501
         nodes = []
         for n in data.get("nodes", []):
             filtered = {k: v for k, v in n.items() if k in _NODE_FIELDS}
@@ -193,12 +220,16 @@ class CanvasService:
         """
         try:
             from core.ws_manager import get_ws_manager
-            await get_ws_manager().broadcast_channel("pipeline", {
-                "type": "canvas_update",
-                "canvas_id": canvas_id,
-                "action": action,
-                "data": data or {},
-            })
+
+            await get_ws_manager().broadcast_channel(
+                "pipeline",
+                {
+                    "type": "canvas_update",
+                    "canvas_id": canvas_id,
+                    "action": action,
+                    "data": data or {},
+                },
+            )
         except Exception as e:
             logger.warning(f"[CanvasService] WS 广播失败: {e}")
 
@@ -212,8 +243,7 @@ class CanvasService:
         # 创建新的延迟写入定时器
         loop = asyncio.get_event_loop()
         self._debounce_timers[canvas_id] = loop.call_later(
-            self.DEBOUNCE_INTERVAL,
-            lambda: asyncio.ensure_future(self._flush_save(canvas_id))
+            self.DEBOUNCE_INTERVAL, lambda: asyncio.ensure_future(self._flush_save(canvas_id))
         )
 
     # 广播防抖定时器在 __init__ 中初始化为实例变量
@@ -227,7 +257,7 @@ class CanvasService:
         loop = asyncio.get_event_loop()
         self._debounce_broadcast_timers[key] = loop.call_later(
             self.DEBOUNCE_INTERVAL,
-            lambda: asyncio.ensure_future(self._broadcast(canvas_id, action, data))
+            lambda: asyncio.ensure_future(self._broadcast(canvas_id, action, data)),
         )
 
     async def _flush_save(self, canvas_id: str):
@@ -251,6 +281,7 @@ class CanvasService:
             nodes/edges/viewport: 初始布局数据（用于恢复场景）
         """
         import uuid
+
         if canvas_id is None:
             canvas_id = f"canvas_{uuid.uuid4().hex[:8]}"
         now = time.time()
@@ -301,7 +332,7 @@ class CanvasService:
                 "node_count": len(c.nodes),
                 "edge_count": len(c.edges),
                 "created_at": c.created_at,
-                "updated_at": c.updated_at
+                "updated_at": c.updated_at,
             }
             for c in sorted(self._canvases.values(), key=lambda x: x.updated_at, reverse=True)
         ]
@@ -323,7 +354,11 @@ class CanvasService:
                 base_ts = float(base_updated_at)
                 # 容忍 1 秒内的时钟偏差
                 if abs(layout.updated_at - base_ts) > 1.0:
-                    return {"_conflict": True, "server_updated_at": layout.updated_at, "canvas": layout}
+                    return {
+                        "_conflict": True,
+                        "server_updated_at": layout.updated_at,
+                        "canvas": layout,
+                    }  # noqa: E501
 
             if "name" in data:
                 layout.name = data["name"]
@@ -340,9 +375,14 @@ class CanvasService:
                     cleaned_nodes.append(CanvasNode(**known))
                 layout.nodes = cleaned_nodes
             if "edges" in data:
-                layout.edges = [CanvasEdge(**{k: v for k, v in e.items() if k in _EDGE_FIELDS}) for e in data["edges"]]
+                layout.edges = [
+                    CanvasEdge(**{k: v for k, v in e.items() if k in _EDGE_FIELDS})
+                    for e in data["edges"]
+                ]  # noqa: E501
             if "viewport" in data:
-                layout.viewport = CanvasViewport(**{k: v for k, v in data["viewport"].items() if k in _VIEWPORT_FIELDS})
+                layout.viewport = CanvasViewport(
+                    **{k: v for k, v in data["viewport"].items() if k in _VIEWPORT_FIELDS}
+                )  # noqa: E501
             if "logs" in data and isinstance(data["logs"], list):
                 layout.logs = data["logs"]
 
@@ -394,8 +434,9 @@ class CanvasService:
             if not layout:
                 return False
             layout.nodes = [n for n in layout.nodes if n.node_id != node_id]
-            layout.edges = [e for e in layout.edges
-                            if e.source_id != node_id and e.target_id != node_id]
+            layout.edges = [
+                e for e in layout.edges if e.source_id != node_id and e.target_id != node_id
+            ]
             layout.updated_at = time.time()
             await asyncio.get_event_loop().run_in_executor(None, self._save, canvas_id)
         await self._broadcast(canvas_id, "node_removed", {"node_id": node_id})
@@ -420,8 +461,11 @@ class CanvasService:
                 if not orphan_ids:
                     continue
                 layout.nodes = [n for n in layout.nodes if n.asset_id != asset_id]
-                layout.edges = [e for e in layout.edges
-                                if e.source_id not in orphan_ids and e.target_id not in orphan_ids]
+                layout.edges = [
+                    e
+                    for e in layout.edges
+                    if e.source_id not in orphan_ids and e.target_id not in orphan_ids
+                ]
                 layout.updated_at = time.time()
                 await asyncio.get_event_loop().run_in_executor(None, self._save, canvas_id)
                 removed_total += len(orphan_ids)
@@ -430,7 +474,9 @@ class CanvasService:
                     f"asset_id={asset_id} | removed={len(orphan_ids)}"
                 )
         if removed_total:
-            await self._broadcast("", "orphan_nodes_removed", {"asset_id": asset_id, "count": removed_total})
+            await self._broadcast(
+                "", "orphan_nodes_removed", {"asset_id": asset_id, "count": removed_total}
+            )  # noqa: E501
         return removed_total
 
     async def add_edge(self, canvas_id: str, edge_data: dict) -> Optional[CanvasEdge]:
@@ -479,6 +525,7 @@ class CanvasService:
 # ============================================================
 
 _instance: Optional[CanvasService] = None
+
 
 def get_canvas_service() -> CanvasService:
     global _instance

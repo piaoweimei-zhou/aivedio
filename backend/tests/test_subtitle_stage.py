@@ -1,4 +1,5 @@
 """字幕烧录阶段单元测试"""
+
 import os
 import sys
 
@@ -6,7 +7,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.stages.subtitle_stage import SubtitleStage
+from services.stages.subtitle_stage import SubtitleStage  # noqa: E402
 
 
 @pytest.fixture
@@ -22,7 +23,7 @@ def test_split_lines_by_punctuation(stage):
 def test_split_lines_caps_at_18_chars(stage):
     long_line = "这是一个非常非常非常非常非常非常非常非常非常非常非常长的句子没有标点"
     lines = stage._split_lines(long_line)
-    assert all(len(l) <= 18 for l in lines)
+    assert all(len(line) <= 18 for line in lines)
     assert "".join(lines) == long_line
 
 

@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/director/prompts", tags=["导演工作台-提示
 
 # ==================== Request Models ====================
 
+
 class PromptVariableRequest(BaseModel):
     name: str
     default: str = ""
@@ -68,6 +69,7 @@ class ResolveRequest(BaseModel):
 
 
 # ==================== Endpoints ====================
+
 
 @router.get("")
 async def list_prompts(
@@ -201,6 +203,7 @@ async def resolve_content(request: ResolveRequest):
 
 # ==================== 阶段 C：项目默认提示词 ====================
 
+
 class SetDefaultRequest(BaseModel):
     project_id: str
     stage_id: str = ""
@@ -238,6 +241,7 @@ async def get_default_prompt(project_id: str, stage_id: str = Query("")):
 
 
 # ==================== 阶段 C：版本历史 ====================
+
 
 @router.get("/{prompt_id}/history")
 async def get_prompt_history(prompt_id: str):

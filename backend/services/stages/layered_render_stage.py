@@ -26,8 +26,16 @@ class LayeredRenderStage(StagePlugin):
     stage_def = StageDef(
         stage_id="layered_render",
         name="分层渲染",
-        input_types=["concept", "multi_view", "storyboard", "storyboard_multi",
-                     "storyboard_layered", "pose", "depth", "lineart"],
+        input_types=[
+            "concept",
+            "multi_view",
+            "storyboard",
+            "storyboard_multi",
+            "storyboard_layered",
+            "pose",
+            "depth",
+            "lineart",
+        ],
         input_content_types=[],
         output_type="storyboard_layered",
         default_provider="comfyui",
@@ -93,7 +101,8 @@ class LayeredRenderStage(StagePlugin):
             content_type = collect_content_type(input_assets)
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="storyboard_layered",
                 name=params.get("name", f"分层渲染 {template_name}".strip()),
                 parent_id=parent_id,

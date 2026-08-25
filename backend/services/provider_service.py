@@ -19,8 +19,6 @@
 """
 
 import logging
-import os
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -31,28 +29,30 @@ logger = logging.getLogger(__name__)
 # 统一结果模型
 # ============================================================
 
+
 @dataclass
 class ProviderResult:
     """统一供应商结果 — 与 ComfyUIGenResult 对齐"""
+
     image_url: str = ""
     images: List[str] = field(default_factory=list)
     filenames: List[str] = field(default_factory=list)
     seed: int = 0
     elapsed_ms: int = 0
     prompt: str = ""
-    provider_id: str = ""          # 来源供应商
-    model: str = ""                # 使用的模型
-    raw: Any = None                # 原始响应（调试用）
-    prompt_id: str = ""            # ComfyUI prompt_id（用于反查生成历史）
+    provider_id: str = ""  # 来源供应商
+    model: str = ""  # 使用的模型
+    raw: Any = None  # 原始响应（调试用）
+    prompt_id: str = ""  # ComfyUI prompt_id（用于反查生成历史）
 
     # 视频扩展字段
-    video_url: str = ""            # 视频结果 URL
-    duration: float = 0.0          # 视频时长
-    last_frame_url: str = ""       # 最后一帧 URL
+    video_url: str = ""  # 视频结果 URL
+    duration: float = 0.0  # 视频时长
+    last_frame_url: str = ""  # 最后一帧 URL
 
     # 任务状态（异步供应商）
     task_id: str = ""
-    status: str = "succeeded"      # succeeded / running / failed
+    status: str = "succeeded"  # succeeded / running / failed
 
     # 通用元数据（文本生成放 text/usage；视频放 reference_images 等）
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -66,6 +66,7 @@ class ProviderResult:
     def to_comfyui_result(self):
         """兼容现有 pipeline_executor 的 ComfyUIGenResult 接口"""
         from services.comfyui_service import ComfyUIGenResult
+
         return ComfyUIGenResult(
             image_url=self.image_url,
             filename=self.filenames[0] if self.filenames else "",
@@ -81,12 +82,13 @@ class ProviderResult:
 # 供应商插件基类
 # ============================================================
 
+
 class ProviderPlugin(ABC):
     """供应商插件基类"""
 
     provider_id: str = ""
     provider_name: str = ""
-    capabilities: List[str] = []   # ["image", "video", "text"]
+    capabilities: List[str] = []  # ["image", "video", "text"]
 
     @abstractmethod
     async def generate_image(
@@ -95,7 +97,7 @@ class ProviderPlugin(ABC):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """生成图像"""
         ...
@@ -115,7 +117,7 @@ class ProviderPlugin(ABC):
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """生成视频（默认未实现）
 
@@ -134,7 +136,7 @@ class ProviderPlugin(ABC):
         max_tokens: int = 4096,
         response_format: Optional[Dict[str, Any]] = None,
         history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """生成文本（默认未实现）— 通过 /v1/chat/completions 调用 LLM"""
         raise NotImplementedError(f"{self.provider_name} 不支持文本生成")
@@ -156,6 +158,7 @@ class ProviderPlugin(ABC):
 # ============================================================
 # ProviderService
 # ============================================================
+
 
 class ProviderService:
     """供应商路由服务 — 统一管理所有供应商"""
@@ -202,7 +205,7 @@ class ProviderService:
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """统一图像生成接口"""
         provider = self._providers.get(provider_id)
@@ -212,11 +215,7 @@ class ProviderService:
         if not provider.is_available():
             raise ValueError(f"供应商 {provider_id} 未配置 API Key 或环境")
         return await provider.generate_image(
-            prompt=prompt,
-            size=size,
-            model=model,
-            reference_images=reference_images,
-            **kwargs
+            prompt=prompt, size=size, model=model, reference_images=reference_images, **kwargs
         )
 
     async def generate_video(
@@ -235,7 +234,7 @@ class ProviderService:
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """统一视频生成接口
 
@@ -251,6 +250,7 @@ class ProviderService:
         # 消除散参数传递的语义混乱，确保下游 provider 拿到的都是解析后的明确值
         try:
             from services.workflow_params import VideoGenerationParams
+
             normalized = VideoGenerationParams(
                 prompt=prompt,
                 width=width,
@@ -271,6 +271,7 @@ class ProviderService:
         except Exception as e:
             # DTO 解析失败不阻断主流程，记录警告后用原始散参数
             import logging
+
             logging.getLogger(__name__).warning(
                 f"[ProviderSvc] VideoGenerationParams 解析失败，降级散参数: {e}"
             )
@@ -294,7 +295,7 @@ class ProviderService:
             frame_count=frame_count,
             seed=seed,
             fps=fps,
-            **kwargs
+            **kwargs,
         )
 
     async def generate_text(
@@ -307,7 +308,7 @@ class ProviderService:
         max_tokens: int = 4096,
         response_format: Optional[Dict[str, Any]] = None,
         history: Optional[List[Dict[str, str]]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """统一文本生成接口（LLM 路由）"""
         provider = self._providers.get(provider_id)
@@ -324,7 +325,7 @@ class ProviderService:
             max_tokens=max_tokens,
             response_format=response_format,
             history=history,
-            **kwargs
+            **kwargs,
         )
 
     def available_providers(self, capability: str = "") -> List[Dict[str, Any]]:
@@ -349,7 +350,7 @@ class ProviderService:
                 "ok": bool,           # 是否全部可用
                 "checked": int,       # 检查的步骤数
                 "unavailable": [      # 不可用的 provider 列表
-                    {"step_id": "xxx", "stage_id": "concept", "provider_id": "comfyui", "reason": "..."}
+                    {"step_id": "xxx", "stage_id": "concept", "provider_id": "comfyui", "reason": "..."}  # noqa: E501
                 ],
                 "providers_status": [ # 所有 provider 状态
                     {"provider_id": "comfyui", "available": False, "name": "ComfyUI"}
@@ -365,12 +366,14 @@ class ProviderService:
         for step in steps:
             stage = stage_svc._stages.get(step.stage_id)
             if not stage:
-                unavailable.append({
-                    "step_id": step.step_id,
-                    "stage_id": step.stage_id,
-                    "provider_id": step.provider_id or "",
-                    "reason": f"未知阶段: {step.stage_id}",
-                })
+                unavailable.append(
+                    {
+                        "step_id": step.step_id,
+                        "stage_id": step.stage_id,
+                        "provider_id": step.provider_id or "",
+                        "reason": f"未知阶段: {step.stage_id}",
+                    }
+                )
                 continue
 
             # 确定该步骤使用的 provider
@@ -385,22 +388,26 @@ class ProviderService:
                     providers_checked[provider_id] = False
 
             if not providers_checked[provider_id]:
-                unavailable.append({
-                    "step_id": step.step_id,
-                    "stage_id": step.stage_id,
-                    "provider_id": provider_id,
-                    "reason": f"Provider {provider_id} 不可用",
-                })
+                unavailable.append(
+                    {
+                        "step_id": step.step_id,
+                        "stage_id": step.stage_id,
+                        "provider_id": provider_id,
+                        "reason": f"Provider {provider_id} 不可用",
+                    }
+                )
 
         # 构建 provider 状态列表
         providers_status = []
         for pid, available in providers_checked.items():
             p = self._providers.get(pid)
-            providers_status.append({
-                "provider_id": pid,
-                "name": p.provider_name if p else pid,
-                "available": available,
-            })
+            providers_status.append(
+                {
+                    "provider_id": pid,
+                    "name": p.provider_name if p else pid,
+                    "available": available,
+                }
+            )
 
         return {
             "ok": len(unavailable) == 0,
@@ -413,7 +420,7 @@ class ProviderService:
         """所有 Provider 健康检查（用于 /api/providers/health 端点）
 
         Returns:
-            [{"provider_id": "comfyui", "name": "ComfyUI", "available": False, "capabilities": [...]}]
+            [{"provider_id": "comfyui", "name": "ComfyUI", "available": False, "capabilities": [...]}]  # noqa: E501
         """
         result = []
         for p in self._providers.values():
@@ -421,13 +428,17 @@ class ProviderService:
                 available = p.is_available()
             except Exception as e:
                 available = False
-                logger.warning(f"[ProviderService] 健康检查异常 | provider={p.provider_id} | error={e}")
-            result.append({
-                "provider_id": p.provider_id,
-                "name": p.provider_name,
-                "available": available,
-                "capabilities": list(p.capabilities),
-            })
+                logger.warning(
+                    f"[ProviderService] 健康检查异常 | provider={p.provider_id} | error={e}"
+                )
+            result.append(
+                {
+                    "provider_id": p.provider_id,
+                    "name": p.provider_name,
+                    "available": available,
+                    "capabilities": list(p.capabilities),
+                }
+            )
         return result
 
     def get_provider(self, provider_id: str) -> Optional[ProviderPlugin]:
@@ -440,6 +451,7 @@ class ProviderService:
 # ============================================================
 
 _instance: Optional[ProviderService] = None
+
 
 def get_provider_service() -> ProviderService:
     global _instance

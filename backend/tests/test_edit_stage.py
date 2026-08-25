@@ -1,4 +1,5 @@
 """edit_stage 卡点剪辑单元测试：节拍计划 / BGM 合成"""
+
 import wave
 
 from services.stages.edit_stage import EditStage

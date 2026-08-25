@@ -57,16 +57,21 @@ class TemplateCleanStage(StagePlugin):
             return self._error_result("缺少 template_id 参数（如 T01_双人正面对话）")
 
         if not validate_template_id(template_id):
-            return self._error_result(f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）")
+            return self._error_result(
+                f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）"
+            )
 
         # 幂等性：重新清场时，先清除上次生成的资产记录
         asset_svc, _ = self._get_services()
         # 先收集要删除的资产 ID，再逐一删除，避免遍历中删除导致跳过
         ids_to_delete = [
-            a.asset_id for a in asset_svc.list_assets()
-            if (a.metadata
+            a.asset_id
+            for a in asset_svc.list_assets()
+            if (
+                a.metadata
                 and a.metadata.get("template_id") == template_id
-                and a.metadata.get("extraction_type") == "template_clean")
+                and a.metadata.get("extraction_type") == "template_clean"
+            )
         ]
         for aid in ids_to_delete:
             try:
@@ -93,14 +98,15 @@ class TemplateCleanStage(StagePlugin):
         if ref_asset and not depth_asset:
             asset_svc, _ = self._get_services()
             for a in asset_svc.list_assets():
-                if (a.asset_type == "depth"
+                if (
+                    a.asset_type == "depth"
                     and a.metadata
                     and a.metadata.get("template_id") == template_id
-                    and a.metadata.get("extraction_type") == "template_batch_extract"):
+                    and a.metadata.get("extraction_type") == "template_batch_extract"
+                ):
                     depth_asset = a
                     logger.info(
-                        f"[TemplateClean] 自动关联深度图 | id={a.asset_id} "
-                        f"name={a.name}"
+                        f"[TemplateClean] 自动关联深度图 | id={a.asset_id} " f"name={a.name}"
                     )
                     break
 
@@ -170,9 +176,8 @@ class TemplateCleanStage(StagePlugin):
                 if not url:
                     continue
                 fname_lower = fn.lower()
-                if f"mask_raw" in fname_lower:
+                if "mask_raw" in fname_lower:
                     mask_url = url
-                    mask_filename = fn
                     break
 
             if not mask_url:
@@ -204,12 +209,11 @@ class TemplateCleanStage(StagePlugin):
 
             # depth_clean 由后端 OpenCV inpaint 生成（从 depth_raw + mask 内插）
             depth_clean_path = str(TEMPLATE_DIR / f"{template_id}_depth_clean.png")
-            self._postprocess_depth_clean(
-                depth_clean_path, depth_clean_path, "", template_id
-            )
+            self._postprocess_depth_clean(depth_clean_path, depth_clean_path, "", template_id)
             if os.path.exists(depth_clean_path):
                 # 同时也复制到 ComfyUI output 目录，方便通过 /api/comfyui/image 访问
                 from services.workflow_builder import _COMFYUI_OUTPUT_DIR
+
                 depth_clean_filename = f"{safe_filename_prefix(template_id)}_depth_clean.png"
                 comfyui_dst = os.path.join(_COMFYUI_OUTPUT_DIR, depth_clean_filename)
                 shutil.copy2(depth_clean_path, comfyui_dst)
@@ -235,7 +239,7 @@ class TemplateCleanStage(StagePlugin):
                         f"name={depth_asset.name} id={depth_asset.asset_id}"
                     )
             else:
-                logger.warning(f"[TemplateClean] depth_clean 未生成，跳过资产注册")
+                logger.warning("[TemplateClean] depth_clean 未生成，跳过资产注册")
 
             # 更新 manifest
             await self._update_manifest(template_id=template_id)
@@ -268,7 +272,9 @@ class TemplateCleanStage(StagePlugin):
         """
         from services.workflow_builder import _COMFYUI_OUTPUT_DIR
         from services.template_utils import (
-            ensure_template_dir, remove_old_files, match_and_copy_files,
+            ensure_template_dir,
+            remove_old_files,
+            match_and_copy_files,
         )
 
         output_dir = _COMFYUI_OUTPUT_DIR
@@ -307,9 +313,7 @@ class TemplateCleanStage(StagePlugin):
             if "depth_clean" in fname_lower:
                 src_path = os.path.join(output_dir, fn)
                 if os.path.exists(src_path):
-                    self._postprocess_depth_clean(
-                        src_path, src_path, output_dir, template_id
-                    )
+                    self._postprocess_depth_clean(src_path, src_path, output_dir, template_id)
                 break
 
     def _postprocess_mask(self, mask_raw_path: str, template_id: str):
@@ -322,7 +326,7 @@ class TemplateCleanStage(StagePlugin):
         输出：{template_id}_mask.png（收缩+羽化后的蒙版）
         """
         try:
-            mask_img = Image.open(mask_raw_path).convert('L')
+            mask_img = Image.open(mask_raw_path).convert("L")
             mask_arr = np.array(mask_img, dtype=np.float32)
 
             logger.info(
@@ -352,9 +356,7 @@ class TemplateCleanStage(StagePlugin):
             )
 
         except Exception as e:
-            logger.error(
-                f"[TemplateClean] 蒙版后处理失败: {e}", exc_info=True
-            )
+            logger.error(f"[TemplateClean] 蒙版后处理失败: {e}", exc_info=True)
 
     def _postprocess_depth_clean(
         self,
@@ -382,18 +384,18 @@ class TemplateCleanStage(StagePlugin):
             )
 
             if not os.path.exists(depth_raw_path):
-                logger.error(f"[TemplateClean] 原始深度图不存在，跳过")
+                logger.error("[TemplateClean] 原始深度图不存在，跳过")
                 return
 
             if not os.path.exists(mask_path):
-                logger.warning(f"[TemplateClean] 蒙版不存在，使用未清场的原始深度图")
+                logger.warning("[TemplateClean] 蒙版不存在，使用未清场的原始深度图")
                 # 直接复制原始深度图作为输出
                 shutil.copy2(depth_raw_path, output_path)
                 return
 
             # 用 PIL 读取（支持中文路径），然后转 numpy 给 OpenCV 处理
-            img_depth = Image.open(depth_raw_path).convert('L')
-            img_mask = Image.open(mask_path).convert('L')
+            img_depth = Image.open(depth_raw_path).convert("L")
+            img_mask = Image.open(mask_path).convert("L")
 
             # 统一尺寸
             if img_mask.size != img_depth.size:
@@ -422,7 +424,7 @@ class TemplateCleanStage(StagePlugin):
             ys, xs = np.where(mask_binary > 0)
             if len(ys) > 100:  # 足够大的区域才做梯度
                 center_y, center_x = ys.mean(), xs.mean()
-                distances = np.sqrt((xs - center_x)**2 + (ys - center_y)**2)
+                distances = np.sqrt((xs - center_x) ** 2 + (ys - center_y) ** 2)
                 max_dist = distances.max()
                 if max_dist > 0:
                     gradient = np.zeros_like(result, dtype=np.float32)
@@ -434,7 +436,7 @@ class TemplateCleanStage(StagePlugin):
                     )
 
             # 用 PIL 保存（支持中文路径）
-            Image.fromarray(result, mode='L').save(output_path)
+            Image.fromarray(result, mode="L").save(output_path)
 
             if os.path.exists(output_path):
                 out_size = os.path.getsize(output_path)
@@ -446,9 +448,7 @@ class TemplateCleanStage(StagePlugin):
                 logger.error(f"[TemplateClean] 输出保存失败: {output_path}")
 
         except Exception as e:
-            logger.error(
-                f"[TemplateClean] 深度图清场失败: {e}", exc_info=True
-            )
+            logger.error(f"[TemplateClean] 深度图清场失败: {e}", exc_info=True)
 
     async def _update_manifest(self, template_id: str):
         """更新 manifest 中的清场深度图和蒙版状态（原子写入，异步互斥锁保护）"""

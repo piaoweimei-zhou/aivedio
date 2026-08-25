@@ -19,6 +19,7 @@ from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin
 from services.template_utils import (
     TEMPLATE_DIR,
+    atomic_manifest_update,
     validate_template_id,
     safe_filename_prefix,
     match_asset_type_by_filename,
@@ -60,7 +61,9 @@ class TemplateBatchExtractStage(StagePlugin):
             return self._error_result("缺少 template_id 参数（如 T01_双人正面对话）")
 
         if not validate_template_id(template_id):
-            return self._error_result(f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）")
+            return self._error_result(
+                f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）"
+            )
 
         err = self._require_input(input_assets) or self._require_urls(input_assets[0])
         if err:
@@ -110,9 +113,7 @@ class TemplateBatchExtractStage(StagePlugin):
                     logger.warning(f"[TemplateBatchExtract] 文件 {fn} 无对应 URL，跳过资产注册")
                     continue
 
-                matched_type = match_asset_type_by_filename(
-                    fn, skip_keywords=["depth_clean"]
-                )
+                matched_type = match_asset_type_by_filename(fn, skip_keywords=["depth_clean"])
                 if not matched_type:
                     logger.debug(f"[TemplateBatchExtract] 跳过未识别文件: {fn}")
                     continue
@@ -190,7 +191,9 @@ class TemplateBatchExtractStage(StagePlugin):
         """
         from services.workflow_builder import _COMFYUI_OUTPUT_DIR
         from services.template_utils import (
-            ensure_template_dir, remove_old_files, match_and_copy_files,
+            ensure_template_dir,
+            remove_old_files,
+            match_and_copy_files,
         )
 
         output_dir = _COMFYUI_OUTPUT_DIR
@@ -218,13 +221,16 @@ class TemplateBatchExtractStage(StagePlugin):
         match_and_copy_files(
             filenames=filenames,
             output_dir=output_dir,
-            rename_map={"lineart": rename_map["lineart"], "depth_raw": rename_map["depth_raw"], "pose": rename_map["pose"]},
+            rename_map={
+                "lineart": rename_map["lineart"],
+                "depth_raw": rename_map["depth_raw"],
+                "pose": rename_map["pose"],
+            },  # noqa: E501
             tag="TemplateBatchExtract",
             skip_keywords=["depth_clean"],
         )
 
         # depth_raw 未匹配时尝试 depth 前缀
-        from services.template_utils import TEMPLATE_DIR
         if not (TEMPLATE_DIR / rename_map["depth_raw"]).exists():
             match_and_copy_files(
                 filenames=filenames,
@@ -243,7 +249,6 @@ class TemplateBatchExtractStage(StagePlugin):
         person_count: int,
     ):
         """自动更新 templates_manifest.json（原子写入，异步互斥锁保护）"""
-        from services.template_utils import atomic_manifest_update, TEMPLATE_DIR
         asset_svc, _ = self._get_services()
 
         def _do_update(manifest):
@@ -288,7 +293,7 @@ class TemplateBatchExtractStage(StagePlugin):
                                 try:
                                     os.remove(str(downstream_path))
                                     logger.info(
-                                        f"[TemplateBatchExtract] 清除下游文件: {tmpl['files'][downstream_key]}"
+                                        f"[TemplateBatchExtract] 清除下游文件: {tmpl['files'][downstream_key]}"  # noqa: E501
                                     )
                                 except OSError:
                                     pass
@@ -334,10 +339,13 @@ class TemplateBatchExtractStage(StagePlugin):
             "template_pose_corrected",
         ]
         ids_to_delete = [
-            a.asset_id for a in asset_svc.list_assets()
-            if (a.metadata
+            a.asset_id
+            for a in asset_svc.list_assets()
+            if (
+                a.metadata
                 and a.metadata.get("template_id") == template_id
-                and a.metadata.get("extraction_type") in downstream_extraction_types)
+                and a.metadata.get("extraction_type") in downstream_extraction_types
+            )
         ]
         for aid in ids_to_delete:
             try:

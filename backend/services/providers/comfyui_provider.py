@@ -7,7 +7,7 @@ ComfyUI 是本地开源推理引擎，始终可用。
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from services.provider_service import ProviderPlugin, ProviderResult
 
@@ -30,7 +30,7 @@ class ComfyUIProvider(ProviderPlugin):
         size: str = "1024x1024",
         model: str = "",
         reference_images: Optional[List[Dict]] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         from services.comfyui_service import get_comfyui_service
 
@@ -88,12 +88,7 @@ class ComfyUIProvider(ProviderPlugin):
         )
 
     async def refine_image(
-        self,
-        image_url: str,
-        prompt: str = "",
-        seed: int = 0,
-        content_type: str = "",
-        **kwargs
+        self, image_url: str, prompt: str = "", seed: int = 0, content_type: str = "", **kwargs
     ) -> ProviderResult:
         """精修图像 — 使用 build_refinement_workflow"""
         from services.comfyui_service import get_comfyui_service
@@ -122,11 +117,7 @@ class ComfyUIProvider(ProviderPlugin):
         )
 
     async def upscale_image(
-        self,
-        image_url: str,
-        upscale_factor: int = 2,
-        seed: int = 0,
-        **kwargs
+        self, image_url: str, upscale_factor: int = 2, seed: int = 0, **kwargs
     ) -> ProviderResult:
         """超分辨率放大 — 使用 upscale/seedvr2 工作流"""
         from services.comfyui_service import get_comfyui_service
@@ -161,7 +152,7 @@ class ComfyUIProvider(ProviderPlugin):
         seed: int = 0,
     ) -> ProviderResult:
         """三视图生成 — 使用 3视图.json 工作流（Qwen Image Edit + multiple-angles LoRA）
-        
+
         使用模板内置的默认提示词，无需外部传递。
         """
         from services.comfyui_service import get_comfyui_service
@@ -205,7 +196,7 @@ class ComfyUIProvider(ProviderPlugin):
         frame_count: Optional[int] = None,
         seed: Optional[int] = None,
         fps: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> ProviderResult:
         """视频生成 — 调用 LTX-2.3 工作流（图生视频）
 

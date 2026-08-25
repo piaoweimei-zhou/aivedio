@@ -12,7 +12,6 @@ import json
 import logging
 import os
 import random
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -32,7 +31,11 @@ def _load_template(name: str) -> Dict[str, Any]:
 
 def _find_nodes_by_class(wf: Dict[str, Any], class_type: str) -> List[Tuple[str, Dict]]:
     """根据 class_type 查找所有匹配节点"""
-    return [(nid, node) for nid, node in wf.items() if isinstance(node, dict) and node.get("class_type") == class_type]
+    return [
+        (nid, node)
+        for nid, node in wf.items()
+        if isinstance(node, dict) and node.get("class_type") == class_type
+    ]  # noqa: E501
 
 
 def _find_node_by_title(wf: Dict[str, Any], title: str) -> Optional[Tuple[str, Dict]]:
@@ -58,6 +61,7 @@ def _inject_filename_prefix(wf: Dict[str, Any], prefix: str):
 # ============================================================
 # 1. 单人分镜
 # ============================================================
+
 
 def build_single_person_workflow(
     reference_images: Dict[str, str],
@@ -114,7 +118,9 @@ def build_single_person_workflow(
     # 注入姿态参考图 — 同时搜索中英文标题
     pose_url = reference_images.get("pose", "") or kwargs.get("pose_reference_image", "")
     if pose_url:
-        pose_match = _find_node_by_title(wf, "姿态参考图") or _find_node_by_title(wf, "IMAGE 4 POSE")
+        pose_match = _find_node_by_title(wf, "姿态参考图") or _find_node_by_title(
+            wf, "IMAGE 4 POSE"
+        )
         if pose_match:
             nid, node = pose_match
             fname = pose_url.rsplit("=", 1)[-1] if "=" in pose_url else pose_url.rsplit("/", 1)[-1]
@@ -126,8 +132,10 @@ def build_single_person_workflow(
     character_fname = ""
     char_url = reference_images.get("character", "")
     if char_url:
-        character_fname = char_url.rsplit("=", 1)[-1] if "=" in char_url else char_url.rsplit("/", 1)[-1]
-    
+        character_fname = (
+            char_url.rsplit("=", 1)[-1] if "=" in char_url else char_url.rsplit("/", 1)[-1]
+        )  # noqa: E501
+
     for nid, node in wf.items():
         if isinstance(node, dict) and node.get("class_type") == "LoadImage":
             default_image = node.get("inputs", {}).get("image", "")
@@ -140,7 +148,11 @@ def build_single_person_workflow(
                     # 使用场景图作为 fallback
                     scene_url = reference_images.get("scene", "")
                     if scene_url:
-                        scene_fname = scene_url.rsplit("=", 1)[-1] if "=" in scene_url else scene_url.rsplit("/", 1)[-1]
+                        scene_fname = (
+                            scene_url.rsplit("=", 1)[-1]
+                            if "=" in scene_url
+                            else scene_url.rsplit("/", 1)[-1]
+                        )  # noqa: E501
                         if scene_fname:
                             node["inputs"]["image"] = scene_fname
 
@@ -170,12 +182,13 @@ def build_single_person_workflow(
         "seed": actual_seed,
         "steps": 1,
     }
-    return [[wf], [f"单人分镜"], metadata]  # 注意：1人分镜可能有多步，此处简化
+    return [[wf], ["单人分镜"], metadata]  # 注意：1人分镜可能有多步，此处简化
 
 
 # ============================================================
 # 2. 双人融合分镜
 # ============================================================
+
 
 def build_dual_person_workflow(
     reference_images: Dict[str, str],
@@ -213,7 +226,9 @@ def build_dual_person_workflow(
         scene_url = reference_images.get("scene", "")
         if scene_url:
             nid, node = load_images[2]
-            fname = scene_url.rsplit("=", 1)[-1] if "=" in scene_url else scene_url.rsplit("/", 1)[-1]
+            fname = (
+                scene_url.rsplit("=", 1)[-1] if "=" in scene_url else scene_url.rsplit("/", 1)[-1]
+            )  # noqa: E501
             if fname:
                 node["inputs"]["image"] = fname
 
@@ -245,6 +260,7 @@ def build_dual_person_workflow(
 # ============================================================
 # 3. 本地多人分镜（含AI分镜描述）
 # ============================================================
+
 
 def build_local_multi_workflow(
     reference_images: Dict[str, str],
@@ -302,6 +318,7 @@ def build_local_multi_workflow(
 # ============================================================
 # 4. GPT分镜（OpenAI GPT-Image-2 API）
 # ============================================================
+
 
 def build_gpt_storyboard_workflow(
     reference_images: Dict[str, str],

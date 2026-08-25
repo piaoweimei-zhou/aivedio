@@ -3,8 +3,6 @@
 import os
 import sys
 
-import pytest
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.asset_organizer import (  # noqa: E402
@@ -32,7 +30,7 @@ class TestSanitizeKeyword:
 
     def test_invalid_chars(self):
         # 非法字符替换 + 12 字符截断
-        assert sanitize_keyword("a/b\\c:d*e?f\"g<h>i|j") == "a_b_c_d_e_f_"
+        assert sanitize_keyword('a/b\\c:d*e?f"g<h>i|j') == "a_b_c_d_e_f_"
 
     def test_truncation(self):
         assert len(sanitize_keyword("x" * 100)) <= 12

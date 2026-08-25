@@ -26,8 +26,15 @@ class MultiPersonStage(StagePlugin):
     stage_def = StageDef(
         stage_id="multi_person",
         name="多人分镜（三元约束）",
-        input_types=["concept", "multi_view", "storyboard", "storyboard_multi",
-                     "pose", "depth", "lineart"],
+        input_types=[
+            "concept",
+            "multi_view",
+            "storyboard",
+            "storyboard_multi",
+            "pose",
+            "depth",
+            "lineart",
+        ],
         input_content_types=[],  # 接受任意内容类型
         output_type="storyboard_multi",
         default_provider="comfyui",
@@ -59,7 +66,9 @@ class MultiPersonStage(StagePlugin):
         # 构建参考图列表，按 asset_type 映射到 workflow_refs 的 key
         reference_images = build_reference_images(input_assets, multi_group=False)
 
-        prompt = params.get("prompt", "Two characters in a scene, natural interaction, cinematic lighting")
+        prompt = params.get(
+            "prompt", "Two characters in a scene, natural interaction, cinematic lighting"
+        )  # noqa: E501
         size = params.get("size", "1024x1024")
         model = params.get("model", "")
         template_name = params.get("template_name", "")
@@ -90,7 +99,8 @@ class MultiPersonStage(StagePlugin):
             content_type = collect_content_type(input_assets)
 
             new_asset = await self._register_asset(
-                asset_svc, result,
+                asset_svc,
+                result,
                 asset_type="storyboard_multi",
                 name=params.get("name", f"多人分镜 {template_name}".strip()),
                 parent_id=parent_id,

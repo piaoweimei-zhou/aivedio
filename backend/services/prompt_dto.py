@@ -20,6 +20,7 @@
 此模块仅作为文档化标准，不强制重命名现有代码（避免破坏性变更）。
 新代码应遵循此标准。
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
@@ -30,11 +31,12 @@ class PromptDTO:
 
     用于 Service 层之间传递提示词，替代散落的 prompt/prompt_text/positive_prompt 等字段。
     """
-    text: str = ""                                    # 主提示词文本
-    negative: str = ""                                # 负向提示词
+
+    text: str = ""  # 主提示词文本
+    negative: str = ""  # 负向提示词
     variables: Dict[str, Any] = field(default_factory=dict)  # 变量替换映射
-    prompt_id: Optional[str] = None                   # 提示词库 ID（可选）
-    structured: Optional[Dict[str, Any]] = None       # 结构化提示词（ComfyUI prompt_json）
+    prompt_id: Optional[str] = None  # 提示词库 ID（可选）
+    structured: Optional[Dict[str, Any]] = None  # 结构化提示词（ComfyUI prompt_json）
 
     def to_workflow_params(self) -> Dict[str, str]:
         """转换为工作流构建层参数（positive_prompt / negative_prompt）"""

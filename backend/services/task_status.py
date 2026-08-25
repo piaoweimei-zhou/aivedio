@@ -16,15 +16,16 @@
 
 class TaskStatus:
     """任务状态常量（字符串常量，便于与现有代码兼容）"""
+
     PENDING = "pending"
     RUNNING = "running"
-    COMPLETED = "completed"      # 后端内部统一用 completed
+    COMPLETED = "completed"  # 后端内部统一用 completed
     FAILED = "failed"
     CANCELLED = "cancelled"
-    SKIPPED = "skipped"          # BatchStep 专用：上游失败时自动跳过
+    SKIPPED = "skipped"  # BatchStep 专用：上游失败时自动跳过
 
     # 前端兼容别名（ProviderResult / 旧 API 使用）
-    SUCCEEDED = "succeeded"      # = COMPLETED 的前端别名
+    SUCCEEDED = "succeeded"  # = COMPLETED 的前端别名
 
 
 # 后端内部状态 → 前端状态映射
@@ -69,4 +70,9 @@ def to_frontend_status(status: str) -> str:
 
 def is_terminal(status: str) -> bool:
     """判断是否为终态（不再变化）"""
-    return status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.SKIPPED)
+    return status in (
+        TaskStatus.COMPLETED,
+        TaskStatus.FAILED,
+        TaskStatus.CANCELLED,
+        TaskStatus.SKIPPED,
+    )  # noqa: E501

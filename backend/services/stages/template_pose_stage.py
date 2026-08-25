@@ -19,6 +19,7 @@ from services.asset_service import AssetRef, AssetProduceResult
 from services.stage_service import StageDef, StagePlugin
 from services.template_utils import (
     TEMPLATE_DIR,
+    atomic_manifest_update,
     validate_template_id,
     safe_filename_prefix,
     match_asset_type_by_filename,
@@ -59,16 +60,21 @@ class TemplatePoseStage(StagePlugin):
             return self._error_result("缺少 template_id 参数")
 
         if not validate_template_id(template_id):
-            return self._error_result(f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）")
+            return self._error_result(
+                f"template_id 格式不合法: {template_id}（不允许包含路径分隔符）"
+            )
 
         # 幂等性：重新生成简化Pose时，先清除上次生成的资产记录
         asset_svc, _ = self._get_services()
         # 先收集要删除的资产 ID，再逐一删除，避免遍历中删除导致跳过
         ids_to_delete = [
-            a.asset_id for a in asset_svc.list_assets()
-            if (a.metadata
+            a.asset_id
+            for a in asset_svc.list_assets()
+            if (
+                a.metadata
                 and a.metadata.get("template_id") == template_id
-                and a.metadata.get("extraction_type") == "template_pose")
+                and a.metadata.get("extraction_type") == "template_pose"
+            )
         ]
         for aid in ids_to_delete:
             try:
@@ -87,8 +93,7 @@ class TemplatePoseStage(StagePlugin):
             return self._error_result(f"资产 {source.asset_id} 无有效图片 URL")
 
         logger.info(
-            f"[TemplatePose] 开始 | template_id={template_id} | "
-            f"source={source.asset_id}"
+            f"[TemplatePose] 开始 | template_id={template_id} | " f"source={source.asset_id}"
         )
 
         start_time = time.time()
@@ -158,9 +163,7 @@ class TemplatePoseStage(StagePlugin):
             await self._update_manifest(template_id)
 
             elapsed_ms = int((time.time() - start_time) * 1000)
-            logger.info(
-                f"[TemplatePose] 完成 | template_id={template_id} | {elapsed_ms}ms"
-            )
+            logger.info(f"[TemplatePose] 完成 | template_id={template_id} | {elapsed_ms}ms")
 
             # 如果资产注册失败，返回错误（文件已复制但资产表无记录）
             if not created_pose_asset:
@@ -192,7 +195,9 @@ class TemplatePoseStage(StagePlugin):
         """
         from services.workflow_builder import _COMFYUI_OUTPUT_DIR
         from services.template_utils import (
-            ensure_template_dir, remove_old_files, match_and_copy_files,
+            ensure_template_dir,
+            remove_old_files,
+            match_and_copy_files,
         )
 
         output_dir = _COMFYUI_OUTPUT_DIR
@@ -222,7 +227,6 @@ class TemplatePoseStage(StagePlugin):
 
         Phase 3 完成时检查全部 6 个模板文件是否存在，齐全则设 status=ready。
         """
-        from services.template_utils import atomic_manifest_update, TEMPLATE_DIR
 
         def _do_update(manifest):
             pose_simplified_exists = (TEMPLATE_DIR / f"{template_id}_pose_simplified.png").exists()

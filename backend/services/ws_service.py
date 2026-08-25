@@ -25,7 +25,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -37,14 +37,15 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WsEvent:
     """WebSocket 推送事件"""
-    event: str                    # 事件类型
-    batch_id: str                 # 批量任务 ID
-    step_id: str = ""             # 步骤 ID（可选）
-    stage_id: str = ""            # 阶段 ID（可选）
-    status: str = ""              # 状态
-    message: str = ""             # 消息
+
+    event: str  # 事件类型
+    batch_id: str  # 批量任务 ID
+    step_id: str = ""  # 步骤 ID（可选）
+    stage_id: str = ""  # 阶段 ID（可选）
+    status: str = ""  # 状态
+    message: str = ""  # 消息
     progress: Dict[str, Any] = None  # 进度信息
-    timestamp: float = 0.0        # 时间戳
+    timestamp: float = 0.0  # 时间戳
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -89,9 +90,7 @@ class WsConnectionManager:
         """取消订阅（batch_id 为空则取消所有）"""
         async with self._lock:
             batches_to_remove = (
-                self._subscribed_batches.get(websocket, set())
-                if not batch_id
-                else {batch_id}
+                self._subscribed_batches.get(websocket, set()) if not batch_id else {batch_id}
             )
             for bid in batches_to_remove:
                 conns = self._subscriptions.get(bid)
@@ -129,8 +128,7 @@ class WsConnectionManager:
                     self._subscriptions.get(batch_id, set()).discard(ws)
 
         logger.info(
-            f"[WsManager] 推送 | batch={batch_id} | event={event.event} | "
-            f"clients={len(conns)}"
+            f"[WsManager] 推送 | batch={batch_id} | event={event.event} | " f"clients={len(conns)}"
         )
 
 
@@ -146,26 +144,33 @@ def get_ws_manager() -> WsConnectionManager:
 # 事件通知接口（供 BatchTaskService 调用）
 # ============================================================
 
+
 async def notify_batch_started(batch_id: str, total_steps: int):
     """通知批量任务启动"""
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="batch_started",
-        batch_id=batch_id,
-        message=f"批量任务启动，共 {total_steps} 个步骤",
-        progress={"total": total_steps, "completed": 0, "percent": 0},
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="batch_started",
+            batch_id=batch_id,
+            message=f"批量任务启动，共 {total_steps} 个步骤",
+            progress={"total": total_steps, "completed": 0, "percent": 0},
+        ),
+    )
 
 
 async def notify_step_started(batch_id: str, step_id: str, stage_id: str):
     """通知步骤开始执行"""
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="step_started",
-        batch_id=batch_id,
-        step_id=step_id,
-        stage_id=stage_id,
-        status="running",
-        message=f"步骤 {step_id} 开始执行",
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="step_started",
+            batch_id=batch_id,
+            step_id=step_id,
+            stage_id=stage_id,
+            status="running",
+            message=f"步骤 {step_id} 开始执行",
+        ),
+    )
 
 
 async def notify_step_completed(
@@ -178,20 +183,23 @@ async def notify_step_completed(
 ):
     """通知步骤完成"""
     percent = int(completed * 100 / total) if total > 0 else 0
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="step_completed",
-        batch_id=batch_id,
-        step_id=step_id,
-        stage_id=stage_id,
-        status=to_frontend_status(TaskStatus.COMPLETED),
-        message=f"步骤 {step_id} 完成",
-        progress={
-            "completed": completed,
-            "total": total,
-            "percent": percent,
-            "output_asset_id": output_asset_id,
-        },
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="step_completed",
+            batch_id=batch_id,
+            step_id=step_id,
+            stage_id=stage_id,
+            status=to_frontend_status(TaskStatus.COMPLETED),
+            message=f"步骤 {step_id} 完成",
+            progress={
+                "completed": completed,
+                "total": total,
+                "percent": percent,
+                "output_asset_id": output_asset_id,
+            },
+        ),
+    )
 
 
 async def notify_step_failed(
@@ -204,15 +212,18 @@ async def notify_step_failed(
 ):
     """通知步骤失败"""
     percent = int(completed * 100 / total) if total > 0 else 0
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="step_failed",
-        batch_id=batch_id,
-        step_id=step_id,
-        stage_id=stage_id,
-        status="failed",
-        message=f"步骤 {step_id} 失败: {error}",
-        progress={"completed": completed, "total": total, "percent": percent},
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="step_failed",
+            batch_id=batch_id,
+            step_id=step_id,
+            stage_id=stage_id,
+            status="failed",
+            message=f"步骤 {step_id} 失败: {error}",
+            progress={"completed": completed, "total": total, "percent": percent},
+        ),
+    )
 
 
 async def notify_step_skipped(
@@ -222,42 +233,64 @@ async def notify_step_skipped(
     reason: str,
 ):
     """通知步骤跳过"""
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="step_skipped",
-        batch_id=batch_id,
-        step_id=step_id,
-        stage_id=stage_id,
-        status="skipped",
-        message=f"步骤 {step_id} 跳过: {reason}",
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="step_skipped",
+            batch_id=batch_id,
+            step_id=step_id,
+            stage_id=stage_id,
+            status="skipped",
+            message=f"步骤 {step_id} 跳过: {reason}",
+        ),
+    )
 
 
 async def notify_batch_completed(batch_id: str, completed: int, total: int, elapsed_ms: int):
     """通知批量任务完成"""
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="batch_completed",
-        batch_id=batch_id,
-        status=to_frontend_status(TaskStatus.COMPLETED),
-        message=f"批量任务完成，{completed}/{total} 步骤成功，耗时 {elapsed_ms}ms",
-        progress={"completed": completed, "total": total, "percent": 100, "elapsed_ms": elapsed_ms},
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="batch_completed",
+            batch_id=batch_id,
+            status=to_frontend_status(TaskStatus.COMPLETED),
+            message=f"批量任务完成，{completed}/{total} 步骤成功，耗时 {elapsed_ms}ms",
+            progress={
+                "completed": completed,
+                "total": total,
+                "percent": 100,
+                "elapsed_ms": elapsed_ms,
+            },
+        ),
+    )
 
 
-async def notify_batch_failed(batch_id: str, failed_step_id: str, error: str, completed: int, total: int):
+async def notify_batch_failed(
+    batch_id: str, failed_step_id: str, error: str, completed: int, total: int
+):  # noqa: E501
     """通知批量任务失败"""
     percent = int(completed * 100 / total) if total > 0 else 0
-    await _ws_manager.broadcast(batch_id, WsEvent(
-        event="batch_failed",
-        batch_id=batch_id,
-        status="failed",
-        message=f"批量任务失败：步骤 {failed_step_id} 失败，{completed}/{total} 已完成",
-        progress={"completed": completed, "total": total, "percent": percent, "failed_step": failed_step_id},
-    ))
+    await _ws_manager.broadcast(
+        batch_id,
+        WsEvent(
+            event="batch_failed",
+            batch_id=batch_id,
+            status="failed",
+            message=f"批量任务失败：步骤 {failed_step_id} 失败，{completed}/{total} 已完成",
+            progress={
+                "completed": completed,
+                "total": total,
+                "percent": percent,
+                "failed_step": failed_step_id,
+            },  # noqa: E501
+        ),
+    )
 
 
 # ============================================================
 # WebSocket 端点处理
 # ============================================================
+
 
 async def handle_batch_ws(websocket: WebSocket, batch_id: str):
     """WebSocket 端点处理函数
@@ -273,12 +306,17 @@ async def handle_batch_ws(websocket: WebSocket, batch_id: str):
     await _ws_manager.subscribe(websocket, batch_id)
 
     # 发送连接成功消息
-    await websocket.send_text(json.dumps({
-        "event": "connected",
-        "batch_id": batch_id,
-        "message": f"已订阅批量任务 {batch_id} 的实时事件",
-        "timestamp": time.time(),
-    }, ensure_ascii=False))
+    await websocket.send_text(
+        json.dumps(
+            {
+                "event": "connected",
+                "batch_id": batch_id,
+                "message": f"已订阅批量任务 {batch_id} 的实时事件",
+                "timestamp": time.time(),
+            },
+            ensure_ascii=False,
+        )
+    )
 
     try:
         # 保持连接，接收客户端心跳
@@ -286,10 +324,15 @@ async def handle_batch_ws(websocket: WebSocket, batch_id: str):
             data = await websocket.receive_text()
             # 处理客户端消息（如 ping）
             if data == "ping":
-                await websocket.send_text(json.dumps({
-                    "event": "pong",
-                    "timestamp": time.time(),
-                }, ensure_ascii=False))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "event": "pong",
+                            "timestamp": time.time(),
+                        },
+                        ensure_ascii=False,
+                    )
+                )
     except WebSocketDisconnect:
         logger.info(f"[WsManager] WebSocket 断开 | batch={batch_id}")
     except Exception as e:

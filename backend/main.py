@@ -4,6 +4,7 @@
 
 独立部署版本。仅包含导演工作台所需的路由和服务。
 """
+
 from services.paths import GENERATED_DIR, UPLOADS_DIR, PIPELINES_DIR
 
 import asyncio
@@ -19,39 +20,43 @@ if sys.version_info < (3, 13):
     )
 
 # Windows 中文编码修复
-if platform.system() == 'Windows':
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    os.environ['PYTHONUTF8'] = '1'
+if platform.system() == "Windows":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    os.environ["PYTHONUTF8"] = "1"
     import locale
+
     try:
-        locale.setlocale(locale.LC_ALL, '')
+        locale.setlocale(locale.LC_ALL, "")
     except locale.Error:
         pass
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-if platform.system() == 'Windows':
+if platform.system() == "Windows":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 # 初始化结构化日志
-from services.structured_logging import init_logging, get_logger
+from services.structured_logging import init_logging, get_logger  # noqa: E402
+
 init_logging()
 
 # 抑制 watchfiles 刷屏日志
-import logging
+import logging  # noqa: E402
+
 logging.getLogger("watchfiles").setLevel(logging.WARNING)
 
-logger = get_logger('main')
+logger = get_logger("main")
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
 
 
 @asynccontextmanager
@@ -97,7 +102,8 @@ app = FastAPI(
 # 注意：allow_origins=["*"] 与 allow_credentials=True 不能同时使用，
 # 浏览器会拒绝携带凭证的跨域请求。这里通过环境变量配置允许的来源，
 # 默认允许本机开发端口；如需生产部署，设置 CORS_ALLOWED_ORIGINS 环境变量。
-import os as _os
+import os as _os  # noqa: E402
+
 _default_origins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -119,7 +125,8 @@ app.add_middleware(
 # ============================================================
 # WebSocket 端点（实时进度推送）
 # ============================================================
-from services.ws_service import handle_batch_ws
+from services.ws_service import handle_batch_ws  # noqa: E402
+
 
 @app.websocket("/api/ws/batches/{batch_id}")
 async def batch_ws_endpoint(websocket, batch_id: str):
@@ -134,9 +141,11 @@ async def batch_ws_endpoint(websocket, batch_id: str):
     """
     await handle_batch_ws(websocket, batch_id)
 
+
 # ============================================================
 # 画布实时变更（WebSocket）
 # ============================================================
+
 
 @app.websocket("/api/ws/canvas")
 async def canvas_ws_endpoint(websocket: WebSocket, canvas_id: str = ""):
@@ -165,20 +174,21 @@ async def canvas_ws_endpoint(websocket: WebSocket, canvas_id: str = ""):
     finally:
         manager.disconnect(conn_id)
 
+
 # ============================================================
 # 路由注册
 # ============================================================
 
-from api.director_asset_api import router as director_asset_router
-from api.director_stage_api import router as director_stage_router
-from api.director_provider_api import router as director_provider_router
-from api.canvas_api import router as canvas_router
-from api.infinite_canvas_api import router as infinite_canvas_router
-from api.project_api import router as project_router
-from api.batch_api import router as batch_router
-from api.workflow_template_api import router as workflow_template_router
-from api.preset_api import router as preset_router
-from api.prompt_api import router as prompt_router
+from api.director_asset_api import router as director_asset_router  # noqa: E402
+from api.director_stage_api import router as director_stage_router  # noqa: E402
+from api.director_provider_api import router as director_provider_router  # noqa: E402
+from api.canvas_api import router as canvas_router  # noqa: E402
+from api.infinite_canvas_api import router as infinite_canvas_router  # noqa: E402
+from api.project_api import router as project_router  # noqa: E402
+from api.batch_api import router as batch_router  # noqa: E402
+from api.workflow_template_api import router as workflow_template_router  # noqa: E402
+from api.preset_api import router as preset_router  # noqa: E402
+from api.prompt_api import router as prompt_router  # noqa: E402
 
 _routers = [
     director_asset_router,
@@ -213,11 +223,13 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
     """
     if not filename:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="filename 参数必填")
     # 安全检查：防止路径遍历
     safe_name = os.path.basename(filename)
     if safe_name != filename or ".." in filename:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="非法文件名")
     # subfolder 同样做路径遍历防护
     safe_sub = ""
@@ -225,13 +237,17 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
         safe_sub = subfolder.replace("\\", "/").strip("/")
         if ".." in safe_sub or safe_sub.startswith("/"):
             from fastapi import HTTPException
+
             raise HTTPException(status_code=400, detail="非法子目录")
     # 搜索路径（按优先级）
     from services.comfyui_service import COMFYUI_DIR
+
     _upload_dir = UPLOADS_DIR
     search_dirs = [
-        os.path.join(GENERATED_DIR, safe_sub) if safe_sub else GENERATED_DIR,  # 1. 持久化目录（优先）
-        _upload_dir,                                        # 2. 上传目录（含 canvas 上传）
+        (
+            os.path.join(GENERATED_DIR, safe_sub) if safe_sub else GENERATED_DIR
+        ),  # 1. 持久化目录（优先）
+        _upload_dir,  # 2. 上传目录（含 canvas 上传）
         os.path.join(COMFYUI_DIR, "output") if COMFYUI_DIR else "",  # 3. ComfyUI output
     ]
     if pipeline_id:
@@ -244,9 +260,15 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
             # 根据扩展名自动判断媒体类型
             ext = os.path.splitext(safe_name)[1].lower()
             media_map = {
-                ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
-                ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+                ".gif": "image/gif",
+                ".bmp": "image/bmp",
+                ".mp4": "video/mp4",
+                ".webm": "video/webm",
+                ".mov": "video/quicktime",
             }
             return FileResponse(fpath, media_type=media_map.get(ext, "application/octet-stream"))
     # 兼容旧 URL：持久化目录递归查找（存量资产迁移到子目录后仍可访问）
@@ -256,16 +278,25 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
                 fpath = os.path.join(root, safe_name)
                 ext = os.path.splitext(safe_name)[1].lower()
                 media_map = {
-                    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                    ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
-                    ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                    ".gif": "image/gif",
+                    ".bmp": "image/bmp",
+                    ".mp4": "video/mp4",
+                    ".webm": "video/webm",
+                    ".mov": "video/quicktime",
                 }
-                return FileResponse(fpath, media_type=media_map.get(ext, "application/octet-stream"))
+                return FileResponse(
+                    fpath, media_type=media_map.get(ext, "application/octet-stream")
+                )  # noqa: E501
 
     # 4. 回退：通过 HTTP 从 ComfyUI /view 端点代理拉取（适用于远程 ComfyUI）
     import aiohttp
     from fastapi.responses import Response
     from services.comfyui.config import COMFYUI_BASE_URL
+
     comfyui_base = COMFYUI_BASE_URL
     view_url = f"{comfyui_base}/view?filename={safe_name}&type=output"
     try:
@@ -282,16 +313,26 @@ async def serve_comfyui_image(filename: str = "", pipeline_id: str = "", subfold
                         logger.warning(f"[ImageProxy] 持久化写入失败: {e}")
                     ext = os.path.splitext(safe_name)[1].lower()
                     media_map = {
-                        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                        ".webp": "image/webp", ".gif": "image/gif", ".bmp": "image/bmp",
-                        ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+                        ".png": "image/png",
+                        ".jpg": "image/jpeg",
+                        ".jpeg": "image/jpeg",
+                        ".webp": "image/webp",
+                        ".gif": "image/gif",
+                        ".bmp": "image/bmp",
+                        ".mp4": "video/mp4",
+                        ".webm": "video/webm",
+                        ".mov": "video/quicktime",
                     }
-                    return Response(content=data, media_type=media_map.get(ext, "application/octet-stream"))
+                    return Response(
+                        content=data, media_type=media_map.get(ext, "application/octet-stream")
+                    )  # noqa: E501
     except Exception as e:
         logger.warning(f"[ImageProxy] ComfyUI /view 代理失败: {e}")
 
     from fastapi import HTTPException
+
     raise HTTPException(status_code=404, detail=f"文件不存在: {safe_name}")
+
 
 # ============================================================
 # 静态文件服务
@@ -320,7 +361,8 @@ os.makedirs(_upload_dir_for_assets, exist_ok=True)
 app.mount("/assets/uploads", StaticFiles(directory=_upload_dir_for_assets), name="assets_uploads")
 
 # 生成产物静态服务（/output/ → backend/output/）
-from services.paths import OUTPUT_DIR as _GEN_OUTPUT_DIR
+from services.paths import OUTPUT_DIR as _GEN_OUTPUT_DIR  # noqa: E402
+
 for _cat in ("output", "script", "graphic", "temp"):
     _cat_dir = os.path.join(_GEN_OUTPUT_DIR, _cat)
     os.makedirs(_cat_dir, exist_ok=True)
@@ -330,6 +372,7 @@ logger.info(f"[Director] 生成产物目录: {_GEN_OUTPUT_DIR}")
 # ============================================================
 # 健康检查
 # ============================================================
+
 
 @app.get("/health")
 async def health():
@@ -343,7 +386,6 @@ async def health():
 # 注意：必须在所有 API 路由和 /static、/output 等静态路径之后挂载，避免被根路径拦截
 _react_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend-director", "dist")
 if os.path.isdir(_react_dist):
-    from fastapi.responses import FileResponse
 
     # 挂载 React 静态资源（/assets/ → frontend-director/dist/assets/）
     _react_assets = os.path.join(_react_dist, "assets")
@@ -355,20 +397,33 @@ if os.path.isdir(_react_dist):
     @app.get("/{full_path:path}")
     async def react_spa(full_path: str):
         # 排除 API、静态文件、输出文件等路径
-        if (full_path.startswith(("api/", "static/", "output/", "assets/"))
-                or full_path in ("health", "favicon.ico")):
+        if full_path.startswith(("api/", "static/", "output/", "assets/")) or full_path in (
+            "health",
+            "favicon.ico",
+        ):
             raise HTTPException(status_code=404, detail="Not Found")
         index_path = os.path.join(_react_dist, "index.html")
         if os.path.isfile(index_path):
             return FileResponse(index_path)
         raise HTTPException(status_code=404, detail="React 前端未构建")
+
     logger.info(f"[Director] React 前端已挂载: {_react_dist}")
 else:
-    logger.warning(f"[Director] React 前端构建产物不存在: {_react_dist}（请运行 cd frontend-director && npm run build）")
+    logger.warning(
+        f"[Director] React 前端构建产物不存在: {_react_dist}（请运行 cd frontend-director && npm run build）"
+    )  # noqa: E501
 
 
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("DIRECTOR_PORT", "8000"))
     logger.info(f"[Director] 启动服务 | port={port}")
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True, reload_dirs=["api", "services"], log_level="warning")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True,
+        reload_dirs=["api", "services"],
+        log_level="warning",
+    )  # noqa: E501

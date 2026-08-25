@@ -13,6 +13,7 @@
 
 新实体应使用本模块的 generate_id() 函数。
 """
+
 import uuid
 from typing import Optional
 

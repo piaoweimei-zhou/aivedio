@@ -31,7 +31,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -132,11 +132,13 @@ def extract_scenes(script: Dict[str, Any]) -> List[Dict[str, str]]:
         scene_desc = (act.get("scene") or "").strip()
         if not scene_desc:
             continue
-        result.append({
-            "name": f"第{act.get('act', len(result)+1)}幕场景",
-            "desc": scene_desc,
-            "act": act.get("act", len(result) + 1),
-        })
+        result.append(
+            {
+                "name": f"第{act.get('act', len(result)+1)}幕场景",
+                "desc": scene_desc,
+                "act": act.get("act", len(result) + 1),
+            }
+        )
     return result
 
 
@@ -161,10 +163,12 @@ def extract_act_durations(script: Dict[str, Any]) -> List[float]:
 # 内部工具
 # ============================================================
 
+
 def _url_to_local_path(url: str) -> Optional[str]:
     """把 script URL 转换为本地文件路径（如果适用）"""
     try:
         from services.providers.provider_utils import output_file_from_url
+
         return output_file_from_url(url)
     except Exception:
         return None
