@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503
+exclude =
+    .venv-test,
+    __pycache__,
+    data,
+    output,
+    assets,
+    logs,
+    static,
+    scripts,
+    tests/data
+# ratchet 策略：既有违规不强制清零，仅拦截新增（执行期按需补充 per-file-ignores）
+# 新增代码必须 0 error

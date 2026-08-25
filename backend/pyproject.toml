@@ -1,0 +1,26 @@
+[tool.black]
+line-length = 100
+extend-exclude = '''
+(
+  \.venv-test |
+  data |
+  output |
+  assets |
+  logs |
+  __pycache__ |
+  scripts
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = [
+    ".venv-test",
+    "data",
+    "output",
+    "assets",
+    "logs",
+    "__pycache__",
+    "scripts",
+]

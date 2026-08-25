@@ -1,0 +1,22 @@
+#!/bin/sh
+# director pre-commit hook（ratchet 策略）
+# 规则：本次提交中【新增】的 backend/*.py 文件必须通过 flake8（0 error）
+# 存量文件的既有违规不拦截（见 docs/工程化/lint_baseline.txt 冻结基线）
+# 启用：git config core.hooksPath .githooks
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+NEW_PY=$(git diff --cached --name-only --diff-filter=A -- 'backend/**/*.py' 'backend/*.py')
+[ -z "$NEW_PY" ] && exit 0
+
+cd backend || exit 1
+FAILED=0
+for f in $NEW_PY; do
+  REL=$(echo "$f" | sed 's|^backend/||')
+  if ! .venv-test/Scripts/python.exe -m flake8 "$REL" --max-line-length=100 2>/dev/null; then
+    echo "pre-commit: new file $REL has flake8 violations, please fix first"
+    FAILED=1
+  fi
+done
+[ $FAILED -ne 0 ] && exit 1
+exit 0
