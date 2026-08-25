@@ -115,6 +115,17 @@ def cmd_dashboard(args):
     return 0 if r.returncode == 0 else 1
 
 
+def cmd_regress_g2(args):
+    print("== G2 一键成片回归 ==")
+    cmd = [_py(), os.path.join(BACKEND, "tools", "g2_regression.py")]
+    if getattr(args, "full", False):
+        cmd.append("--full")
+    if getattr(args, "runs", 3) != 3:
+        cmd += ["--runs", str(args.runs)]
+    r = _run(cmd, cwd=BACKEND)
+    return 0 if r.returncode == 0 else 1
+
+
 def main():
     p = argparse.ArgumentParser(description="director 统一命令入口")
     sub = p.add_subparsers(dest="cmd")
@@ -129,6 +140,9 @@ def main():
     h = sub.add_parser("health", help="后端健康检查")
     h.add_argument("--url", default="http://127.0.0.1:8000")
     sub.add_parser("dashboard", help="生成治理看板")
+    gr = sub.add_parser("regress-g2", help="G2 一键成片回归（默认契约冒烟）")
+    gr.add_argument("--full", action="store_true", help="真实回归（需后端+ComfyUI+key）")
+    gr.add_argument("--runs", type=int, default=3)
     sub.add_parser("start", help="启动后端")
     args = p.parse_args()
     if not args.cmd:
@@ -136,7 +150,7 @@ def main():
         return 0
     fns = {"status": cmd_status, "test": cmd_test, "lint": cmd_lint,
            "gates": cmd_gates, "health": cmd_health, "dashboard": cmd_dashboard,
-           "start": cmd_start}
+           "regress-g2": cmd_regress_g2, "start": cmd_start}
     return fns[args.cmd](args)
 
 
