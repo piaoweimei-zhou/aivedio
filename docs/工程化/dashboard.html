@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8">
+<title>director 治理看板</title>
+<style>
+body{font-family:'Microsoft YaHei',sans-serif;margin:24px;background:#f5f6fa;color:#1f2937}
+h1{font-size:22px} .card{background:#fff;border-radius:10px;padding:16px 20px;
+margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.metric{display:inline-block;background:#eef2ff;border-radius:8px;padding:10px 18px;
+margin:6px;text-align:center}
+.metric b{display:block;font-size:26px;color:#4f46e5} table{border-collapse:collapse;width:100%}
+td,th{border-bottom:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:14px}
+.tag{background:#eef2ff;color:#4338ca;border-radius:6px;padding:2px 8px;margin:2px;font-size:12px}
+.foot{color:#9ca3af;font-size:12px}
+</style></head><body>
+<h1>director 导演工作台 · 治理看板</h1>
+<div class="foot">生成时间 2026-08-25 17:01:41</div>
+<div class="card"><h3>资产血缘</h3>
+<div class="metric"><b>215</b>资产总数</div>
+<div class="metric"><b>5</b>最大血缘深度</div>
+<div class="metric"><b>asset_registry.json</b>数据源</div>
+<table><tr><th>资产类型</th><th>数量</th></tr><tr><td>concept</td><td>125</td></tr><tr><td>video</td><td>50</td></tr><tr><td>multi_view</td><td>25</td></tr><tr><td>audio</td><td>5</td></tr><tr><td>storyboard</td><td>4</td></tr><tr><td>edit</td><td>2</td></tr><tr><td>pano</td><td>1</td></tr><tr><td>depth</td><td>1</td></tr><tr><td>pose</td><td>1</td></tr><tr><td>lineart</td><td>1</td></tr></table></div>
+<div class="card"><h3>日志健康度（全链路可观测）</h3>
+<div class="metric"><b>98.5%</b>非ERROR占比</div>
+<div class="metric"><b>478</b>ERROR</div>
+<div class="metric"><b>981</b>WARNING</div>
+<div class="metric"><b>30968</b>INFO</div>
+<div class="foot">说明：供应商成本埋点待 P3 指标埋点落地，当前仅日志级可观测。</div></div>
+<div class="card"><h3>发布历史（G6）</h3>
+<div class="metric"><b>1.0.0</b>服务版本</div>
+<div><span class='tag'>v0.9-baseline</span> <span class='tag'>v0.9-fix-f821</span> <span class='tag'>v0.9-p0-cleanup</span> <span class='tag'>v0.9-p0-standards</span> <span class='tag'>v0.9-p1-final</span> <span class='tag'>v0.9-p1-paths</span></div></div>
+<div class="card"><h3>工程化度量：services/ 大文件（目标 &lt;40KB）</h3>
+<table><tr><th>文件</th><th>大小</th></tr><tr><td>services\comfyui_generation.py</td><td>63.0 KB</td></tr><tr><td>services\comfyui_storyboard.py</td><td>53.2 KB</td></tr><tr><td>services\comfyui_video.py</td><td>48.4 KB</td></tr><tr><td>services\workflow_core.py</td><td>46.8 KB</td></tr><tr><td>services\comfyui_lifecycle.py</td><td>41.2 KB</td></tr><tr><td>services\stages\video_stage.py</td><td>39.7 KB</td></tr></table></div>
+</body></html>

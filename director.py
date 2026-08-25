@@ -109,6 +109,12 @@ def cmd_start(args):
     return 1
 
 
+def cmd_dashboard(args):
+    print("== 治理看板 ==")
+    r = _run([_py(), os.path.join(BACKEND, "scripts", "dashboard.py")], cwd=BACKEND)
+    return 0 if r.returncode == 0 else 1
+
+
 def main():
     p = argparse.ArgumentParser(description="director 统一命令入口")
     sub = p.add_subparsers(dest="cmd")
@@ -122,13 +128,15 @@ def main():
     gp.add_argument("--no-cov", action="store_true", dest="no_cov", help="跳过覆盖率")
     h = sub.add_parser("health", help="后端健康检查")
     h.add_argument("--url", default="http://127.0.0.1:8000")
+    sub.add_parser("dashboard", help="生成治理看板")
     sub.add_parser("start", help="启动后端")
     args = p.parse_args()
     if not args.cmd:
         p.print_help()
         return 0
     fns = {"status": cmd_status, "test": cmd_test, "lint": cmd_lint,
-           "gates": cmd_gates, "health": cmd_health, "start": cmd_start}
+           "gates": cmd_gates, "health": cmd_health, "dashboard": cmd_dashboard,
+           "start": cmd_start}
     return fns[args.cmd](args)
 
 
