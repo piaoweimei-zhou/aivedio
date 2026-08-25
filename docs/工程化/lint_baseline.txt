@@ -1147,26 +1147,22 @@ services\workflow_scene.py:333:5: F811 redefinition of unused 'copy' from line 2
 services\workflow_scene.py:34:1: E302 expected 2 blank lines, found 1
 services\workflow_scene.py:440:1: E302 expected 2 blank lines, found 0
 services\workflow_scene.py:478:1: E302 expected 2 blank lines, found 0
-services\workflow_storyboard.py:154:101: E501 line too long (104 > 100 characters)
-services\workflow_storyboard.py:244:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:245:16: F821 undefined name 'build_single_person_workflow'
-services\workflow_storyboard.py:254:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:255:16: F821 undefined name 'build_dual_person_workflow'
-services\workflow_storyboard.py:26:1: F401 'copy' imported but unused
-services\workflow_storyboard.py:264:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:265:16: F821 undefined name 'build_local_multi_workflow'
-services\workflow_storyboard.py:27:1: F401 'json' imported but unused
-services\workflow_storyboard.py:274:21: F541 f-string is missing placeholders
-services\workflow_storyboard.py:275:16: F821 undefined name 'build_gpt_storyboard_workflow'
-services\workflow_storyboard.py:286:9: F541 f-string is missing placeholders
-services\workflow_storyboard.py:29:1: F401 'os' imported but unused
-services\workflow_storyboard.py:30:1: F401 're' imported but unused
-services\workflow_storyboard.py:33:1: F401 'shutil' imported but unused
-services\workflow_storyboard.py:34:1: F401 'pathlib.Path' imported but unused
-services\workflow_storyboard.py:36:1: F401 'urllib.parse.parse_qs' imported but unused
-services\workflow_storyboard.py:36:1: F401 'urllib.parse.urlparse' imported but unused
-services\workflow_storyboard.py:40:1: E302 expected 2 blank lines, found 1
-services\workflow_storyboard.py:81:5: F841 local variable '_t0' is assigned to but never used
+services\workflow_storyboard.py:160:101: E501 line too long (104 > 100 characters)
+services\workflow_storyboard.py:250:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:260:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:270:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:280:21: F541 f-string is missing placeholders
+services\workflow_storyboard.py:292:9: F541 f-string is missing placeholders
+services\workflow_storyboard.py:32:1: F401 'copy' imported but unused
+services\workflow_storyboard.py:33:1: F401 'json' imported but unused
+services\workflow_storyboard.py:35:1: F401 'os' imported but unused
+services\workflow_storyboard.py:36:1: F401 're' imported but unused
+services\workflow_storyboard.py:39:1: F401 'shutil' imported but unused
+services\workflow_storyboard.py:40:1: F401 'pathlib.Path' imported but unused
+services\workflow_storyboard.py:42:1: F401 'urllib.parse.parse_qs' imported but unused
+services\workflow_storyboard.py:42:1: F401 'urllib.parse.urlparse' imported but unused
+services\workflow_storyboard.py:46:1: E302 expected 2 blank lines, found 1
+services\workflow_storyboard.py:87:5: F841 local variable '_t0' is assigned to but never used
 services\workflow_storyboard_custom.py:129:101: E501 line too long (105 > 100 characters)
 services\workflow_storyboard_custom.py:130:1: W293 blank line contains whitespace
 services\workflow_storyboard_custom.py:143:101: E501 line too long (120 > 100 characters)

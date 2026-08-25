@@ -22,6 +22,12 @@ from services.workflow_scene import (
     build_template_pose_workflow,
     build_upscale_workflow,
 )
+from services.workflow_storyboard_custom import (
+    build_single_person_workflow,
+    build_dual_person_workflow,
+    build_local_multi_workflow,
+    build_gpt_storyboard_workflow,
+)
 
 import copy
 import json
