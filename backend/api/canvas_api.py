@@ -240,6 +240,35 @@ def _msr_task_get(task_id: str) -> dict:
         return _msr_tasks.get(task_id)
 
 
+# 后台任务 handle 登记表：解决 fire-and-forget 泄漏 + 支持优雅关闭时统一取消
+_msr_task_handles: Dict[str, asyncio.Task] = {}
+
+
+def _msr_task_track(task_id: str, task: asyncio.Task) -> None:
+    """登记 MSR 后台任务 handle：任务完成自动移除（防泄漏）"""
+    with _msr_tasks_lock:
+        _msr_task_handles[task_id] = task
+
+    def _on_done(_t: asyncio.Task) -> None:
+        with _msr_tasks_lock:
+            _msr_task_handles.pop(task_id, None)
+
+    task.add_done_callback(_on_done)
+
+
+async def shutdown_msr_tasks() -> None:
+    """优雅关闭：取消所有存活的 MSR 后台任务（FastAPI lifespan shutdown 时调用）"""
+    with _msr_tasks_lock:
+        handles = list(_msr_task_handles.values())
+    if not handles:
+        return
+    logger.info(f"[MSR] 应用关闭，取消 {len(handles)} 个后台任务")
+    for t in handles:
+        if not t.done():
+            t.cancel()
+    await asyncio.gather(*handles, return_exceptions=True)
+
+
 async def _ensure_image_for_msr(image_url: str, comfyui_svc) -> str:
     """确保 MSR 参考图存在于 ComfyUI input 目录，返回文件名"""
     if not image_url:
@@ -573,7 +602,7 @@ async def submit_msr_video(request: MsrVideoRequest):
         except Exception as e:
             _msr_task_update(task_id, {"status": "failed", "error": str(e)})
 
-    asyncio.create_task(_execute())
+    _msr_task_track(task_id, asyncio.create_task(_execute()))
     _msr_task_update(task_id, {"status": "running"})
     return {"success": True, "task_id": task_id, "status": "running"}
 

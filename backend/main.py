@@ -89,6 +89,10 @@ async def lifespan(app: FastAPI):
 
     # 关闭清理任务
     await comfyui_svc.stop_output_cleanup_task()
+    # 取消存活的 MSR 后台任务（fire-and-forget 治理：避免关闭时残留任务继续写库）
+    from api.canvas_api import shutdown_msr_tasks
+
+    await shutdown_msr_tasks()
     logger.info("[Director] 导演工作台关闭")
 
 
