@@ -794,8 +794,11 @@ async def upload_image(files: List[UploadFile] = File(...)):
                 os.makedirs(input_dir, exist_ok=True)
                 with open(os.path.join(input_dir, fname), "wb") as f2:
                     f2.write(content)
-        except Exception:
-            pass
+        except Exception as e:
+            # ComfyUI input 同步是附加降级：主上传已成功，同步失败仅记录不阻断
+            logger.warning(
+                "[upload] ComfyUI input 同步失败（主上传已成功，不影响使用）: %s", e
+            )
         uploaded.append({"comfy_name": fname})
     return {"files": uploaded}
 

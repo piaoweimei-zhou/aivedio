@@ -176,9 +176,9 @@ class ComfyUIStoryboardBatchMixin:
         return results
 
     def _get_intermediates_dir(self, project_id: str, trace_id: str) -> Path:
-        """获取中间结果保存目录"""
+        """获取中间结果保存目录（数据统一收敛到 backend/data，勿写项目根 data）"""
         intermediates_dir = (
-            Path(__file__).parent.parent.parent
+            Path(__file__).parent.parent
             / "data"
             / "storyboard_intermediates"
             / project_id[-8:]
