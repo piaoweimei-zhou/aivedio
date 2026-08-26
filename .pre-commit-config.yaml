@@ -1,0 +1,28 @@
+# 治理方案 v2.2 · 门禁前置（pre-commit）
+# 作用：commit 前自动跑三端 lint 门禁，0 error 才允许提交
+# 安装：backend/.venv-test/Scripts/python.exe -m pre_commit install
+# 手动跑全量：backend/.venv-test/Scripts/python.exe -m pre_commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: backend-flake8
+        name: backend flake8 (T2, 0 error)
+        entry: backend/.venv-test/Scripts/python.exe -m flake8 --max-line-length=100 --extend-ignore=E203,W503 --exclude=.venv-test,__pycache__,data,output,assets,logs,static,scripts,tests/data backend
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      - id: trafficos-flake8
+        name: trafficos flake8 (T2, 0 error)
+        entry: backend/.venv-test/Scripts/python.exe -m flake8 --max-line-length=100 --extend-ignore=E203,W503 trafficos/app trafficos/tests trafficos/sdk trafficos/scripts
+        language: system
+        files: ^trafficos/.*\.py$
+        pass_filenames: false
+
+      - id: frontend-eslint
+        name: frontend eslint (T2, 0 error)
+        entry: node frontend-director/node_modules/eslint/bin/eslint.js frontend-director/src --ext .ts,.tsx --resolve-plugins-relative-to frontend-director
+        language: system
+        files: ^frontend-director/src/.*\.(ts|tsx)$
+        pass_filenames: false
