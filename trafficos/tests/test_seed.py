@@ -1,4 +1,4 @@
-"""C 组：内容初始化种子测试（幂等 + 内容完整性）"""
+﻿"""C 缁勶細鍐呭鍒濆鍖栫瀛愭祴璇曪紙骞傜瓑 + 鍐呭瀹屾暣鎬э級"""
 import os
 import sys
 import tempfile
@@ -26,15 +26,15 @@ def _isolated():
 
 def test_seed_content_counts():
     r = seed_mod.seed()
-    assert r == {"accounts": 5, "templates": 6, "topics": 30}
+    assert r == {"accounts": 11, "templates": 6, "topics": 30}
 
 
 def test_seed_idempotent():
     seed_mod.seed()
     r2 = seed_mod.seed()
     assert r2 == {"accounts": 0, "templates": 0, "topics": 0}
-    # 数量不变
-    assert len(get_collection("accounts").list()) == 5
+    # 鏁伴噺涓嶅彉
+    assert len(get_collection("accounts").list()) == 11
     assert len(get_collection("topics").list()) == 30
 
 
@@ -54,10 +54,10 @@ def test_seed_topics_all_scored():
 def test_seed_accounts_shape():
     seed_mod.seed()
     accs = get_collection("accounts").list()
-    assert len(accs) == 5
+    assert len(accs) == 11
     dims = {a["dimension"] for a in accs}
     assert dims == {"pure_content", "knowledge", "soft_ad"}
-    # 每账号有维度+变现+人设
+    # 姣忚处鍙锋湁缁村害+鍙樼幇+浜鸿
     for a in accs:
         assert a["dimension"] and a["monetizer"] and a["persona"]
 
@@ -65,4 +65,4 @@ def test_seed_accounts_shape():
 def test_seed_force_rebuild():
     seed_mod.seed()
     r = seed_mod.seed(force=True)
-    assert r == {"accounts": 5, "templates": 6, "topics": 30}
+    assert r == {"accounts": 11, "templates": 6, "topics": 30}
