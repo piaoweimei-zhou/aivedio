@@ -58,9 +58,37 @@ def pick_topic(
     return None
 
 
-def build_script_from_topic(topic: Dict[str, Any], duration_s: float = 5.0) -> Dict[str, Any]:
-    """话题 → 5s 单段脚本。台词按 5s 可读长度截断（约 ≤12 字）。"""
+def build_script_from_topic(
+    topic: Dict[str, Any],
+    duration_s: float = 5.0,
+    platform: str = "douyin",
+    use_creative: bool = True,
+    segments: int = 1,
+) -> Dict[str, Any]:
+    """话题 → 脚本。优先 CreativeOS 生成（多段/LLM 文案），失败兜底模板。
+
+    CreativeOS 不可达或 LLM 失败时，回落到原 5s 单段模板（链路不中断）。
+    """
     title = (topic.get("title") or "").strip()
+    if use_creative:
+        try:
+            from .creative_adapter import generate_spec, spec_to_script
+            spec = generate_spec(
+                title,
+                platform=platform,
+                duration_s=duration_s,
+                segments=segments,
+            )
+            if spec:
+                script = spec_to_script(spec, duration_s)
+                if script.get("acts"):
+                    logger.info("[TrafficOS] CreativeOS 生成脚本: %s (%d 段)",
+                                title, len(script["acts"]))
+                    return script
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("[TrafficOS] CreativeOS 适配失败，兜底模板: %s", exc)
+
+    # —— 原模板兜底：5s 单段 ——
     # 去标点与空格、去"神器/工具/数字+秒搞定"等后缀，提炼核心动作词
     core = re.sub(r"[，。！？、,.!?\s]", "", title)
     suffixes = (
@@ -144,7 +172,7 @@ def orchestrate_produce(
 
     title = topic.get("title", "")
     content_id = f"hot_{platform}_{uuid.uuid4().hex[:8]}"
-    script = build_script_from_topic(topic, duration_s=duration_s)
+    script = build_script_from_topic(topic, duration_s=duration_s, platform=platform)
     result = submit_contract(
         content_id=content_id,
         script=script,
