@@ -57,6 +57,11 @@ tracker.track(action="download", title="明星采访视频", url="https://...") 
 - [x] B3 选题打分器 + 选题库
 - [x] B4 标题/封面生成器
 - [x] B5 封面合成
-- [ ] B6 抖音发布接入（需权限验证）
+- [x] B6 发布包生成（半自动路径，可升级全自动）
 - [x] B7 数据看板 + ROI 归因
 - [x] B8 工具信号上报 + 埋点 SDK
+
+## 发布（B6 半自动路径）
+`POST /api/traffic/publish/package` 生成标准发布包（视频+封面+标题+文案+manifest），
+用户手动发到抖音；`PUT /api/traffic/publish/jobs/{id}/mark-published` 标记闭环。
+抖音 `video.create.bind` 权限通过后，同一 `manifest.json` 可直接切全自动发布。
