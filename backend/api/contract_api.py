@@ -470,12 +470,12 @@ async def get_produce(task_id: str) -> TaskDetail:
     if batch.steps:
         for i, st in enumerate(batch.steps):
             step_infos.append({
-                "step_id": st.get("step_id"),
-                "stage_id": st.get("stage_id"),
-                "name": st.get("name", ""),
-                "status": st.get("status", "pending"),
-                "elapsed_ms": st.get("elapsed_ms", 0),
-                "gen_task_id": st.get("gen_task_id", ""),
+                "step_id": st.step_id,
+                "stage_id": st.stage_id,
+                "name": st.name or "",
+                "status": st.status or "pending",
+                "elapsed_ms": st.elapsed_ms or 0,
+                "gen_task_id": st.gen_task_id or "",
             })
         if 0 <= batch.current_step_index < len(batch.steps):
             current_step = batch.steps[batch.current_step_index].stage_id
@@ -483,7 +483,7 @@ async def get_produce(task_id: str) -> TaskDetail:
         cur = batch.steps[batch.current_step_index] if (
             0 <= batch.current_step_index < len(batch.steps)
         ) else None
-        prompt_id = (cur or {}).get("prompt_id", "")
+        prompt_id = (cur.prompt_id or "") if cur else ""
         try:
             if prompt_id:
                 from services.comfyui.client import ComfyUIClient
