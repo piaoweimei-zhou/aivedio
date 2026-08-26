@@ -375,6 +375,10 @@ class VideoStage(VideoScriptMixin, VideoAudioMixin, VideoConcatMixin, StagePlugi
                             if mixed_url:
                                 r.video_url = mixed_url
                                 r.image_url = mixed_url
+                                # ⭐ 修复 P0 单段无声音：必须同步更新 images，
+                                #   否则 _register_asset 用 result.images（仍是 H3 原片）
+                                #   注册，导致后续 subtitle/hook/export 用无声源
+                                r.images = [mixed_url]
                     except Exception as tts_e:
                         logger.warning(
                             f"[VideoStage] 镜{i+1} TTS 混音失败，保留 H3 原音频 | err={tts_e}"
