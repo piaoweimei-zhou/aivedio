@@ -12,8 +12,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api import (accounts, cover, dashboard, dimensions, feedback, hits,
-                     hotspots, metrics, monetizers, packaging, publishing,
-                     reports, signals, topics)
+                     hotspots, metrics, monetizers, orchestrate, packaging,
+                     publishing, reports, signals, topics)
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,7 @@ _routers = [
     publishing.router,
     reports.router,
     feedback.router,
+    orchestrate.router,
 ]
 for r in _routers:
     app.include_router(r)
