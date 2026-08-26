@@ -40,6 +40,27 @@ jobs:
         working-directory: backend
         run: python -m pytest --cov=. --cov-report=term-missing --cov-fail-under=37
 
+  g2-contract-smoke:
+    name: G2 契约冒烟（steps 契约 + DAG 生成）
+    runs-on: ubuntu-latest
+    env:
+      # CI 无 GPU/ComfyUI：禁用 ComfyUI 子进程管理，仅验证契约层可被后端接受
+      DISABLE_PROCESS_MANAGEMENT: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.0"
+          cache: pip
+      - name: Install pinned dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock
+      - name: Run G2 contract smoke (no external deps)
+        working-directory: backend
+        run: python tools/g2_regression.py
+
   frontend-build:
     name: Frontend build
     runs-on: ubuntu-latest

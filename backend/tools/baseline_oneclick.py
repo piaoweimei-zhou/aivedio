@@ -691,6 +691,7 @@ async def main_async(args: argparse.Namespace) -> None:
     }
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n报告已落盘: {out_path}")
+    return agg
 
 
 def parse_args() -> argparse.Namespace:

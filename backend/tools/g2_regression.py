@@ -24,8 +24,20 @@ import sys
 BACKEND = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# director 真实读取的 provider key 集（G2 preconditions 精确化：
+# 只认这组后端实际消费的密钥，避免"任意 KEY 环境变量"误判已配置）
+_REAL_PROVIDER_KEYS = (
+    "ARK_API_KEY",
+    "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
+    "MODELSCOPE_API_KEY",
+    "RUNNINGHUB_API_KEY",
+    "COMFYUI_API_KEY",
+)
+
+
 def _check_preconditions() -> list:
-    """真实回归前置条件：后端 / ComfyUI / provider key"""
+    """真实回归前置条件：后端 / ComfyUI / 真实 provider key"""
     import urllib.request
 
     from dotenv import load_dotenv
@@ -44,11 +56,15 @@ def _check_preconditions() -> list:
             urllib.request.urlopen(url, timeout=3).close()
         except Exception:
             missing.append(name)
-    # 放宽：只要存在任意含 KEY/TOKEN 的 env 变量即视为已配置 provider key。
-    # （不要求 PROVIDER/MINIMAX/VOLC 交集，避免 ARK_API_KEY 单独配置时误报缺 key）
-    keys = [k for k in os.environ if "KEY" in k.upper() or "TOKEN" in k.upper()]
+    # 精确检查：后端真实读取的 provider key 至少存在一个（默认 provider=comfyui
+    # 本地生成不需外部 key，但文案/字幕/LLM 步骤仍依赖其一）
+    keys = [k for k in _REAL_PROVIDER_KEYS if os.environ.get(k, "").strip()]
     if not keys:
-        missing.append("provider key（backend/.env 或环境变量未见 KEY/TOKEN 密钥）")
+        missing.append(
+            "provider key（backend/.env 未见任一真实 provider key: "
+            + "/".join(_REAL_PROVIDER_KEYS)
+            + "）"
+        )
     return missing
 
 
@@ -102,6 +118,13 @@ def smoke():
 
 
 def full(runs: int, host: str):
+    """真实一键成片回归 + G2 门禁判定。
+
+    返回码（门禁语义）：
+        0 = 全链路 100% 通过（full_chain_success=True）
+        1 = 回归跑完但全链路未 100%（门禁拦截）
+        2 = 前置条件缺失（后端/ComfyUI/provider key）
+    """
     missing = _check_preconditions()
     if missing:
         print("G2 真实回归前置条件缺失：")
@@ -115,7 +138,20 @@ def full(runs: int, host: str):
 
     sys.argv = ["g2_regression", "--runs", str(runs), "--host", host]
     args = parse_args()
-    return asyncio.run(main_async(args))
+    agg = asyncio.run(main_async(args))
+    # G2 门禁判定：一键成片全链路必须 100% 通过，否则拦截发布
+    if not agg or not agg.get("full_chain_success"):
+        print(
+            f"[G2] FAIL: 一键成片全链路未 100% 通过 "
+            f"(runs={agg.get('run_count') if agg else 0}, "
+            f"success_rate={agg.get('full_chain_success_rate') if agg else 0.0})"
+        )
+        return 1
+    print(
+        f"[G2] PASS: 一键成片全链路 100% 通过 "
+        f"(runs={agg.get('run_count')}, success_rate={agg.get('full_chain_success_rate')})"
+    )
+    return 0
 
 
 def main():
