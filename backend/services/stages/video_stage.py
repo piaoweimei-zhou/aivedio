@@ -189,7 +189,13 @@ class VideoStage(VideoScriptMixin, VideoAudioMixin, VideoConcatMixin, StagePlugi
             if (
                 provider_id == "minimax_h3"
                 and (segment_prompts or force_segmented)
-                and len(tts_texts or segment_prompts) > 1
+                and (
+                    len(tts_texts or segment_prompts) > 1
+                    # ⭐ 修复 P0 配音丢失：单段（1 镜）但有台词时，
+                    #   也走逐镜路径触发独立 TTS 混音；否则台词直接丢给
+                    #   H3 generate_video（不注入人声）导致成片无声旁白
+                    or bool(tts_texts and any(t.strip() for t in tts_texts))
+                )
             ):
                 result = await self._generate_h3_segmented(
                     provider_svc=provider_svc,
