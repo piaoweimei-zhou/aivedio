@@ -79,3 +79,6 @@ backend/_*.txt
 
 # 工业化目录（node_modules + 无关文档，不入库）
 工业化/
+
+# TrafficOS 运行时数据（集合 JSON）
+trafficos/data/
