@@ -1,4 +1,4 @@
-# 内容创作系统规划（CreativeOS）v1.0
+# 内容创作系统规划（CreativeOS）v1.1
 
 > 日期：2026-08-26 ｜ 定位：三系统架构中的"创意引擎"
 > 一句话：**解决"管道里流的水"——让每条内容都有钩子、有结构、有表现力，替代静态模板，由 LLM 生成式创作 + 质量评估回灌。**
@@ -157,6 +157,31 @@ CreativeOS 的一切输出收敛为 Content Spec，director 只认它生产。**
 
 ---
 
+## 3.5 参考资产吸收（CineForge 方法论原型）
+
+> 项目：`D:\项目\视频与内容创作\chuangzuo`（CineForge V2，Electron 桌面短剧 AI 创作工具，**已实践验证**）
+> 判断：**CreativeOS 不从零发明——它已在这个桌面工具里验证了 L2/L3/L5 三层核心方法论。CreativeOS 做的是"服务化迁移"：把给人用的 GUI 流程 + 提示词模板，改造成机器可调用的 API + 结构化模板库。**
+
+### 可移植资产映射
+
+| CreativeOS 层 | CineForge 现成资产 | 迁移方式 |
+|---|---|---|
+| **L2 剧本/文案** | 9 步剧本 Wizard（设定→概念→梗概→人物→前史→结构→场景→写作→审阅）；剧本 SKILL（eye-blink-life 等：一句话设定 → 完整剧本+镜头表，含 protagonist-card / shot-card-pov 等 references） | 流程服务化为 `app/copywriting.py` 的多步生成；剧本 SKILL 结构化进模板库 |
+| **L3 分镜/提示词** | 分镜提示词模板 V3（Step 0.3 剧本强化锁方向 / 角色 ID 卡 / **16 字段逐镜输出**）；全资产大师（场景+角色+道具）；反推图像提示词（空间构图/光影/五大维度方法论） | 模板→组件库 → `app/storyboard.py` / `app/prompt_engine.py` 组装；资产库→角色卡 |
+| **L5 质量评估** | 评价.txt 三维打分：**精确性/完整性/情感张力**（量化评分+扣分点+改进建议，且已做多版本对比） | 直接作为 `app/quality.py` 评分维度基础（内容分=三维持 + 平台匹配） |
+
+### 已知缺陷（CineForge 暴露，CreativeOS 必须解决）
+1. **内容循环冗余**：剧本场景高度重复（多次"硬币掉包-修复-真相泄露"循环）→ L5 加"结构去重/信息增量"检查 + L2 结构模板约束每幕必须有新信息增量
+2. **时长不匹配**：5 分钟内容仅 11 个单元、时长压缩 → L2 按时长配额生成（如 60s/8 段 vs 15s/1 段）
+3. **情感张力依赖特定结构**（如"不可挽回的损失"）→ L1 角度库 + L5 情感峰值检查，防止套路化
+
+### 落地
+- M0 起将 CineForge 提示词模板库**直接复制为 `creativeos/assets/prompts/` seeds**（结构化解析，非散文本）
+- 剧本/分镜模板先冻结为 schema（`assets/templates/*.yaml`），由 L2/L3 按 schema 加载组装
+- 保留版权与出处标注（CineForge 作者 Work-Fisher）
+
+---
+
 ## 4. LLM 混合接入（云端为主 + 本地兜底）
 
 ### 4.1 抽象层
@@ -262,11 +287,12 @@ creativeos/
 - 反馈回灌覆盖率（多少内容有效果数据）
 
 ## 10. 立即行动项（本周）
-1. 建 `D:\1\2\creativeos` 骨架（app/ data/ tests/）
+1. 建 `D:\1\2\creativeos` 骨架（app/ data/ tests/ assets/）
 2. Content Spec Pydantic schema（对齐 contract schema）
 3. LLM 抽象层（cloud + local + auto 降级，读环境变量）
-4. L2 最小可跑：topic → script 的 LLM 调用 + 落盘
-5. 写 M1 端到端验收脚本（调 CreativeOS → director 对比成片）
+4. **从 CineForge 移植结构化提示词模板 → `assets/prompts/` seeds**（分镜 V3 / 资产库 / 剧本 SKILL）
+5. L2 最小可跑：topic → script 的 LLM 调用 + 落盘
+6. 写 M1 端到端验收脚本（调 CreativeOS → director 对比成片）
 
 ---
 
