@@ -169,7 +169,9 @@ def _normalize_status(batch_status: str) -> str:
     return _BATCH_TO_CONTRACT_STATUS.get(batch_status, batch_status)
 
 
-def _build_steps_from_spec(spec: ContentSpec) -> List[Dict[str, Any]]:
+def _build_steps_from_spec(
+    spec: ContentSpec,
+) -> List[Dict[str, Any]]:
     """ContentSpec → director BatchStep 列表（薄映射，不改生产逻辑）。
 
     通用剧本展开（L1，自由组合）：
@@ -185,7 +187,7 @@ def _build_steps_from_spec(spec: ContentSpec) -> List[Dict[str, Any]]:
             detail=f"unsupported script.type '{stage_type}'; "
                    f"allowed={SUPPORTED_STAGE_TYPES}",
         )
-    if stage_type == "video_script_mixin" and spec.script.get("acts"):
+    if spec.script.get("acts") and stage_type in ("video_script_mixin", "video_act"):
         return _build_script_video_steps(spec, spec.script["acts"])
     step: Dict[str, Any] = {
         "stage_id": stage_type,
@@ -206,10 +208,12 @@ def _build_script_video_steps(
     spec: ContentSpec,
     acts: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """通用剧本展开：acts[N] → 逐段视频（任意段数/时长）。
+    """通用剧本展开：acts[N] → 前置概念图 + 逐段视频（任意段数/时长）。
 
-    复用 video stage 的 segmented_oneclick 路径（baseline 已实测）：
-        segment_prompts + segment_durations + tts_texts → 逐段生成拼接。
+    与前端一键成片 DAG 对齐（concept → video，baseline 已实测）：
+        1) concept 场景概念图（comfyui 生成真实图片资产，作 video 输入）
+        2) video（I2V 图生视频）segmented_oneclick 路径：
+           segment_prompts + segment_durations + tts_texts → 逐段生成拼接。
     时长下限 4s 由 video_stage 强制（生成模型约束）。
     """
     params = spec.params or {}
@@ -231,6 +235,35 @@ def _build_script_video_steps(
         seg_prompts.append(prompt)
         tts_texts.append(narration)
 
+    steps: List[Dict[str, Any]] = []
+
+    # ---- 1) concept 场景概念图（真实图片资产，作为 video 的 I2V 输入）----
+    topic = (
+        (spec.packaging or {}).get("title")
+        or params.get("prompt")
+        or (seg_prompts[0] if seg_prompts else "")
+        or "短视频"
+    )
+    s_concept_scene = "s1_concept_scene1"
+    steps.append({
+        "step_id": s_concept_scene,
+        "stage_id": "concept",
+        "name": f"概念图-{spec.content_id}",
+        "provider_id": "comfyui",
+        "params": {
+            "prompt": (params.get("concept_prompt")
+                       or (seg_prompts[0] if seg_prompts else topic)),
+            "negative_prompt": "low quality, blurry, deformed, ugly",
+            "content_type": "scene",
+            "width": params.get("concept_width", 1024),
+            "height": params.get("concept_height", 1024),
+        },
+        "input_asset_ids": [],
+        "input_from_steps": [],
+        "max_retries": 0,
+    })
+
+    # ---- 2) video：I2V 图生视频（前置概念图作输入）----
     video_params: Dict[str, Any] = {
         "prompt": params.get("prompt") or (seg_prompts[0] if seg_prompts else ""),
         "aspect_ratio": params.get("aspect_ratio", "9:16"),
@@ -248,20 +281,20 @@ def _build_script_video_steps(
     }
     video_params = {k: v for k, v in video_params.items() if v is not None}
 
-    steps: List[Dict[str, Any]] = [{
-        "step_id": "s1_video",
+    steps.append({
+        "step_id": "s2_video",
         "stage_id": "video",
         "name": f"contract-video-{spec.content_id}",
         "provider_id": params.get("provider_id", "minimax_h3"),
         "params": video_params,
         "input_asset_ids": [],
-        "input_from_steps": [],
+        "input_from_steps": [s_concept_scene],
         "max_retries": 0,
-    }]
+    })
 
     if params.get("export"):
         steps.append({
-            "step_id": "s2_export",
+            "step_id": "s3_export",
             "stage_id": "export",
             "name": "导出成片",
             "provider_id": "local",
@@ -273,7 +306,7 @@ def _build_script_video_steps(
                 "name": f"contract_export_{spec.content_id}",
             },
             "input_asset_ids": [],
-            "input_from_steps": ["s1_video"],
+            "input_from_steps": ["s2_video"],
             "max_retries": 0,
         })
     return steps

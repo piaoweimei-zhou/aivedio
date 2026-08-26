@@ -33,12 +33,14 @@ def _spec(**overrides) -> ContentSpec:
 # ---------- 通用展开 ----------
 
 def test_acts_expands_to_segmented_video_step():
-    """3 幕（5/10/15s）→ 1 个 video step，时长/提示/台词全部来自 acts。"""
+    """3 幕（5/10/15s）→ concept + video 2 步，时长/提示/台词全部来自 acts。"""
     steps = _build_steps_from_spec(_spec())
-    assert len(steps) == 1
-    step = steps[0]
+    assert len(steps) == 2                       # concept 前置 + video
+    assert steps[0]["stage_id"] == "concept"     # ⭐ 真实图片资产（I2V 输入）
+    step = steps[1]
     assert step["stage_id"] == "video"
     assert step["provider_id"] == "minimax_h3"
+    assert step["input_from_steps"] == ["s1_concept_scene1"]  # 引用概念图
     p = step["params"]
     assert p["segmented_oneclick"] is True
     assert p["segment_durations"] == [5.0, 10.0, 15.0]      # ⭐ 任意组合时长
@@ -56,7 +58,7 @@ def test_single_5s_act():
     spec = _spec()
     spec.script["acts"] = [{"narration": "一句话", "duration_s": 5}]
     steps = _build_steps_from_spec(spec)
-    p = steps[0]["params"]
+    p = steps[1]["params"]
     assert p["segment_durations"] == [5.0]
     assert len(p["segment_prompts"]) == 1
     assert p["tts_texts"] == ["一句话"]
@@ -68,7 +70,7 @@ def test_mixed_durations():
     spec.script["acts"] = [
         {"duration_s": 4}, {"duration_s": 7}, {"duration_s": 180},
     ]
-    p = _build_steps_from_spec(spec)[0]["params"]
+    p = _build_steps_from_spec(spec)[1]["params"]
     assert p["segment_durations"] == [4.0, 7.0, 180.0]
 
 
@@ -76,7 +78,7 @@ def test_default_duration_when_missing():
     """acts 未给 duration_s → 默认 5s。"""
     spec = _spec()
     spec.script["acts"] = [{"narration": "无时长"}]
-    p = _build_steps_from_spec(spec)[0]["params"]
+    p = _build_steps_from_spec(spec)[1]["params"]
     assert p["segment_durations"] == [5.0]
 
 
@@ -84,14 +86,14 @@ def test_visual_hint_fallback_to_narration():
     """无 visual_hint → 用 narration 作为画面提示。"""
     spec = _spec()
     spec.script["acts"] = [{"narration": "只有台词", "duration_s": 6}]
-    p = _build_steps_from_spec(spec)[0]["params"]
+    p = _build_steps_from_spec(spec)[1]["params"]
     assert p["segment_prompts"][0] == "只有台词"
 
 
 def test_no_tts_when_no_narration():
     spec = _spec()
     spec.script["acts"] = [{"duration_s": 5, "visual_hint": "纯画面"}]
-    p = _build_steps_from_spec(spec)[0]["params"]
+    p = _build_steps_from_spec(spec)[1]["params"]
     assert p["tts_enabled"] is False
     assert p["tts_texts"] == []
 
@@ -101,16 +103,16 @@ def test_export_optional_step():
     spec = _spec()
     spec.params = {**spec.params, "export": True}
     steps = _build_steps_from_spec(spec)
-    assert len(steps) == 2
-    assert steps[1]["stage_id"] == "export"
-    assert steps[1]["input_from_steps"] == ["s1_video"]
+    assert len(steps) == 3                       # concept + video + export
+    assert steps[2]["stage_id"] == "export"
+    assert steps[2]["input_from_steps"] == ["s2_video"]
 
 
 def test_reference_assets_passed():
     """spec.assets → reference_image_files（图生视频参考）。"""
     spec = _spec()
     spec.assets = ["https://example.com/ref.png"]
-    p = _build_steps_from_spec(spec)[0]["params"]
+    p = _build_steps_from_spec(spec)[1]["params"]
     assert p["reference_image_files"] == ["https://example.com/ref.png"]
 
 
@@ -146,4 +148,5 @@ def test_build_script_video_steps_direct():
     """直接调用辅助函数（纯构造）。"""
     spec = _spec()
     steps = _build_script_video_steps(spec, spec.script["acts"])
-    assert steps[0]["params"]["segment_durations"] == [5.0, 10.0, 15.0]
+    assert steps[0]["stage_id"] == "concept"     # 前置概念图
+    assert steps[1]["params"]["segment_durations"] == [5.0, 10.0, 15.0]
