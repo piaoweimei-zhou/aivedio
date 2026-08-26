@@ -172,9 +172,11 @@ def _normalize_status(batch_status: str) -> str:
 def _build_steps_from_spec(spec: ContentSpec) -> List[Dict[str, Any]]:
     """ContentSpec → director BatchStep 列表（薄映射，不改生产逻辑）。
 
-    骨架实现：script.type 作为单个 stage_id，script 内容整体传入 params，
-    由该 stage 自行消费。更复杂的"剧本→多幕→合成"编排属于 P0 细化，
-    不在此骨架中预设（保持与 capabilities 声明的单一 type 对齐）。
+    通用剧本展开（L1，自由组合）：
+        script.type == "video_script_mixin" 且 script.acts[N] 非空时，
+        按每幕 duration_s/visual_hint/narration 展开为"逐段视频"步骤
+        ——任意段数 × 任意时长（5s/10s/3min…），时长 100% 来自契约输入。
+    兼容：其余 script.type 保持单 step（script 整体传给对应 stage）。
     """
     stage_type = spec.script.get("type", "")
     if stage_type not in SUPPORTED_STAGE_TYPES:
@@ -183,6 +185,8 @@ def _build_steps_from_spec(spec: ContentSpec) -> List[Dict[str, Any]]:
             detail=f"unsupported script.type '{stage_type}'; "
                    f"allowed={SUPPORTED_STAGE_TYPES}",
         )
+    if stage_type == "video_script_mixin" and spec.script.get("acts"):
+        return _build_script_video_steps(spec, spec.script["acts"])
     step: Dict[str, Any] = {
         "stage_id": stage_type,
         "name": f"contract-{spec.content_id}",
@@ -196,6 +200,83 @@ def _build_steps_from_spec(spec: ContentSpec) -> List[Dict[str, Any]]:
         "max_retries": 0,
     }
     return [step]
+
+
+def _build_script_video_steps(
+    spec: ContentSpec,
+    acts: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """通用剧本展开：acts[N] → 逐段视频（任意段数/时长）。
+
+    复用 video stage 的 segmented_oneclick 路径（baseline 已实测）：
+        segment_prompts + segment_durations + tts_texts → 逐段生成拼接。
+    时长下限 4s 由 video_stage 强制（生成模型约束）。
+    """
+    params = spec.params or {}
+    seg_prompts: List[str] = []
+    seg_durations: List[float] = []
+    tts_texts: List[str] = []
+
+    for i, act in enumerate(acts):
+        if not isinstance(act, dict):
+            continue
+        narration = str(act.get("narration") or "").strip()
+        visual = str(act.get("visual_hint") or "").strip()
+        prompt = visual or narration or f"第{i + 1}幕"
+        raw_dur = act.get("duration_s") or act.get("duration_seconds")
+        try:
+            seg_durations.append(float(raw_dur) if raw_dur else 5.0)
+        except (TypeError, ValueError):
+            seg_durations.append(5.0)
+        seg_prompts.append(prompt)
+        tts_texts.append(narration)
+
+    video_params: Dict[str, Any] = {
+        "prompt": params.get("prompt") or (seg_prompts[0] if seg_prompts else ""),
+        "aspect_ratio": params.get("aspect_ratio", "9:16"),
+        "resolution": params.get("resolution", "720p"),
+        "frame_rate": params.get("frame_rate") or params.get("fps") or 24,
+        "width": params.get("width"),
+        "height": params.get("height"),
+        "segment_prompts": seg_prompts,
+        "segment_durations": seg_durations,
+        "segmented_oneclick": True,
+        "tts_enabled": bool(any(tts_texts)),
+        "tts_texts": [t for t in tts_texts if t],
+        "tts_mode": params.get("tts_mode", "voice_design"),
+        "reference_image_files": list(spec.assets),
+    }
+    video_params = {k: v for k, v in video_params.items() if v is not None}
+
+    steps: List[Dict[str, Any]] = [{
+        "step_id": "s1_video",
+        "stage_id": "video",
+        "name": f"contract-video-{spec.content_id}",
+        "provider_id": params.get("provider_id", "minimax_h3"),
+        "params": video_params,
+        "input_asset_ids": [],
+        "input_from_steps": [],
+        "max_retries": 0,
+    }]
+
+    if params.get("export"):
+        steps.append({
+            "step_id": "s2_export",
+            "stage_id": "export",
+            "name": "导出成片",
+            "provider_id": "local",
+            "params": {
+                "resolution": params.get("export_resolution", "1080x1920"),
+                "format": "mp4",
+                "codec": "libx264",
+                "bitrate": "8M",
+                "name": f"contract_export_{spec.content_id}",
+            },
+            "input_asset_ids": [],
+            "input_from_steps": ["s1_video"],
+            "max_retries": 0,
+        })
+    return steps
 
 
 def _asset_url(batch_id: str, asset_id: str) -> str:

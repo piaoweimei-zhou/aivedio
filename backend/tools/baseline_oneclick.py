@@ -33,7 +33,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 
@@ -71,11 +71,78 @@ TOPIC_POOL = [
 # ----------------------------------------------------------------------------
 
 
-def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dict[str, Any]]:
+def _resolve_seg_config(
+    topic: str,
+    segments: Optional[int],
+    seg_durations: Optional[List[float]],
+    total_seconds: Optional[float],
+    _cjk_speed: float = 4.2,
+    _min_seg: float = 4.0,
+    _max_seg: float = 6.5,
+) -> Tuple[List[str], List[str], List[float]]:
+    """L2：参数化分段配置，返回 (tts_texts, segment_prompts, seg_durations)。
+
+    优先级：
+        1. seg_durations 显式列表（自由组合，如 [5,10,15]）——完全按用户时长
+        2. total_seconds + segments 均分
+        3. 全部为 None → 内置 4 段小橘猫故事 + 按台词长度动态估算（向后兼容）
+    """
+    if segments is None and seg_durations is None and total_seconds is None:
+        # 默认：内置 4 段故事（保持 g2_regression 基线语义不变）
+        tts_texts = [
+            "清晨，一只小橘猫打着伞走进森林。",
+            "它踩着落叶，听着雨滴打在伞面上清脆作响。",
+            "远处忽然传来一声鹿鸣，它好奇地停下脚步。",
+            "最后，它把伞递给一只躲雨的小狐狸，转身离去。",
+        ]
+        segment_prompts = [
+            f"{topic}，清晨的森林，小橘猫撑着伞走进林间小路，画面里有落叶和树木",
+            f"{topic}，小橘猫的脚踩在落叶上，落叶被踩得沙沙作响、飘飞起来，雨滴打在伞面上",
+            f"{topic}，小橘猫停下脚步，竖起耳朵，远处一只鹿的身影，森林深处传来鹿鸣",
+            f"{topic}，小橘猫把伞递给一只躲在树下躲雨的小狐狸，小狐狸接过伞，猫转身离去",
+        ]
+        seg_durations = [
+            max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2)) for t in tts_texts
+        ]
+        return tts_texts, segment_prompts, seg_durations
+
+    # 参数化路径：段数
+    n = segments or (len(seg_durations) if seg_durations else 1)
+    tts_texts = [f"第{i + 1}幕：{topic}。" for i in range(n)]
+    segment_prompts = [f"{topic}，第{i + 1}个画面，电影感氛围，连贯剧情" for i in range(n)]
+
+    if seg_durations:
+        # 显式时长列表：不足补末值，超出截断
+        if len(seg_durations) < n:
+            seg_durations = seg_durations + [seg_durations[-1]] * (n - len(seg_durations))
+        else:
+            seg_durations = seg_durations[:n]
+    elif total_seconds:
+        seg_durations = [round(total_seconds / n, 2)] * n
+    else:
+        seg_durations = [
+            max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2)) for t in tts_texts
+        ]
+    return tts_texts, segment_prompts, seg_durations
+
+
+def build_oneclick_steps(
+    provider: str,
+    topic: str,
+    mode: str = "B",
+    segments: Optional[int] = None,
+    seg_durations: Optional[List[float]] = None,
+    total_seconds: Optional[float] = None,
+) -> List[Dict[str, Any]]:
     """复现前端 buildSteps（OneClickVideoPage.tsx:1093-1227）的同构 steps 序列。
 
     模式 B（默认）：concept → (angle|pano) → video → (subtitle → hook → export)
     注意：**不传 max_retries**，保持零重试基线。
+
+    L2 自由组合参数（默认 None = 保留内置 4 段故事，向后兼容 g2_regression）：
+        segments      : 片段数 N（任意）
+        seg_durations : 每段时长秒列表，如 [5, 10, 15]（优先于 total_seconds）
+        total_seconds : 总时长秒，与 segments 均分每段
     """
     steps: List[Dict[str, Any]] = []
 
@@ -147,26 +214,20 @@ def build_oneclick_steps(provider: str, topic: str, mode: str = "B") -> List[Dic
     reference_image_files: List[str] = (
         []
     )  # 真实环境应由 concept 输出资产注入；此处留空由 backend 解析 input_from_steps
-    # ⭐ P2/P3 修复：每镜画面 prompt 融合该镜台词的动作语义 + 剧情连贯（含前情），
-    #   让 H3 画面 DiT 与音频 DiT 对齐内容，消除"念了踩落叶、画面却没踩落叶"的声画脱节
-    #   ⭐ 每镜时长按台词长度动态估算（P3：消除长台词被压进固定时长导致的语速突快）
-    tts_texts = [
-        "清晨，一只小橘猫打着伞走进森林。",
-        "它踩着落叶，听着雨滴打在伞面上清脆作响。",
-        "远处忽然传来一声鹿鸣，它好奇地停下脚步。",
-        "最后，它把伞递给一只躲雨的小狐狸，转身离去。",
-    ]
-    segment_prompts = [
-        f"{topic}，清晨的森林，小橘猫撑着伞走进林间小路，画面里有落叶和树木",
-        f"{topic}，小橘猫的脚踩在落叶上，落叶被踩得沙沙作响、飘飞起来，雨滴打在伞面上",
-        f"{topic}，小橘猫停下脚步，竖起耳朵，远处一只鹿的身影，森林深处传来鹿鸣",
-        f"{topic}，小橘猫把伞递给一只躲在树下躲雨的小狐狸，小狐狸接过伞，猫转身离去",
-    ]
-    # 每镜台词长度（字符数）→ 估算该镜视频时长（秒），避免长台词被压缩导致语速突快
+    # ⭐ L2：分段配置可参数化（--segments / --seg-durations / --total-seconds）
+    #   默认 None = 保留内置 4 段小橘猫故事 + 按台词长度动态估算时长（向后兼容）
     _cjk_speed = 4.2  # 每秒约 4.2 个汉字（自然旁白语速）
     _min_seg = 4.0
     _max_seg = 6.5
-    seg_durations = [max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2)) for t in tts_texts]
+    tts_texts, segment_prompts, seg_durations = _resolve_seg_config(
+        topic=topic,
+        segments=segments,
+        seg_durations=seg_durations,
+        total_seconds=total_seconds,
+        _cjk_speed=_cjk_speed,
+        _min_seg=_min_seg,
+        _max_seg=_max_seg,
+    )
     video_params: Dict[str, Any] = {
         "prompt": topic,
         "duration": 8,
@@ -649,9 +710,27 @@ async def main_async(args: argparse.Namespace) -> None:
         async with httpx.AsyncClient() as client:
             for i in range(args.runs):
                 topic = args.topic or TOPIC_POOL[i % len(TOPIC_POOL)]
-                steps = build_oneclick_steps(args.provider, topic)
+                seg_durations_list: Optional[List[float]] = None
+                if args.seg_durations:
+                    seg_durations_list = [
+                        float(x) for x in args.seg_durations.split(",") if x.strip()
+                    ]
+                steps = build_oneclick_steps(
+                    args.provider,
+                    topic,
+                    segments=args.segments,
+                    seg_durations=seg_durations_list,
+                    total_seconds=args.total_seconds,
+                )
                 print(
-                    f"[run {i+1}/{args.runs}] topic={topic[:20]!r} provider={args.provider} steps={len(steps)}"  # noqa: E501
+                    f"[run {i+1}/{args.runs}] topic={topic[:20]!r} provider={args.provider} "
+                    f"steps={len(steps)}"
+                    + (
+                        f" segs={args.segments or len(seg_durations_list or [])}"
+                        f" dur={args.seg_durations or args.total_seconds}"
+                        if (args.segments or args.seg_durations or args.total_seconds)
+                        else ""
+                    )
                 )  # noqa: E501
                 rec = await run_once(client, host, steps, timeout_per_batch, args.skip_dry_run)
                 runs.append(rec)
@@ -710,6 +789,25 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="单批硬超时秒 (默认 1200)")
     p.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="报告输出目录")
     p.add_argument("--skip-dry-run", action="store_true", help="跳过 dry-run 预检")
+    # ⭐ L2：自由组合分段（时长/片段数可任意，默认 None=保留内置 4 段故事）
+    p.add_argument(
+        "--segments",
+        type=int,
+        default=None,
+        help="L2: 片段数 N（任意，如 1=单条 5s，6=六段）",
+    )
+    p.add_argument(
+        "--seg-durations",
+        type=str,
+        default=None,
+        help="L2: 每段时长秒，逗号分隔，如 5,10,15,20（优先于 --total-seconds）",
+    )
+    p.add_argument(
+        "--total-seconds",
+        type=float,
+        default=None,
+        help="L2: 总时长秒，配合 --segments 均分每段",
+    )
     # 从磁盘聚合（不重跑）
     p.add_argument(
         "--from-disk",
