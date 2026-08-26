@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.models import Topic
+from app.models import Dimension, Monetizer, Topic
 from app.scoring import (
     DEFAULT_WEIGHTS,
     score_from_topic_weights,
@@ -24,10 +24,10 @@ def build_topic(topic: Topic) -> Topic:
     """
     if topic.dimension is None or topic.monetizer is None:
         hint = suggest_dimension_monetizer(topic.title)
-        if topic.dimension is None:
-            topic.dimension = hint["dimension"]  # type: ignore[assignment]
-        if topic.monetizer is None:
-            topic.monetizer = hint["monetizer"]  # type: ignore[assignment]
+        if topic.dimension is None and hint["dimension"]:
+            topic.dimension = Dimension(hint["dimension"])  # 字符串→枚举（避免序列化警告）
+        if topic.monetizer is None and hint["monetizer"]:
+            topic.monetizer = Monetizer(hint["monetizer"])
     result = score_from_topic_weights(topic.weights)
     topic.score = result["score"]
     return topic

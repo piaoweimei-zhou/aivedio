@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import (accounts, cover, dashboard, dimensions, hits, metrics,
-                     monetizers, packaging, publishing, signals, topics)
+from app.api import (accounts, cover, dashboard, dimensions, hits, hotspots,
+                     metrics, monetizers, packaging, publishing, signals,
+                     topics)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,29 @@ DATA_DIR = os.environ.get(
 async def lifespan(_app: FastAPI):
     os.makedirs(DATA_DIR, exist_ok=True)
     logger.info("[TrafficOS] 数据目录就绪: %s", DATA_DIR)
-    yield
+
+    # P1a 热点定时刷新（默认关；TRAFFICOS_HOTSPOT_AUTO=1 且间隔>0 才启）
+    interval_h = float(os.environ.get("TRAFFICOS_HOTSPOT_INTERVAL_HOURS", "0"))
+    if os.environ.get("TRAFFICOS_HOTSPOT_AUTO", "0") == "1" and interval_h > 0:
+        import asyncio
+        from app.hotspots import sync as _hs_sync
+
+        async def _loop():
+            while True:
+                try:
+                    await asyncio.to_thread(_hs_sync, 50)
+                    logger.info("[TrafficOS] 热点定时同步完成")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("[TrafficOS] 热点定时同步异常: %s", exc)
+                await asyncio.sleep(interval_h * 3600)
+
+        task = asyncio.create_task(_loop())
+        logger.info("[TrafficOS] 热点定时刷新已启用（间隔 %.1fh）", interval_h)
+        yield
+        task.cancel()
+    else:
+        logger.info("[TrafficOS] 热点定时刷新未启用（TRAFFICOS_HOTSPOT_AUTO=1 可开启）")
+        yield
 
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
@@ -41,6 +64,7 @@ _routers = [
     topics.router,
     signals.router,
     hits.router,
+    hotspots.router,
     packaging.router,
     cover.router,
     metrics.router,
