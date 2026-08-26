@@ -23,9 +23,12 @@ async def generate_package(
     account_id: str = "",
     topic_id: str = "",
     content_id: str = "",
+    platform: str = "douyin",
 ) -> Dict[str, Any]:
     """半自动发布：生成发布包（视频+封面+标题+文案+清单）。
 
+    支持平台（P1c）：douyin/kuaishou/bilibili/xiaohongshu，
+    话题与发布注意按平台差异化；manifest 含平台归因。
     发布包目录下的 manifest.json 即全自动发布的机器输入。
     """
     try:
@@ -38,8 +41,9 @@ async def generate_package(
             account_id=account_id,
             topic_id=topic_id,
             content_id=content_id,
+            platform=platform,
         )
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
@@ -55,6 +59,7 @@ async def create_job(job: PublishJob) -> PublishJob:
 async def list_jobs(
     status: Optional[str] = Query(default=None),
     account_id: Optional[str] = Query(default=None),
+    platform: Optional[str] = Query(default=None),
     limit: int = Query(default=100, le=500),
 ) -> List[PublishJob]:
     col = get_collection("publish_jobs")
@@ -63,6 +68,8 @@ async def list_jobs(
         records = [r for r in records if r.get("status") == status]
     if account_id:
         records = [r for r in records if r.get("account_id") == account_id]
+    if platform:
+        records = [r for r in records if r.get("platform") == platform]
     records.sort(key=lambda r: r.get("created_at", 0.0), reverse=True)
     return [PublishJob(**r) for r in records[:limit]]
 

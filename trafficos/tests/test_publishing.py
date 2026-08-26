@@ -42,10 +42,10 @@ def _fake_video() -> str:
 # ---------- 生成器纯逻辑 ----------
 
 def test_hashtags():
-    tags = _hashtags(Dimension.KNOWLEDGE, Monetizer.COURSE)
+    tags = _hashtags("douyin", Dimension.KNOWLEDGE, Monetizer.COURSE)
     assert "#知识分享" in tags
     assert "#副业" in tags
-    assert len(tags) <= 6
+    assert len(tags) <= 8  # 平台+维度+变现合并后上限 8
 
 
 def test_build_package_structure():
