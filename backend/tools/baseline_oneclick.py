@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,11 +72,35 @@ TOPIC_POOL = [
 # ----------------------------------------------------------------------------
 
 
+def _auto_split_segments(
+    total_seconds: float, max_seg: float = 15.0, min_seg: float = 4.0
+) -> List[float]:
+    """L2a：成片总时长 → 自动拆段（每段落在 [min_seg, max_seg]，尽量少段数）。
+
+    例如 55s → [13.75,13.75,13.75,13.75] 4 段；10s → [10.0] 单段。
+    避免单段过长（16GB 显存/时间约束）或过短（<4s 被 video_stage 抬升）。
+    """
+    total = float(total_seconds)
+    if total <= 0:
+        return [5.0]
+    n = max(1, int(math.ceil(total / max_seg)))
+    seg = total / n
+    while seg < min_seg and n > 1:
+        n -= 1
+        seg = total / n
+    segs = [round(seg, 2)] * n
+    segs[-1] = round(total - sum(segs[:-1]), 2)  # 末段补差，消除浮点累计误差
+    return segs
+
+
 def _resolve_seg_config(
     topic: str,
     segments: Optional[int],
     seg_durations: Optional[List[float]],
     total_seconds: Optional[float],
+    target_seconds: Optional[float] = None,
+    auto_max_seg: float = 15.0,
+    seg_seconds: float = 5.0,
     _cjk_speed: float = 4.2,
     _min_seg: float = 4.0,
     _max_seg: float = 6.5,
@@ -85,9 +110,16 @@ def _resolve_seg_config(
     优先级：
         1. seg_durations 显式列表（自由组合，如 [5,10,15]）——完全按用户时长
         2. total_seconds + segments 均分
-        3. 全部为 None → 内置 4 段小橘猫故事 + 按台词长度动态估算（向后兼容）
+        3. target_seconds 成片总时长 → 自动拆段（每段 ≤15s，默认）
+        4. segments × seg_seconds（默认每段 5s）——N 段 × 5s 混排成片
+        5. 全部为 None → 内置 4 段小橘猫故事 + 按台词长度动态估算（向后兼容）
     """
-    if segments is None and seg_durations is None and total_seconds is None:
+    if (
+        segments is None
+        and seg_durations is None
+        and total_seconds is None
+        and target_seconds is None
+    ):
         # 默认：内置 4 段故事（保持 g2_regression 基线语义不变）
         tts_texts = [
             "清晨，一只小橘猫打着伞走进森林。",
@@ -106,13 +138,19 @@ def _resolve_seg_config(
         ]
         return tts_texts, segment_prompts, seg_durations
 
-    # 参数化路径：段数
-    n = segments or (len(seg_durations) if seg_durations else 1)
+    # 参数化路径：先决定段数（seg_durations 显式时以它为准）
+    if seg_durations:
+        n = len(seg_durations)
+    elif target_seconds is not None:
+        seg_durations = _auto_split_segments(target_seconds, max_seg=auto_max_seg)
+        n = len(seg_durations)
+    else:
+        n = segments or 1
     tts_texts = [f"第{i + 1}幕：{topic}。" for i in range(n)]
     segment_prompts = [f"{topic}，第{i + 1}个画面，电影感氛围，连贯剧情" for i in range(n)]
 
     if seg_durations:
-        # 显式时长列表：不足补末值，超出截断
+        # 显式/自动拆段时长列表：不足补末值，超出截断
         if len(seg_durations) < n:
             seg_durations = seg_durations + [seg_durations[-1]] * (n - len(seg_durations))
         else:
@@ -120,9 +158,8 @@ def _resolve_seg_config(
     elif total_seconds:
         seg_durations = [round(total_seconds / n, 2)] * n
     else:
-        seg_durations = [
-            max(_min_seg, min(_max_seg, len(t) / _cjk_speed + 1.2)) for t in tts_texts
-        ]
+        # ⭐ 段数 × 每段固定秒数（默认 5s）→ N 段 × 5s 混排成片
+        seg_durations = [round(float(seg_seconds), 2)] * n
     return tts_texts, segment_prompts, seg_durations
 
 
@@ -133,6 +170,9 @@ def build_oneclick_steps(
     segments: Optional[int] = None,
     seg_durations: Optional[List[float]] = None,
     total_seconds: Optional[float] = None,
+    target_seconds: Optional[float] = None,
+    max_seg: float = 15.0,
+    seg_seconds: float = 5.0,
 ) -> List[Dict[str, Any]]:
     """复现前端 buildSteps（OneClickVideoPage.tsx:1093-1227）的同构 steps 序列。
 
@@ -140,9 +180,11 @@ def build_oneclick_steps(
     注意：**不传 max_retries**，保持零重试基线。
 
     L2 自由组合参数（默认 None = 保留内置 4 段故事，向后兼容 g2_regression）：
-        segments      : 片段数 N（任意）
-        seg_durations : 每段时长秒列表，如 [5, 10, 15]（优先于 total_seconds）
+        segments      : 片段数 N（任意，1/2/3/4/5...）
+        seg_seconds   : 每段固定秒数（默认 5s）→ N 段 × 5s 混排成片
+        seg_durations : 每段时长列表，如 [5, 10, 15]（优先于其余）
         total_seconds : 总时长秒，与 segments 均分每段
+        target_seconds: 成片总时长秒，自动拆段（每段 ≤ max_seg），如 55 → 4 段
     """
     steps: List[Dict[str, Any]] = []
 
@@ -224,6 +266,9 @@ def build_oneclick_steps(
         segments=segments,
         seg_durations=seg_durations,
         total_seconds=total_seconds,
+        target_seconds=target_seconds,
+        auto_max_seg=max_seg,
+        seg_seconds=seg_seconds,
         _cjk_speed=_cjk_speed,
         _min_seg=_min_seg,
         _max_seg=_max_seg,
@@ -707,9 +752,21 @@ async def main_async(args: argparse.Namespace) -> None:
     else:
         runs = []
         timeout_per_batch = args.timeout
+        # ⭐ L2 多档位：--target-seconds "10,15,20" 每个档位跑一次；否则按 --runs 循环
+        target_list: List[float] = []
+        if args.target_seconds:
+            target_list = [float(x) for x in args.target_seconds.split(",") if x.strip()]
         async with httpx.AsyncClient() as client:
-            for i in range(args.runs):
-                topic = args.topic or TOPIC_POOL[i % len(TOPIC_POOL)]
+            iterations = target_list if target_list else range(args.runs)
+            for idx, it in enumerate(iterations):
+                if target_list:
+                    i = 0  # 档位模式：topic 固定用第一个
+                    topic = args.topic or TOPIC_POOL[0]
+                    target = it
+                else:
+                    i = idx
+                    topic = args.topic or TOPIC_POOL[i % len(TOPIC_POOL)]
+                    target = None
                 seg_durations_list: Optional[List[float]] = None
                 if args.seg_durations:
                     seg_durations_list = [
@@ -721,14 +778,25 @@ async def main_async(args: argparse.Namespace) -> None:
                     segments=args.segments,
                     seg_durations=seg_durations_list,
                     total_seconds=args.total_seconds,
+                    target_seconds=target,
+                    max_seg=args.max_seg,
+                    seg_seconds=args.seg_seconds,
+                )
+                label = (
+                    f"target={target}s" if target is not None else f"run {idx+1}/{args.runs}"
                 )
                 print(
-                    f"[run {i+1}/{args.runs}] topic={topic[:20]!r} provider={args.provider} "
+                    f"[{label}] topic={topic[:20]!r} provider={args.provider} "
                     f"steps={len(steps)}"
                     + (
                         f" segs={args.segments or len(seg_durations_list or [])}"
-                        f" dur={args.seg_durations or args.total_seconds}"
-                        if (args.segments or args.seg_durations or args.total_seconds)
+                        f" dur={args.seg_durations or args.total_seconds or target}"
+                        if (
+                            args.segments
+                            or args.seg_durations
+                            or args.total_seconds
+                            or target
+                        )
                         else ""
                     )
                 )  # noqa: E501
@@ -794,19 +862,51 @@ def parse_args() -> argparse.Namespace:
         "--segments",
         type=int,
         default=None,
-        help="L2: 片段数 N（任意，如 1=单条 5s，6=六段）",
+        help="L2: 片段数 N（任意，如 1=单条 5s，4=默认四段 20s，5=五段 25s）",
+    )
+    p.add_argument(
+        "--seg-seconds",
+        type=float,
+        default=5.0,
+        help="L2: 每段固定秒数（默认 5s），配合 --segments 混排成片，如 --segments 3 --seg-seconds 10 → 30s",
     )
     p.add_argument(
         "--seg-durations",
         type=str,
         default=None,
-        help="L2: 每段时长秒，逗号分隔，如 5,10,15,20（优先于 --total-seconds）",
+        help="L2: 每段时长秒，逗号分隔，如 5,10,15,20（优先于 --seg-seconds/--total-seconds）",
     )
     p.add_argument(
         "--total-seconds",
         type=float,
         default=None,
         help="L2: 总时长秒，配合 --segments 均分每段",
+    )
+    p.add_argument(
+        "--target-seconds",
+        type=str,
+        default=None,
+        help="L2: 成片总时长档位，逗号分隔可测多档（如 10,15,20,...,55），自动拆段≤15s/段",
+    )
+    p.add_argument(
+        "--max-seg",
+        type=float,
+        default=15.0,
+        help="L2: --target-seconds 自动拆段每段上限秒（默认 15）",
+    )
+    # ⭐ L2a：成片总时长档位 + 批量测试（用户核心诉求）
+    p.add_argument(
+        "--target-seconds",
+        type=str,
+        default=None,
+        help="L2a: 成片总时长档位，逗号分隔可一次测多档，如 10,15,20,...,55 "
+             "（自动拆段，每段≤--max-seg）",
+    )
+    p.add_argument(
+        "--max-seg",
+        type=float,
+        default=15.0,
+        help="L2a: 自动拆段每段上限秒 (默认 15，16GB 显存安全值)",
     )
     # 从磁盘聚合（不重跑）
     p.add_argument(
