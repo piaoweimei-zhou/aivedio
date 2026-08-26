@@ -60,8 +60,18 @@ tracker.track(action="download", title="明星采访视频", url="https://...") 
 - [x] B6 发布包生成（半自动路径，可升级全自动）
 - [x] B7 数据看板 + ROI 归因
 - [x] B8 工具信号上报 + 埋点 SDK
+- [x] C 内容初始化（5 账号矩阵 + 6 模板 + 30 选题，幂等 seed）
 
 ## 发布（B6 半自动路径）
 `POST /api/traffic/publish/package` 生成标准发布包（视频+封面+标题+文案+manifest），
 用户手动发到抖音；`PUT /api/traffic/publish/jobs/{id}/mark-published` 标记闭环。
 抖音 `video.create.bind` 权限通过后，同一 `manifest.json` 可直接切全自动发布。
+
+## 内容初始化（C 组）
+```bash
+cd trafficos
+python scripts/seed.py          # 幂等灌入：5 账号矩阵 + 6 包装模板 + 30 条选题
+python scripts/seed.py --force  # 强制重建
+```
+- 选题来源贴合产品矩阵（去水印工具 / 192 工具方向 / 虚拟资源 / 网课 / SaaS）
+- 覆盖三维度 × 7 变现，全部自动打标打分
