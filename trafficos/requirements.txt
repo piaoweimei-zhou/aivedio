@@ -1,6 +1,7 @@
 fastapi>=0.110
 uvicorn>=0.29
 pydantic>=2.6
+Pillow>=10.0
 
 # dev
 pytest>=8.0
