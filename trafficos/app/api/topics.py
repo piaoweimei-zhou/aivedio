@@ -28,7 +28,9 @@ def build_topic(topic: Topic) -> Topic:
             topic.dimension = Dimension(hint["dimension"])  # 字符串→枚举（避免序列化警告）
         if topic.monetizer is None and hint["monetizer"]:
             topic.monetizer = Monetizer(hint["monetizer"])
-    result = score_from_topic_weights(topic.weights)
+    # 打分用全局生效权重（P2a 回灌后自动生效）
+    from app.feedback import get_active_weights
+    result = score_from_topic_weights(topic.weights, get_active_weights())
     topic.score = result["score"]
     return topic
 
