@@ -112,6 +112,9 @@ const DEFAULT_SEGMENT_PROMPTS = [
   '两人并肩向街道深处走去，镜头缓缓跟拍，消失在烟雨朦胧的石板小路尽头',
 ]
 
+// ⭐ L3：每段默认时长（秒）——4 段 × 5s 混排成片（用户核心策略）
+const DEFAULT_SEGMENT_DURATIONS = [5, 5, 5, 5]
+
 // 默认提示词模板
 const DEFAULT_PROMPTS = {
   char1: 'a beautiful young woman in traditional hanfu dress, walking on a stone path in jiangnan water town, gentle expression, long black hair, cinematic lighting, high detail, 8k',
@@ -518,6 +521,8 @@ export default function OneClickVideoPage() {
   // 成片结果：批量完成后取最终视频资产用于预览/下载
   const [finalVideo, setFinalVideo] = useState<{ url: string; name: string; asset_id: string } | null>(null)
   const [segmentPrompts, setSegmentPrompts] = useState<string[]>(DEFAULT_SEGMENT_PROMPTS)
+// ⭐ L3：每段时长（秒），与 segmentPrompts 一一对应；默认 4 段 × 5s
+const [segmentDurations, setSegmentDurations] = useState<number[]>(DEFAULT_SEGMENT_DURATIONS)
   // TTS 配音配置
   const [ttsEnabled, setTtsEnabled] = useState(false)
   const [ttsMode, setTtsMode] = useState<'voice_design' | 'voice_clone'>('voice_design')
@@ -642,6 +647,12 @@ export default function OneClickVideoPage() {
     const newSegTexts = acts.map(a => Array.isArray((a as any).tts_texts) ? (a as any).tts_texts.join(' ') : '')
     setSegmentPrompts(newSegPrompts.length ? newSegPrompts : DEFAULT_SEGMENT_PROMPTS)
     setSegmentTexts(newSegTexts.length ? newSegTexts : ['', '', '', ''])
+    // ⭐ L3：剧本幕数 → 每段时长（用 act.duration_seconds，缺省 5s）
+    const newSegDurs = acts.map(a => {
+      const d = Number((a as any).duration_seconds)
+      return !Number.isFinite(d) || d <= 0 ? 5 : Math.min(15, Math.max(4, Math.round(d)))
+    })
+    setSegmentDurations(newSegDurs.length ? newSegDurs : [...DEFAULT_SEGMENT_DURATIONS])
     // 封面文案
     setScriptCovers(Array.isArray(script.covers) ? script.covers.map((c: any) => ({ title: c.title || '', subtitle: c.subtitle || '' })) : [])
     setScriptHook(script.hook || '')
@@ -1120,8 +1131,13 @@ export default function OneClickVideoPage() {
   // 模式 A（分镜图直接输入）：仅 1 个 video 步骤，输入为已有分镜图资产
   // 模式 B（正常多素材）：DAG 3 层 concept → angle/pano → video
   const buildSteps = (values: any): BatchStep[] => {
-    const segCount = Math.floor(values.duration / values.segment_seconds) || 4
+    // ⭐ L3：段数由用户实际编辑的段落决定（不再被 duration/segment_seconds 公式锁死）
+    const segCount = segmentPrompts.length || 4
     const segs = segmentPrompts.slice(0, segCount)
+    // 每段时长（默认 5s/段，可逐段编辑）；总时长 = ΣsegmentDurations
+    const segDurs = segmentDurations.slice(0, segCount)
+    while (segDurs.length < segCount) segDurs.push(5)
+    const totalDur = segDurs.reduce((a, b) => a + (b || 5), 0)
     const steps: BatchStep[] = []
 
     // ===== 模式 A：分镜图直接输入 =====
@@ -1133,14 +1149,16 @@ export default function OneClickVideoPage() {
         provider_id: 'minimax_h3',
         params: {
           prompt: values.video_prompt,
-          duration: values.duration,
+          duration: totalDur,
           aspect_ratio: values.aspect_ratio,
           resolution: values.resolution,
           model: values.model,
           frame_rate: values.frame_rate,
           width: values.width,
           height: values.height,
-          segment_seconds: values.segment_seconds,
+          segment_seconds: Math.min(...segDurs) || 5,
+          segment_durations: segDurs,
+          segmented_oneclick: true,
           segment_prompts: segs,
           ...buildTtsParams(segCount),
         },
@@ -1236,14 +1254,16 @@ export default function OneClickVideoPage() {
       provider_id: 'minimax_h3',
       params: {
         prompt: values.video_prompt,
-        duration: values.duration,
+        duration: totalDur,
         aspect_ratio: values.aspect_ratio,
         resolution: values.resolution,
         model: values.model,
         frame_rate: values.frame_rate,
         width: values.width,
         height: values.height,
-        segment_seconds: values.segment_seconds,
+        segment_seconds: Math.min(...segDurs) || 5,
+        segment_durations: segDurs,
+        segmented_oneclick: true,
         reference_image_files,
         segment_prompts: segs,
         ...buildTtsParams(segCount),
@@ -1325,6 +1345,7 @@ export default function OneClickVideoPage() {
   const handleReset = () => {
     form.resetFields()
     setSegmentPrompts([...DEFAULT_SEGMENT_PROMPTS])
+    setSegmentDurations([...DEFAULT_SEGMENT_DURATIONS])
     setMaterials([
       { slotId: 1, kind: 'character', mode: 'generate', outputForm: 'angle', prompt: DEFAULT_PROMPTS.char1, asset_id: '' },
       { slotId: 2, kind: 'character', mode: 'generate', outputForm: 'angle', prompt: DEFAULT_PROMPTS.char2, asset_id: '' },
@@ -1345,6 +1366,8 @@ export default function OneClickVideoPage() {
       title: tpl.label,
     })
     setSegmentPrompts([...tpl.segmentPrompts])
+    // ⭐ L3：每段时长跟随模板的单段时长
+    setSegmentDurations(tpl.segmentPrompts.map(() => tpl.videoParams.segment_seconds || 5))
     setMaterials(tpl.materials.map(m => ({ ...m })))
     setBatch(null)
     setWsProgress(null)
@@ -1869,15 +1892,35 @@ export default function OneClickVideoPage() {
                   rows={2}
                   style={{ flex: 1 }}
                 />
+                <InputNumber
+                  min={4}
+                  max={15}
+                  step={1}
+                  value={segmentDurations[i] ?? 5}
+                  onChange={v => {
+                    const next = [...segmentDurations]
+                    while (next.length <= i) next.push(5)
+                    next[i] = v ?? 5
+                    setSegmentDurations(next)
+                  }}
+                  addonAfter="秒"
+                  style={{ width: 90 }}
+                  title={`片段 ${i + 1} 时长（秒），4~15 秒`}
+                />
                 <Button
                   danger
                   disabled={segmentPrompts.length <= 1}
                   onClick={() => {
                     setSegmentPrompts(segmentPrompts.filter((_, idx) => idx !== i))
                     setSegmentTexts(segmentTexts.filter((_, idx) => idx !== i))
+                    setSegmentDurations(segmentDurations.filter((_, idx) => idx !== i))
                   }}
                 >删除</Button>
               </Space.Compact>
+              <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                第 {i + 1} 段时长 {segmentDurations[i] ?? 5} 秒（可改 4~15s）；当前总时长{' '}
+                {(segmentDurations.slice(0, segmentPrompts.length).reduce((a, b) => a + (b || 5), 0))} 秒
+              </div>
               {ttsEnabled && (
                 <Input.TextArea
                   value={segmentTexts[i] || ''}
@@ -1900,6 +1943,7 @@ export default function OneClickVideoPage() {
             onClick={() => {
               setSegmentPrompts([...segmentPrompts, ''])
               setSegmentTexts([...segmentTexts, ''])
+              setSegmentDurations([...segmentDurations, 5])
             }}
             disabled={segmentPrompts.length >= 20}
           >+ 添加一段故事</Button>
