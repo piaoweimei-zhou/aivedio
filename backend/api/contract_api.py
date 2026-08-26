@@ -22,6 +22,7 @@
 
 import logging
 import os
+import glob
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -535,6 +536,29 @@ async def get_produce(task_id: str) -> TaskDetail:
 
     # TODO(P0): status=done 时从产物目录扫描真实 assets（type/url/size）
     assets: List[AssetInfo] = []
+    # 成片资产交付：done 时扫描全局导出目录取最新成片（单卡串行下即本任务产物；
+    # 正式接入静态文件服务 + content_id 关联为后续 TODO）
+    if batch.status == "completed":
+        try:
+            _exp_dir = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "generated", "global", "export",
+            )
+            _files = sorted(
+                glob.glob(os.path.join(_exp_dir, "*.mp4")),
+                key=os.path.getmtime, reverse=True,
+            )
+            if _files:
+                _f = _files[0]
+                assets.append(AssetInfo(
+                    asset_id=os.path.basename(_f),
+                    type="video",
+                    url=os.path.basename(_f),
+                    size_bytes=os.path.getsize(_f),
+                    ttl_sec=86400,
+                ))
+        except Exception as ae:  # 扫描失败不阻塞主查询
+            logger.warning("[Contract] 成片资产扫描失败: %s", ae)
 
     return TaskDetail(
         task_id=batch.batch_id,
