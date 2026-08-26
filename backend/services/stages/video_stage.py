@@ -21,6 +21,28 @@ from services.stages.video_script_mixin import VideoScriptMixin  # noqa: E402
 logger = logging.getLogger(__name__)
 
 
+def _should_use_h3_segmented(
+    provider_id: str,
+    segment_prompts: List[str],
+    force_segmented: bool,
+    tts_texts: List[str],
+) -> bool:
+    """minimax_h3 是否走逐镜路径（含独立 TTS 混音）。
+
+    ⭐ 回归基线（P0 配音丢失修复）：
+    只要有真实台词（非空/非空白）就走逐镜（含单段 1 镜），否则台词直接
+    丢给 H3 generate_video（不注入人声）导致成片无声旁白；无台词时仅多段走逐镜。
+    """
+    if provider_id != "minimax_h3":
+        return False
+    if not (segment_prompts or force_segmented):
+        return False
+    has_tts = bool(tts_texts and any(t.strip() for t in tts_texts))
+    if has_tts:
+        return True
+    return len(segment_prompts) > 1
+
+
 class VideoStage(VideoScriptMixin, VideoAudioMixin, VideoConcatMixin, StagePlugin):
     """视频生成阶段"""
 
@@ -186,16 +208,11 @@ class VideoStage(VideoScriptMixin, VideoAudioMixin, VideoConcatMixin, StagePlugi
         try:
             # ⭐ 逐镜生成+拼接：minimax_h3 多镜头路径改逐个生成、拼对齐，
             #   避免"整段旁白拼进一个 prompt 导致音画节奏乱 / 时长不一致"。
-            if (
-                provider_id == "minimax_h3"
-                and (segment_prompts or force_segmented)
-                and (
-                    len(tts_texts or segment_prompts) > 1
-                    # ⭐ 修复 P0 配音丢失：单段（1 镜）但有台词时，
-                    #   也走逐镜路径触发独立 TTS 混音；否则台词直接丢给
-                    #   H3 generate_video（不注入人声）导致成片无声旁白
-                    or bool(tts_texts and any(t.strip() for t in tts_texts))
-                )
+            if _should_use_h3_segmented(
+                provider_id=provider_id,
+                segment_prompts=segment_prompts,
+                force_segmented=force_segmented,
+                tts_texts=tts_texts,
             ):
                 result = await self._generate_h3_segmented(
                     provider_svc=provider_svc,
