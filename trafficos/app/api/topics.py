@@ -16,21 +16,27 @@ from app.storage import get_collection
 router = APIRouter(prefix="/api/traffic/topics", tags=["流量侧-选题库"])
 
 
-@router.post("", response_model=Topic)
-async def create_topic(topic: Topic) -> Topic:
-    """创建选题，自动打分（缺失特征按 0.5 中性；标题可自动打标）。"""
-    col = get_collection("topics")
-    # 自动打标：未指定维度/变现时按标题粗判
+def build_topic(topic: Topic) -> Topic:
+    """选题规范化（同步纯逻辑，供各入口复用）：自动打标 + 自动打分。
+
+    - 未指定维度/变现时按标题粗判
+    - 缺失特征按 0.5 中性打分
+    """
     if topic.dimension is None or topic.monetizer is None:
         hint = suggest_dimension_monetizer(topic.title)
         if topic.dimension is None:
             topic.dimension = hint["dimension"]  # type: ignore[assignment]
         if topic.monetizer is None:
             topic.monetizer = hint["monetizer"]  # type: ignore[assignment]
-    # 打分
     result = score_from_topic_weights(topic.weights)
     topic.score = result["score"]
-    return col.insert(topic)
+    return topic
+
+
+@router.post("", response_model=Topic)
+async def create_topic(topic: Topic) -> Topic:
+    """创建选题，自动打分（缺失特征按 0.5 中性；标题可自动打标）。"""
+    return get_collection("topics").insert(build_topic(topic))
 
 
 @router.get("", response_model=List[Topic])

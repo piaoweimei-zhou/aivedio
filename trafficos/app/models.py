@@ -148,6 +148,24 @@ class Signal(BaseModel):
         return self
 
 
+class ToolEvent(BaseModel):
+    """工具行为事件（工具传感器上报，脱敏，不含个人信息）"""
+    id: str = ""
+    tool_name: str = ""         # 工具标识（如 watermark-remover）
+    action: str = ""            # download/analyze/search/save
+    url: str = ""
+    title: str = ""             # 用户处理内容标题（可选）
+    field: str = ""             # 领域（可选，服务端兜底 general）
+    keyword: str = ""           # 关键词（工具可传；空则服务端从 title 粗提取）
+    extra: Dict[str, Any] = Field(default_factory=dict)
+    created_at: float = 0.0
+
+    def touch(self) -> "ToolEvent":
+        self.id = self.id or _new_id("evt")
+        self.created_at = self.created_at or _now()
+        return self
+
+
 class Hit(BaseModel):
     """爆款拆解记录（工具自动拆解 + 手动补充）"""
     id: str = ""
