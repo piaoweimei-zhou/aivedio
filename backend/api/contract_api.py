@@ -151,6 +151,8 @@ class TaskDetail(BaseModel):
     status: str
     progress: float = 0.0
     current_step: Optional[str] = None
+    steps: List[Dict[str, Any]] = Field(default_factory=list)
+    comfyui: Optional[Dict[str, Any]] = None
     assets: List[AssetInfo] = Field(default_factory=list)
     error: Optional[ErrorPayload] = None
     traffic_meta: Optional[Dict[str, Any]] = None
@@ -463,8 +465,36 @@ async def get_produce(task_id: str) -> TaskDetail:
         raise HTTPException(status_code=404, detail=f"task not found: {task_id}")
 
     current_step = None
-    if 0 <= batch.current_step_index < len(batch.steps):
-        current_step = batch.steps[batch.current_step_index].stage_id
+    step_infos: List[Dict[str, Any]] = []
+    comfyui_state: Optional[Dict[str, Any]] = None
+    if batch.steps:
+        for i, st in enumerate(batch.steps):
+            step_infos.append({
+                "step_id": st.get("step_id"),
+                "stage_id": st.get("stage_id"),
+                "name": st.get("name", ""),
+                "status": st.get("status", "pending"),
+                "elapsed_ms": st.get("elapsed_ms", 0),
+                "gen_task_id": st.get("gen_task_id", ""),
+            })
+        if 0 <= batch.current_step_index < len(batch.steps):
+            current_step = batch.steps[batch.current_step_index].stage_id
+        # ComfyUI 实时进度：查当前 running step 的 prompt 是否在队列/执行中
+        cur = batch.steps[batch.current_step_index] if (
+            0 <= batch.current_step_index < len(batch.steps)
+        ) else None
+        prompt_id = (cur or {}).get("prompt_id", "")
+        try:
+            if prompt_id:
+                from services.comfyui.client import ComfyUIClient
+                _c = ComfyUIClient(base_url="http://127.0.0.1:8188", output_dir=".")
+                q = await _c.get_queue_progress(prompt_id)
+                comfyui_state = {"online": True, **q}
+            else:
+                comfyui_state = {"online": True, "in_queue": False,
+                                 "note": "当前步骤未关联 ComfyUI prompt（非 comfyui 步骤）"}
+        except Exception as ce:
+            comfyui_state = {"online": False, "error": str(ce)[:120]}
 
     error_payload = None
     if batch.error:
@@ -479,6 +509,8 @@ async def get_produce(task_id: str) -> TaskDetail:
         status=_normalize_status(batch.status),
         progress=batch.progress / 100.0,
         current_step=current_step,
+        steps=step_infos,
+        comfyui=comfyui_state,
         assets=assets,
         error=error_payload,
         traffic_meta=(batch.metadata or {}).get("traffic_meta"),
