@@ -775,8 +775,10 @@ class GraphicStage(StagePlugin):
 
         # 顶部大标题（冲击力）
         if title:
-            # 标题若超长则换行
-            lines = self._wrap_text(title, 6)
+            # 按画面比例自适应换行：竖版（9:16/3:4）6 字/行，横版（16:9）更多
+            ratio = width / height if height else 1.0
+            max_chars = 6 if ratio < 1.1 else 10
+            lines = self._wrap_text(title, max_chars)
             for line in lines:
                 tw = self._text_width(draw, line, f_quote)
                 draw.text(((width - tw) // 2, y), line, font=f_quote, fill=palette["accent"])

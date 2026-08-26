@@ -149,6 +149,9 @@ class BatchTaskService:
         self._load()
         # 正在运行的批量任务（防止重复执行）
         self._running: Dict[str, asyncio.Task] = {}
+        # 全局 GPU 调度锁：ComfyUI 本地单卡，所有 contract 任务跨任务排队串行，
+        # 避免多任务并发提交导致 ComfyUI 队列堵塞、concept 阶段排队超时失败
+        self._gpu_sched_lock = asyncio.Lock()
 
     # ================================================================
     # 持久化
@@ -454,7 +457,12 @@ class BatchTaskService:
         # 设置 trace_id，贯穿整个批量任务执行链（batch → dag → stage → comfyui）
         set_trace_id(batch_id)
         try:
-            await self._run_batch_dag_impl(batch_id, batch)
+            # 全局 GPU 排队：等待前一个任务释放单卡，再执行本任务。
+            # 锁在 finally 释放；排队期间 batch.status=running（语义=已受理待执行）
+            if self._gpu_sched_lock.locked():
+                logger.info("[BatchTask] 等待单卡调度：%s 排队中（前序任务占用 GPU）", batch_id)
+            async with self._gpu_sched_lock:
+                await self._run_batch_dag_impl(batch_id, batch)
         finally:
             clear_trace_id()
 
@@ -639,6 +647,10 @@ class BatchTaskService:
                     f"failed_step={result.failed_step_id} | "
                     f"completed={result.completed_steps}/{result.total_steps}"
                 )
+                # 任务级自动重试：仅超时类基础设施失败（排队过久/外部依赖慢），退避后重跑
+                if await self._maybe_auto_retry(batch, result):
+                    # 已安排自动重试，不再对外通知最终失败
+                    return
                 # 通知批量任务失败
                 await ws_service.notify_batch_failed(
                     batch_id,
@@ -662,6 +674,38 @@ class BatchTaskService:
             batch.updated_at = time.time()
             self._save_batch(batch)
             self._running.pop(batch_id, None)
+
+    async def _maybe_auto_retry(self, batch: BatchTask, result) -> bool:
+        """任务级自动重试判定：仅超时类基础设施失败，且有剩余重试次数。
+
+        返回 True 表示已安排延迟重跑（调用方应跳过最终失败通知）。
+        """
+        meta = batch.metadata or {}
+        left = int(meta.get("auto_retry_left", 0))
+        if left <= 0:
+            return False
+        # 只对"超时"类失败自动重试（排队过久/外部依赖慢，重跑有意义）
+        if "超时" not in (result.error or ""):
+            return False
+
+        meta["auto_retry_left"] = left - 1
+        batch.status = "pending"  # 复位，允许重新 start()
+        batch.error = (
+            f"{batch.error} | 触发自动重试，剩余 {left - 1} 次（30s 退避）"
+        )
+        self._save_batch(batch)
+        batch_id = batch.batch_id
+        logger.warning(
+            "[BatchTask] 任务级自动重试 | id=%s | 剩余=%s | 30s 退避",
+            batch_id, left - 1,
+        )
+        asyncio.create_task(self._delayed_retry(batch_id, backoff_s=30))
+        return True
+
+    async def _delayed_retry(self, batch_id: str, backoff_s: float):
+        """退避后重新启动任务（重新走全局 GPU 排队）。"""
+        await asyncio.sleep(backoff_s)
+        await self.start(batch_id)
 
     async def _resolve_step_inputs(self, batch: BatchTask, step: BatchStep) -> Optional[List[str]]:
         """解析步骤输入资产 ID

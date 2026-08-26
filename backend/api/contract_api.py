@@ -128,6 +128,12 @@ class ProduceResponse(BaseModel):
     task_id: str
     content_id: str
     status: str
+
+
+class StartResponse(BaseModel):
+    task_id: str
+    started: bool = False
+    message: str = ""
     duplicate: bool = False
 
 
@@ -169,6 +175,24 @@ class CancelResponse(BaseModel):
 class ClaimResponse(BaseModel):
     asset_id: str
     claimed: bool = True
+
+
+class TaskSummary(BaseModel):
+    task_id: str
+    content_id: Optional[str] = None
+    status: str
+    progress: float = 0.0
+    current_step: Optional[str] = None
+    dimension: Optional[str] = None
+    monetizer: Optional[str] = None
+    account_id: Optional[str] = None
+    platform: Optional[str] = None
+    error: Optional[str] = None
+
+
+class TasksResponse(BaseModel):
+    tasks: List[TaskSummary] = Field(default_factory=list)
+    total: int = 0
 
 
 class Capabilities(BaseModel):
@@ -419,6 +443,8 @@ async def produce(spec: ContentSpec) -> ProduceResponse:
             )
 
     steps = _build_steps_from_spec(spec)
+    # 任务级自动重试：默认对"超时"类基础设施失败自动重跑 1 次（30s 退避）
+    auto_retry = int((spec.params or {}).get("auto_retry", 1))
     metadata = {
         "content_id": spec.content_id,
         "dimension": spec.dimension,
@@ -427,6 +453,9 @@ async def produce(spec: ContentSpec) -> ProduceResponse:
         "callback_url": spec.callback_url,
         "traffic_meta": spec.traffic_meta or {},
         "contract_version": "1.0.0",
+        "auto_retry": auto_retry,
+        "auto_retry_left": auto_retry,
+        "platform": (spec.params or {}).get("platform", ""),
     }
     batch = svc.create(
         name=f"contract-{spec.content_id}",
@@ -439,6 +468,10 @@ async def produce(spec: ContentSpec) -> ProduceResponse:
         # 异步启动，不阻塞响应；调用方经 GET 查询进度
         import asyncio
         asyncio.create_task(svc.start(batch.batch_id))
+        resp_status = "queued"  # 已创建并排队启动
+    else:
+        # 仅创建不启动：status=created，可经 POST /contract/produce/{task_id}/start 手动启动
+        resp_status = "created"
 
     logger.info(
         "[Contract] produce | content_id=%s task_id=%s auto_start=%s",
@@ -447,7 +480,7 @@ async def produce(spec: ContentSpec) -> ProduceResponse:
     return ProduceResponse(
         task_id=batch.batch_id,
         content_id=spec.content_id,
-        status="queued",
+        status=resp_status,
         duplicate=False,
     )
 
@@ -517,6 +550,56 @@ async def get_produce(task_id: str) -> TaskDetail:
     )
 
 
+@router.get(
+    "/tasks",
+    response_model=TasksResponse,
+    dependencies=[Depends(require_api_key)],
+)
+async def list_tasks(
+    status: str = "",
+    platform: str = "",
+    account_id: str = "",
+    limit: int = 50,
+) -> TasksResponse:
+    """成片/任务管理视图：列出生产任务（支持按状态/平台/账号过滤）。
+
+    运营视角：哪个账号、哪条内容、当前状态/进度、产物错误。
+    """
+    svc = get_batch_task_service()
+    batches = await svc.list_batches()
+    # 按创建时间倒序（最新在前）
+    batches.sort(key=lambda b: b.created_at, reverse=True)
+
+    summaries: List[TaskSummary] = []
+    for b in batches:
+        meta = b.metadata or {}
+        norm_status = _normalize_status(b.status)
+        if status and norm_status != status:
+            continue
+        if platform and meta.get("platform") != platform:
+            continue
+        if account_id and meta.get("account_id") != account_id:
+            continue
+        summaries.append(TaskSummary(
+            task_id=b.batch_id,
+            content_id=meta.get("content_id"),
+            status=norm_status,
+            progress=b.progress / 100.0,
+            current_step=(
+                b.steps[b.current_step_index].stage_id
+                if 0 <= b.current_step_index < len(b.steps) else None
+            ),
+            dimension=meta.get("dimension"),
+            monetizer=meta.get("monetizer"),
+            account_id=meta.get("account_id"),
+            platform=meta.get("platform"),
+            error=b.error or None,
+        ))
+        if len(summaries) >= limit:
+            break
+    return TasksResponse(tasks=summaries, total=len(summaries))
+
+
 @router.post(
     "/produce/{task_id}/cancel",
     response_model=CancelResponse,
@@ -556,6 +639,36 @@ async def cancel_produce(task_id: str) -> CancelResponse:
         status="cancelled",
         cancelled=ok,
         message="cancelled" if ok else "cancel failed",
+    )
+
+
+@router.post(
+    "/produce/{task_id}/start",
+    response_model=StartResponse,
+    dependencies=[Depends(require_api_key)],
+)
+async def start_produce(task_id: str) -> StartResponse:
+    """手动启动已创建未运行的任务（auto_start=False 时可用）。
+
+    仅 pending/queued 状态可启动；running 与终态返回 started=False。
+    """
+    svc = get_batch_task_service()
+    batch = await svc.get(task_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail=f"task not found: {task_id}")
+    if batch.status == "running":
+        return StartResponse(task_id=task_id, started=False, message="already running")
+    if batch.status not in ("pending",):
+        return StartResponse(
+            task_id=task_id,
+            started=False,
+            message=f"task in state {batch.status}; only pending can start",
+        )
+    started = await svc.start(task_id)
+    return StartResponse(
+        task_id=task_id,
+        started=started,
+        message="started" if started else "start rejected",
     )
 
 
