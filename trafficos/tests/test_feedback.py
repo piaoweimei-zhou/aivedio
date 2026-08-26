@@ -6,9 +6,10 @@ import time
 
 import pytest
 
-from app.feedback import (compute_adjustment, get_active_weights,
+from app.feedback import (apply_ratio_adjustment, compute_adjustment,
+                          compute_ratio_adjustment, get_active_weights,
                           rescore_pending, run_feedback)
-from app.models import Topic
+from app.models import DimensionConfig, Topic
 from app.scoring import DEFAULT_WEIGHTS, normalize_weights
 from app.storage import get_collection
 
@@ -124,4 +125,52 @@ def test_run_feedback_applies_and_rescores(monkeypatch):
     # 权重已生效且可审计
     assert "weights_before" in res
     assert get_active_weights()["convert"] != DEFAULT_WEIGHTS["convert"]
+    tmp.cleanup()
+
+
+# ==================== P2b 配比动态调整 ====================
+
+def test_compute_ratio_adjustment_high_roi_up(monkeypatch):
+    tmp = _tmp(monkeypatch)
+    # 配置两个维度
+    dcol = get_collection("dimensions")
+    dcol.insert(DimensionConfig(code="knowledge", name="知识", ratio=0.4))
+    dcol.insert(DimensionConfig(code="pure_content", name="纯内容", ratio=0.6))
+    # 数据：knowledge 高 ROI，pure_content 低 ROI（collected_at=now 避免被窗口过滤）
+    from app.models import MetricRecord
+    now = time.time()
+    records = [
+        MetricRecord(content_id="c1", dimension="knowledge", monetizer="course",
+                     views=1000, revenue=50.0, collected_at=now),
+        MetricRecord(content_id="c2", dimension="pure_content", monetizer="adshare",
+                     views=500, revenue=1.0, collected_at=now),
+    ]
+    res = compute_ratio_adjustment(records, days=7, dim_configs=dcol.list())
+    by = {a["dimension"]: a for a in res["adjustments"]}
+    assert by["knowledge"]["ratio_after"] > by["knowledge"]["ratio_before"]
+    assert by["pure_content"]["ratio_after"] < by["pure_content"]["ratio_before"]
+    # 归一化：总和 ≈ 1
+    total = sum(a["ratio_after"] for a in res["adjustments"])
+    assert abs(total - 1.0) < 1e-6
+    tmp.cleanup()
+
+
+def test_apply_ratio_dry_run_not_write(monkeypatch):
+    tmp = _tmp(monkeypatch)
+    dcol = get_collection("dimensions")
+    dcol.insert(DimensionConfig(code="knowledge", name="知识", ratio=0.4))
+    dcol.insert(DimensionConfig(code="pure_content", name="纯内容", ratio=0.6))
+    from app.models import MetricRecord
+    records = [
+        MetricRecord(content_id="c1", dimension="knowledge", monetizer="course",
+                     views=1000, revenue=50.0),
+        MetricRecord(content_id="c2", dimension="pure_content", monetizer="adshare",
+                     views=500, revenue=1.0),
+    ]
+    res = apply_ratio_adjustment(records, days=7, dry_run=True)
+    assert res["applied"] is False
+    assert res["dry_run"] is True
+    # 未写库
+    after = {r["code"]: r["ratio"] for r in dcol.list()}
+    assert after["knowledge"] == 0.4
     tmp.cleanup()

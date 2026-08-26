@@ -1,11 +1,12 @@
-"""迭代回灌 API（P2a）：一键回灌 + 权重查看（含历史审计）。"""
+"""迭代回灌 API（P2a 权重 + P2b 配比）：一键回灌 + 权重/配比查看。"""
 from __future__ import annotations
 
 from typing import Any, Dict
 
 from fastapi import APIRouter, Query
 
-from app.feedback import get_active_weights, run_feedback
+from app.feedback import (apply_ratio_adjustment, get_active_weights,
+                          run_feedback)
 from app.storage import get_collection
 
 router = APIRouter(prefix="/api/traffic/feedback", tags=["流量侧-迭代飞轮"])
@@ -27,3 +28,12 @@ async def current_weights() -> Dict[str, Any]:
         "active_weights": get_active_weights(),
         "history": get_collection("weight_history").list(),
     }
+
+
+@router.post("/ratio")
+async def ratio_adjustment(
+    days: int = Query(default=7, ge=1, le=90),
+    dry_run: bool = Query(default=True, description="默认只出建议；false 才写回配比"),
+) -> Dict[str, Any]:
+    """P2b 配比动态调整：维度 ROI → 配比增减建议（dry_run）或写回 dimensions.ratio。"""
+    return apply_ratio_adjustment(days=days, dry_run=dry_run)

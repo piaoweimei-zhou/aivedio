@@ -60,6 +60,11 @@ def _within_days(records: List[dict], days: int) -> List[dict]:
     return [r for r in records if float(r.get("collected_at", 0.0) or 0.0) >= cutoff]
 
 
+def _enum_val(x: Any) -> Any:
+    """枚举 → 值；否则原样。"""
+    return x.value if hasattr(x, "value") else x
+
+
 def _best_ratio(roi_map: Dict[str, float], baseline: float) -> float:
     """最佳组 ROI 相对基准的比率（聚焦高 ROI 变现/维度），封顶 RATIO_MAX。"""
     if baseline <= 0 or not roi_map:
@@ -188,3 +193,98 @@ def run_feedback(days: int = 7, force: bool = False) -> Dict[str, Any]:
         "applied_id": applied["applied"],
         "rescore_count": rescored,
     }
+
+
+# ==================== P2b 配比动态调整 ====================
+
+def compute_ratio_adjustment(
+    records: List[dict],
+    days: int = 7,
+    dim_configs: Optional[List[dict]] = None,
+) -> Dict[str, Any]:
+    """维度 ROI → 配比调整建议（不写库）。
+
+    Returns:
+        {"adjustments": [{dimension, roi, ratio_before, ratio_after, note}],
+         "normalized": true}
+    """
+    if dim_configs is None:
+        dim_configs = get_collection("dimensions").list()
+    if not dim_configs:
+        return {"adjustments": [], "normalized": True}
+
+    # 统一 records 为 dict（兼容 MetricRecord 模型 / dict）
+    records = [r if isinstance(r, dict) else r.model_dump() for r in records]
+    recent = _within_days(records, days)
+    total = aggregate(recent)
+    baseline = total["roi"] if total["roi"] > 0 else None
+
+    # 维度 ROI（group 可能是 Dimension 枚举对象，统一转值/字符串）
+    dim_roi: Dict[str, float] = {}
+    if recent:
+        for d in group_by(recent, "dimension"):
+            g = d["group"]
+            key = g.value if hasattr(g, "value") else str(g)
+            dim_roi[key] = d["roi"]
+
+    # 调整系数：有数据维度按 ROI/基准 钳制；无数据保持 1.0；ROI=0 减产
+    ratios: Dict[str, float] = {}
+    for cfg in dim_configs:
+        code_raw = cfg.get("code")
+        code = code_raw.value if hasattr(code_raw, "value") else code_raw
+        roi = dim_roi.get(code, None)
+        if roi is None:
+            ratios[code] = 1.0
+        elif baseline is None or roi <= 0:
+            ratios[code] = 0.6          # ROI 为 0 → 减产
+        else:
+            ratios[code] = _clamp(roi / baseline, 0.5, 2.0)
+
+    # 新配比 = 旧配比 × 系数 → 归一化
+    adjustments = []
+    total_w = sum(
+        (float(cfg.get("ratio") or 0.0)) * ratios[_enum_val(cfg.get("code"))]
+        for cfg in dim_configs
+    ) or 1.0
+    for cfg in dim_configs:
+        code = _enum_val(cfg.get("code"))
+        before = float(cfg.get("ratio") or 0.0)
+        after = round(before * ratios.get(code, 1.0) / total_w, 4)
+        note = ("ROI 高增产" if ratios.get(code, 1.0) > 1.05
+                else "ROI 低减产" if ratios.get(code, 1.0) < 0.95 else "维持")
+        adjustments.append({
+            "dimension": code,
+            "roi": dim_roi.get(code, 0.0),
+            "ratio_before": before,
+            "ratio_after": after,
+            "note": note,
+        })
+    return {"adjustments": adjustments, "normalized": True}
+
+
+def apply_ratio_adjustment(
+    records: Optional[List[dict]] = None,
+    days: int = 7,
+    dry_run: bool = True,
+) -> Dict[str, Any]:
+    """应用配比调整（写回 dimensions.ratio）。dry_run=True 只出建议不落库。"""
+    if records is None:
+        records = get_collection("metrics").list()
+    dim_col = get_collection("dimensions")
+    configs = dim_col.list()
+    result = compute_ratio_adjustment(records, days=days, dim_configs=configs)
+    if not result["adjustments"]:
+        return {"applied": False, **result}
+
+    if dry_run:
+        return {"applied": False, "dry_run": True, **result}
+
+    n = 0
+    for adj in result["adjustments"]:
+        code = adj["dimension"]
+        rec = next((c for c in configs if c.get("code") == code), None)
+        if rec is None:
+            continue
+        dim_col.update(rec["id"], {"ratio": adj["ratio_after"]})
+        n += 1
+    return {"applied": True, "updated": n, "dry_run": False, **result}
