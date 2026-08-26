@@ -33,9 +33,11 @@ def _spec(**overrides) -> ContentSpec:
 # ---------- 通用展开 ----------
 
 def test_acts_expands_to_segmented_video_step():
-    """3 幕（5/10/15s）→ concept + video 2 步，时长/提示/台词全部来自 acts。"""
+    """3 幕（5/10/15s）→ concept→video→subtitle→hook→export 5 步。"""
     steps = _build_steps_from_spec(_spec())
-    assert len(steps) == 2                       # concept 前置 + video
+    assert [s["stage_id"] for s in steps] == [
+        "concept", "video", "subtitle", "hook_overlay", "export",
+    ]
     assert steps[0]["stage_id"] == "concept"     # ⭐ 真实图片资产（I2V 输入）
     step = steps[1]
     assert step["stage_id"] == "video"
@@ -51,6 +53,30 @@ def test_acts_expands_to_segmented_video_step():
     assert p["aspect_ratio"] == "9:16"
     assert p["resolution"] == "720p"
     assert p["frame_rate"] == 24
+    # 字幕/钩子/导出默认开启（对齐一键成片默认流程）
+    assert steps[2]["stage_id"] == "subtitle"
+    assert steps[2]["params"]["subtitle_texts"] == [
+        {"text": "开场旁白"}, {"text": "中段剧情"}, {"text": "结尾高潮"},
+    ]
+    assert steps[3]["stage_id"] == "hook_overlay"
+    assert steps[4]["stage_id"] == "export"
+
+
+def test_platform_profiles_shape():
+    """平台画像：concept 比例 / video 尺寸 / 导出规格按平台对齐。"""
+    for platform, prof in (
+        ("douyin", ("1080x1920", "9:16", (720, 1280), "1080x1920")),
+        ("kuaishou", ("1080x1920", "9:16", (720, 1280), "1080x1920")),
+        ("xiaohongshu", ("1080x1440", "3:4", (720, 960), "1080x1440")),
+        ("bilibili", ("1920x1080", "16:9", (1280, 720), "1920x1080")),
+    ):
+        spec = _spec(params={"platform": platform})
+        steps = _build_steps_from_spec(spec)
+        assert steps[0]["params"]["size"] == prof[0], platform      # concept 比例
+        assert steps[1]["params"]["aspect_ratio"] == prof[1], platform
+        assert steps[1]["params"]["width"] == prof[2][0], platform
+        assert steps[1]["params"]["height"] == prof[2][1], platform
+        assert steps[4]["params"]["resolution"] == prof[3], platform  # 导出规格
 
 
 def test_single_5s_act():
@@ -96,16 +122,19 @@ def test_no_tts_when_no_narration():
     p = _build_steps_from_spec(spec)[1]["params"]
     assert p["tts_enabled"] is False
     assert p["tts_texts"] == []
+    # 无台词 → 字幕步骤空
+    subs = [s for s in _build_steps_from_spec(spec) if s["stage_id"] == "subtitle"]
+    assert subs and subs[0]["params"]["subtitle_texts"] == []
 
 
-def test_export_optional_step():
-    """export=true → 追加 export 步骤，依赖 video。"""
-    spec = _spec()
-    spec.params = {**spec.params, "export": True}
+def test_export_default_on():
+    """export 默认开启（对齐默认成片流程），平台规格导出。"""
+    spec = _spec(params={"platform": "bilibili"})
     steps = _build_steps_from_spec(spec)
-    assert len(steps) == 3                       # concept + video + export
-    assert steps[2]["stage_id"] == "export"
-    assert steps[2]["input_from_steps"] == ["s2_video"]
+    export = steps[4]
+    assert export["stage_id"] == "export"
+    assert export["params"]["resolution"] == "1920x1080"
+    assert export["input_from_steps"] == ["s4_hook"]
 
 
 def test_reference_assets_passed():

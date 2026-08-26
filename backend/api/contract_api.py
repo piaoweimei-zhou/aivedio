@@ -48,6 +48,24 @@ SUPPORTED_STAGE_TYPES = [
     "export",
 ]
 
+# 平台画像（概念图比例 → I2V 尺寸 → 导出规格，P0 对齐各平台发布规范）
+#  ratio:        video aspect_ratio
+#  concept_size: concept stage 的 size（竖版 1080x1920 / 横版 1920x1080 / 4:5 1080x1440）
+#  video_wh:     video 输出宽高（I2V 图生视频）
+#  export:       export stage 导出分辨率
+#  label:        导出文件名标签
+PLATFORM_PROFILES: Dict[str, Dict[str, Any]] = {
+    "douyin":     {"ratio": "9:16", "concept_size": "1080x1920",
+                   "video_wh": (720, 1280), "export": "1080x1920", "label": "抖音"},
+    "kuaishou":   {"ratio": "9:16", "concept_size": "1080x1920",
+                   "video_wh": (720, 1280), "export": "1080x1920", "label": "快手"},
+    "xiaohongshu": {"ratio": "3:4", "concept_size": "1080x1440",
+                    "video_wh": (720, 960), "export": "1080x1440", "label": "小红书"},
+    "bilibili":   {"ratio": "16:9", "concept_size": "1920x1080",
+                   "video_wh": (1280, 720), "export": "1920x1080", "label": "B站"},
+}
+DEFAULT_PLATFORM = "douyin"
+
 # director 内部 BatchTask.status → 契约 TaskStatus 映射
 _BATCH_TO_CONTRACT_STATUS = {
     "pending": "queued",
@@ -237,7 +255,18 @@ def _build_script_video_steps(
 
     steps: List[Dict[str, Any]] = []
 
-    # ---- 1) concept 场景概念图（真实图片资产，作为 video 的 I2V 输入）----
+    # ---- 平台画像（决定 concept 比例 / video 尺寸 / 导出规格）----
+    platform = (params.get("platform") or (spec.packaging or {}).get("platform")
+                or DEFAULT_PLATFORM)
+    if platform not in PLATFORM_PROFILES:
+        platform = DEFAULT_PLATFORM
+    prof = PLATFORM_PROFILES[platform]
+    _cs = params.get("concept_size") or prof["concept_size"]
+    concept_w, concept_h = (
+        (int(x) for x in str(_cs).lower().split("x")) if isinstance(_cs, str) else _cs
+    )
+
+    # ---- 1) concept 场景概念图（真实图片资产，按平台比例，作为 video 的 I2V 输入）----
     topic = (
         (spec.packaging or {}).get("title")
         or params.get("prompt")
@@ -255,22 +284,25 @@ def _build_script_video_steps(
                        or (seg_prompts[0] if seg_prompts else topic)),
             "negative_prompt": "low quality, blurry, deformed, ugly",
             "content_type": "scene",
-            "width": params.get("concept_width", 1024),
-            "height": params.get("concept_height", 1024),
+            "size": f"{concept_w}x{concept_h}",
         },
         "input_asset_ids": [],
         "input_from_steps": [],
         "max_retries": 0,
     })
 
-    # ---- 2) video：I2V 图生视频（前置概念图作输入）----
+    # ---- 2) video：I2V 图生视频（前置概念图作输入，平台尺寸）----
+    _vs = params.get("video_size") or prof["video_wh"]
+    v_w, v_h = (
+        (int(x) for x in str(_vs).lower().split("x")) if isinstance(_vs, str) else _vs
+    )
     video_params: Dict[str, Any] = {
         "prompt": params.get("prompt") or (seg_prompts[0] if seg_prompts else ""),
-        "aspect_ratio": params.get("aspect_ratio", "9:16"),
+        "aspect_ratio": params.get("aspect_ratio") or prof["ratio"],
         "resolution": params.get("resolution", "720p"),
         "frame_rate": params.get("frame_rate") or params.get("fps") or 24,
-        "width": params.get("width"),
-        "height": params.get("height"),
+        "width": params.get("width", v_w),
+        "height": params.get("height", v_h),
         "segment_prompts": seg_prompts,
         "segment_durations": seg_durations,
         "segmented_oneclick": True,
@@ -292,23 +324,63 @@ def _build_script_video_steps(
         "max_retries": 0,
     })
 
-    if params.get("export"):
-        steps.append({
-            "step_id": "s3_export",
-            "stage_id": "export",
-            "name": "导出成片",
-            "provider_id": "local",
-            "params": {
-                "resolution": params.get("export_resolution", "1080x1920"),
-                "format": "mp4",
-                "codec": "libx264",
-                "bitrate": "8M",
-                "name": f"contract_export_{spec.content_id}",
-            },
-            "input_asset_ids": [],
-            "input_from_steps": ["s2_video"],
-            "max_retries": 0,
-        })
+    # ---- 3) subtitle：字幕叠加（对齐一键成片默认流程，台词→时间轴自动估算）----
+    s_subtitle = "s3_subtitle"
+    steps.append({
+        "step_id": s_subtitle,
+        "stage_id": "subtitle",
+        "name": "字幕叠加",
+        "provider_id": "local",
+        "params": {
+            "subtitle_texts": [{"text": t} for t in tts_texts if t and t.strip()],
+            "margin_v": params.get("subtitle_margin_v", "0.13"),
+        },
+        "input_asset_ids": [],
+        "input_from_steps": ["s2_video"],
+        "max_retries": 0,
+    })
+
+    # ---- 4) hook_overlay：钩子标题叠加（从 packaging 取标题）----
+    s_hook = "s4_hook"
+    hook_text = (params.get("hook_text")
+                 or (spec.packaging or {}).get("hook")
+                 or (spec.packaging or {}).get("title")
+                 or (seg_prompts[0] if seg_prompts else ""))
+    steps.append({
+        "step_id": s_hook,
+        "stage_id": "hook_overlay",
+        "name": "钩子文案叠加",
+        "provider_id": "local",
+        "params": {
+            "hook_text": hook_text,
+            "sub_text": params.get("hook_sub_text", "关注我看后续"),
+            "duration": params.get("hook_duration", 4),
+            "position": params.get("hook_position", "bottom"),
+            "margin": params.get("hook_margin"),
+        },
+        "input_asset_ids": [],
+        "input_from_steps": [s_subtitle],
+        "max_retries": 0,
+    })
+
+    # ---- 5) export：平台规格导出（默认开启，对齐默认成片流程）----
+    export_res = params.get("export_resolution") or prof["export"]
+    steps.append({
+        "step_id": "s5_export",
+        "stage_id": "export",
+        "name": f"导出成片 {prof['label']}规格 ({export_res})",
+        "provider_id": "local",
+        "params": {
+            "resolution": export_res,
+            "format": "mp4",
+            "codec": "libx264",
+            "bitrate": "8M",
+            "name": f"contract_{platform}_{spec.content_id}",
+        },
+        "input_asset_ids": [],
+        "input_from_steps": [s_hook],
+        "max_retries": 0,
+    })
     return steps
 
 
