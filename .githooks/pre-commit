@@ -1,22 +1,15 @@
 #!/bin/sh
-# director pre-commit hook（ratchet 策略）
-# 规则：本次提交中【新增】的 backend/*.py 文件必须通过 flake8（0 error）
-# 存量文件的既有违规不拦截（见 docs/工程化/lint_baseline.txt 冻结基线）
-# 启用：git config core.hooksPath .githooks
+# director pre-commit hook（统一门禁前置，替代原手写 ratchet 钩子）
+# 委托 pre-commit 框架执行 .pre-commit-config.yaml：
+#   backend flake8 + trafficos flake8 + frontend eslint（三端 0-error）
+# 启用：git config core.hooksPath .githooks（本仓库已配置）
+# 全量验证：backend/.venv-test/Scripts/python.exe -m pre_commit run --all-files
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
-NEW_PY=$(git diff --cached --name-only --diff-filter=A -- 'backend/**/*.py' 'backend/*.py')
-[ -z "$NEW_PY" ] && exit 0
+if [ ! -f backend/.venv-test/Scripts/python.exe ]; then
+  echo "pre-commit: backend/.venv-test 缺失，先安装依赖（详见 docs/工程化/开发流程SOP.md）"
+  exit 1
+fi
 
-cd backend || exit 1
-FAILED=0
-for f in $NEW_PY; do
-  REL=$(echo "$f" | sed 's|^backend/||')
-  if ! .venv-test/Scripts/python.exe -m flake8 "$REL" --max-line-length=100 2>/dev/null; then
-    echo "pre-commit: new file $REL has flake8 violations, please fix first"
-    FAILED=1
-  fi
-done
-[ $FAILED -ne 0 ] && exit 1
-exit 0
+exec "backend/.venv-test/Scripts/python.exe" -m pre_commit run --hook-stage pre-commit
