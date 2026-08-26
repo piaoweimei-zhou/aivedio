@@ -1,0 +1,311 @@
+openapi: 3.0.3
+info:
+  title: TrafficOS ↔ director 内容生产契约
+  description: >
+    TrafficOS（流量侧）与 director（生产侧）之间唯一的数据/接口契约。
+    本文件是单一事实源（SSOT）——双端必须按此实现。
+    设计原则：
+      - director 生产逻辑零改动，本契约由 director 内薄适配器 backend/api/contract_api.py 实现
+      - Content Spec 不发明新模型，script 字段以 /contract/capabilities 声明的 stage 形状为准
+      - 合体用（同机双端口）与分开用（独立部署/售卖）是部署选择，契约不变
+  version: 1.0.0
+  contact:
+    name: director / TrafficOS
+servers:
+  - url: http://localhost:8000   # director 生产侧；分离部署时替换为实际地址
+    description: director 生产侧（TrafficOS 通过 DIRECTOR_BASE_URL 覆盖）
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: contract
+    description: 内容生产契约接口
+
+paths:
+  /contract/produce:
+    post:
+      tags: [contract]
+      summary: 提交内容规格，创建生产任务
+      description: >
+        幂等：以 content_id 去重。重复提交返回已有任务（duplicate=true），不重复生产。
+        成功创建后任务进入 queued，由 director 调度执行。
+      operationId: createProduce
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSpec'
+      responses:
+        '200':
+          description: 创建成功（或命中已存在的同 content_id 任务）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProduceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          description: Content Spec 校验失败（不符合 capabilities 声明）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPayload'
+
+  /contract/produce/{task_id}:
+    get:
+      tags: [contract]
+      summary: 查询任务进度/状态/产物/错误
+      operationId: getProduce
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: 任务详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 任务不存在
+
+  /contract/produce/{task_id}/cancel:
+    post:
+      tags: [contract]
+      summary: 取消任务（幂等）
+      description: >
+        对齐 director 真实能力：**仅 running 状态可取消**。
+        queued（已创建未启动）调用返回 cancel_rejected=true（任务未运行，无需取消）；
+        终态（done/failed/cancelled）同样返回 cancel_rejected=true。
+      operationId: cancelProduce
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: 取消结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id: { type: string, example: batch_abc123 }
+                  status: { $ref: '#/components/schemas/TaskStatus' }
+                  cancelled: { type: boolean, example: true }
+                  cancel_rejected: { type: boolean, example: false }
+                  message: { type: string }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /contract/produce/{task_id}/assets/{asset_id}/claim:
+    post:
+      tags: [contract]
+      summary: 标记产物已由 TrafficOS 转存（延长保活）
+      description: >
+        分离部署时，director 产物 URL 为签名 URL（TTL 默认 24h）。TrafficOS 拉取并转存到
+        自己的存储后，调用本接口标记，避免 director 提前清理。不调用则按 TTL 过期回收。
+      operationId: claimAsset
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - name: asset_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 标记成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset_id: { type: string }
+                  claimed: { type: boolean, example: true }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /contract/capabilities:
+    get:
+      tags: [contract]
+      summary: 能力声明（TrafficOS 先拉此接口再构造 Content Spec）
+      operationId: getCapabilities
+      responses:
+        '200':
+          description: director 当前可接受的生产能力
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema: { type: string, example: batch_abc123 }
+
+  responses:
+    Unauthorized:
+      description: 缺少或错误的 X-API-Key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorPayload'
+
+  schemas:
+    TaskStatus:
+      type: string
+      enum: [queued, running, done, failed, cancelled]
+      description: 任务终态为 done / failed / cancelled
+
+    Dimension:
+      type: string
+      enum: [pure_content, knowledge, soft_ad]
+
+    Monetizer:
+      type: string
+      enum: [adshare, netdisk, xianyu, saas, resource, course, tool]
+
+    ContentSpec:
+      type: object
+      required: [content_id, script]
+      properties:
+        content_id:
+          type: string
+          description: 幂等键。TrafficOS 侧唯一，重复提交返回同一任务
+        dimension:
+          $ref: '#/components/schemas/Dimension'
+        monetizer:
+          $ref: '#/components/schemas/Monetizer'
+        account_id:
+          type: string
+          description: TrafficOS 账号矩阵中的账号标识（透传，不校验）
+        script:
+          type: object
+          description: >
+            生产输入。type 必须为 /contract/capabilities 返回的 supported_stage_types 之一；
+            字段形状对齐 director 对应 stage 的真实输入，不发明新模型。
+          properties:
+            type:
+              type: string
+              example: video_script_mixin
+            acts:
+              type: array
+              items:
+                type: object
+                properties:
+                  narration: { type: string, description: 该幕旁白/文案 }
+                  duration_s: { type: number, description: 目标时长(秒) }
+                  visual_hint: { type: string, description: 画面提示（用于分镜/生成） }
+                  audio_ref_url: { type: string, description: 参考音频 URL（可选） }
+        assets:
+          type: array
+          description: 参考素材。须为 TrafficOS 提供的公网可访问 URL（director 需可下载）
+          items: { type: string }
+        packaging:
+          type: object
+          description: 包装（可选，TrafficOS 可只做生产不看包装）
+          properties:
+            titles: { type: array, items: { type: string } }
+            cover_url: { type: string }
+            hook: { type: string, description: 前 3 秒钩子文案 }
+        params:
+          type: object
+          description: 生产参数（默认值由 capabilities 声明）
+          properties:
+            resolution: { type: string, example: '480p' }
+            fps: { type: integer, example: 24 }
+            duration_s: { type: number, example: 5 }
+        callback_url:
+          type: string
+          format: uri
+          description: 终态回调地址（done/failed/cancelled 触发一次，失败重试 3 次）
+        traffic_meta:
+          type: object
+          description: TrafficOS 元数据透传（回传时原样带回，供归因）
+          properties:
+            dimension: { $ref: '#/components/schemas/Dimension' }
+            monetizer: { $ref: '#/components/schemas/Monetizer' }
+            account_id: { type: string }
+            extra: { type: object, additionalProperties: true }
+
+    AssetInfo:
+      type: object
+      properties:
+        asset_id: { type: string }
+        type: { type: string, enum: [video, image, audio, subtitle, project] }
+        url: { type: string, format: uri, description: 签名 URL，TTL=ttl_sec 秒 }
+        ttl_sec: { type: integer, example: 86400 }
+        size_bytes: { type: integer }
+
+    ProduceResponse:
+      type: object
+      required: [task_id, content_id, status, duplicate]
+      properties:
+        task_id: { type: string, example: batch_abc123 }
+        content_id: { type: string }
+        status: { $ref: '#/components/schemas/TaskStatus' }
+        duplicate: { type: boolean, description: true=命中已有 content_id，未新建 }
+
+    TaskDetail:
+      type: object
+      properties:
+        task_id: { type: string }
+        content_id: { type: string }
+        status: { $ref: '#/components/schemas/TaskStatus' }
+        progress: { type: number, example: 0.42, description: 0.0~1.0 }
+        current_step: { type: string, description: 当前 stage_id }
+        assets:
+          type: array
+          items: { $ref: '#/components/schemas/AssetInfo' }
+          description: status=done 时返回全部产物
+        error:
+          $ref: '#/components/schemas/ErrorPayload'
+        traffic_meta:
+          type: object
+          description: 创建时透传的元数据，原样带回
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    ErrorPayload:
+      type: object
+      properties:
+        error_code: { type: string, example: STAGE_FAILED }
+        message: { type: string }
+        failed_step_id: { type: string, description: 失败步骤（可选） }
+        detail: { type: object, additionalProperties: true }
+
+    Capabilities:
+      type: object
+      properties:
+        version: { type: string, example: '1.0.0' }
+        supported_stage_types:
+          type: array
+          description: script.type 允许值（对齐 director 真实 stage）
+          items: { type: string }
+          example: [video_script_mixin, storyboard_batch, video_act, compose, export]
+        params_defaults:
+          type: object
+          description: 各 stage 的默认参数（resolution/fps/duration 等）
+          additionalProperties: true
+        providers:
+          type: array
+          description: 可用生成供应商（comfyui/minimax_h3 云端等）
+          items: { type: string }
+        api:
+          type: object
+          description: 本契约 API 版本
+          properties:
+            version: { type: string, example: '1.0.0' }
+            min_trafficos: { type: string, example: '0.1.0' }
