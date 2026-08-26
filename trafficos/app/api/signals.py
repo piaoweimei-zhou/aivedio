@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Query
 
-from app.models import Signal, ToolEvent
+from app.models import Hit, Signal, ToolEvent
 from app.scoring import compute_score, suggest_dimension_monetizer
 from app.storage import get_collection
 
@@ -49,9 +49,11 @@ async def report_signal_batch(sigs: List[Signal]) -> Dict[str, int]:
 
 @router.post("/tool-event", response_model=Signal)
 async def report_tool_event(evt: ToolEvent) -> Signal:
-    """工具行为事件 → 自动转需求信号（B8：工具即传感器）。
+    """工具行为事件 → 自动转需求信号（B8：工具即传感器）+ 爆款拆解（P1b）。
 
     服务端自动：keyword 粗提取 + field 兜底 + 按 action 加权 heat。
+    P1b：action=download 且含 url/title 时，自动写入 hits 拆解库（source=auto），
+    一次工具下载即沉淀一条"用户正在消费的内容"参考。
     """
     keyword = _extract_keyword(evt.keyword or evt.title)
     heat = _ACTION_HEAT.get(evt.action or "", 1.0)
@@ -61,6 +63,19 @@ async def report_tool_event(evt: ToolEvent) -> Signal:
         heat=heat,
         source=f"tool:{evt.tool_name or 'unknown'}",
     ).touch()
+    # P1b：下载动作 → 爆款拆解入库（url 与 title 至少其一）
+    if (evt.action or "") == "download" and (evt.url or evt.title):
+        hit = Hit(
+            url=evt.url or "",
+            title=evt.title or "",
+            source="auto",
+            raw_meta={
+                "tool_name": evt.tool_name,
+                "keyword": keyword,
+                "field": evt.field or "general",
+            },
+        ).touch()
+        get_collection("hits").insert(hit)
     return get_collection("signals").insert(sig)
 
 

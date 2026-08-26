@@ -52,6 +52,18 @@ class ToolTracker:
         }
         return self._post("/api/traffic/signals/tool-event", payload)
 
+    def track_download(self, title: str = "", url: str = "",
+                       field: str = "", keyword: str = "",
+                       extra: Optional[Dict[str, object]] = None) -> bool:
+        """便捷方法：上报一次下载行为（P1b，服务端自动写爆款拆解库 hits）。
+
+        工具下载内容后调用，即沉淀一条"用户正在消费的内容"参考。
+        """
+        return self.track(
+            action="download", title=title, url=url,
+            field=field, keyword=keyword, extra=extra,
+        )
+
     # ---------- 批量上报 ----------
 
     def track_many(self, events: List[Dict[str, object]]) -> int:
