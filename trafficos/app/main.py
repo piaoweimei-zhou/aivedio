@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import accounts, dimensions, monetizers
+from app.api import accounts, dimensions, hits, monetizers, signals, topics
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,14 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION, lifespan=lifespan)
 
-_routers = [dimensions.router, monetizers.router, accounts.router]
+_routers = [
+    dimensions.router,
+    monetizers.router,
+    accounts.router,
+    topics.router,
+    signals.router,
+    hits.router,
+]
 for r in _routers:
     app.include_router(r)
     logger.info("[TrafficOS] 路由注册: %s", r.prefix)

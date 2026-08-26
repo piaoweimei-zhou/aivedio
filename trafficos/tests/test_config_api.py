@@ -6,9 +6,8 @@ import tempfile
 import pytest
 from fastapi.testclient import TestClient
 
-# 用临时数据目录隔离测试
+# 每个测试文件的独立临时数据目录（隔离，避免相互污染）
 _tmp = tempfile.mkdtemp(prefix="trafficos_test_")
-os.environ["TRAFFICOS_DATA_DIR"] = _tmp
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.main import app  # noqa: E402
@@ -17,12 +16,15 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def _clean_collections():
+def _isolated():
+    # 测试执行时设置 env（storage 每次动态解析 data_dir，实现文件级隔离）
+    os.environ["TRAFFICOS_DATA_DIR"] = _tmp
     yield
-    # 每个用例后清空集合文件，避免相互污染
-    import glob
-    for f in glob.glob(os.path.join(_tmp, "*.json")):
-        os.remove(f)
+    # 清空本文件数据目录下的全部集合（内存 + 文件），避免测试间残留
+    from app.storage import _store
+    for key, col in list(_store.items()):
+        if key[1] == _tmp:
+            col.clear()
 
 
 def test_health():

@@ -104,14 +104,21 @@ def _ts() -> float:
     return time.time()
 
 
-# 运行时集合单例（惰性创建）
-_store: Dict[str, JsonCollection] = {}
+# 运行时集合单例（惰性创建）；键 = (name, data_dir)，隔离不同数据目录
+_store: Dict[tuple, JsonCollection] = {}
 _store_lock = threading.Lock()
 
 
-def get_collection(name: str, data_dir: str = _DEFAULT_DATA_DIR) -> JsonCollection:
-    """获取（惰性创建）命名集合。"""
+def _resolve_data_dir() -> str:
+    """数据目录动态解析：env 优先（测试可隔离），否则默认路径。"""
+    return os.environ.get("TRAFFICOS_DATA_DIR", _DEFAULT_DATA_DIR)
+
+
+def get_collection(name: str) -> JsonCollection:
+    """获取（惰性创建）命名集合。data_dir 每次动态解析，支持测试隔离。"""
+    data_dir = _resolve_data_dir()
+    key = (name, data_dir)
     with _store_lock:
-        if name not in _store:
-            _store[name] = JsonCollection(name, data_dir)
-        return _store[name]
+        if key not in _store:
+            _store[key] = JsonCollection(name, data_dir)
+        return _store[key]
