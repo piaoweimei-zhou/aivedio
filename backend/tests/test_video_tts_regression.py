@@ -73,3 +73,68 @@ def test_no_segments_not_segmented():
         force_segmented=False,
         tts_texts=["台词"],
     ) is False
+
+
+def test_single_seg_tts_updates_images_to_mixed_url(monkeypatch):
+    """P0 单段无声音回归：单段混音后 r.images 必须同步指向混音产物。
+
+    修复前：_generate_h3_segmented 只改 r.video_url/r.image_url，
+    而 r.images 仍是 H3 原片，_register_asset 用 result.images 注册，
+    导致 subtitle/hook/export 全部用无声源，成片听不到人声。
+    """
+    import asyncio as _asyncio
+    from types import SimpleNamespace
+
+    from services.provider_service import ProviderResult
+    from services.stages.video_stage import VideoStage
+
+    stage = VideoStage()
+    called = {}
+
+    async def fake_gen_video(**kwargs):
+        return ProviderResult(
+            provider_id="minimax_h3",
+            video_url="http://x/h3_orig.mp4",
+            image_url="http://x/h3_orig.mp4",
+            images=["http://x/h3_orig.mp4"],
+            filenames=["h3_orig.mp4"],
+            seed=0,
+            elapsed_ms=1000,
+            prompt="画面",
+        )
+
+    async def fake_tts(svc, text, i):
+        return "http://x/tts.flac"
+
+    async def fake_mix(video_url, tts_url):
+        called["video_url"] = video_url
+        return "http://x/mixed.mp4"
+
+    monkeypatch.setattr(stage, "_gen_tts_segment", fake_tts)
+    monkeypatch.setattr(stage, "_mix_tts_into_segment", fake_mix)
+
+    async def run():
+        return await stage._generate_h3_segmented(
+            provider_svc=SimpleNamespace(generate_video=fake_gen_video),
+            prompt="测试画面",
+            segment_prompts=["画面提示"],
+            tts_texts=["三秒搞定去水印"],
+            images=["http://x/c.png"],
+            width=720,
+            height=1280,
+            duration=5.0,
+            segment_seconds=5.0,
+            seed=1,
+            model="",
+            aspect_ratio="9:16",
+            resolution="720p",
+            segment_durations=[],
+        )
+
+    result = _asyncio.run(run())
+    # 关键断言：_register_asset 用 result.images，必须指向混音产物（含人声）
+    assert result.images == ["http://x/mixed.mp4"], (
+        f"result.images 应指向混音产物，实际={result.images}"
+    )
+    assert result.image_url == "http://x/mixed.mp4"
+    assert called["video_url"] == "http://x/h3_orig.mp4"
