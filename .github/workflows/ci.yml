@@ -41,7 +41,17 @@ jobs:
           pip install pytest-cov
       - name: Run tests with coverage (ratchet baseline 42%)
         working-directory: backend
-        run: python -m pytest --cov=. --cov-report=term-missing --cov-fail-under=42
+        run: python -m pytest --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=42 --junitxml=test-results.xml
+      - name: Generate nightly regression report (C 项可追踪)
+        working-directory: backend
+        if: always()
+        run: python tools/nightly_report.py --junitxml test-results.xml --coverage cov.json --out nightly-report.json
+      - name: Upload nightly report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-report
+          path: backend/nightly-report.json
 
   g2-contract-smoke:
     name: G2 契约冒烟（steps 契约 + DAG 生成）

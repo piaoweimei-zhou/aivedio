@@ -82,3 +82,8 @@ backend/_*.txt
 
 # TrafficOS 运行时数据（集合 JSON）
 trafficos/data/
+
+# pytest 运行产物（CI 由 artifact 归档）
+backend/cov.json
+backend/test-results.xml
+backend/nightly-report.json
