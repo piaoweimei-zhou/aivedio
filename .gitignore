@@ -87,3 +87,6 @@ trafficos/data/
 backend/cov.json
 backend/test-results.xml
 backend/nightly-report.json
+
+hit_analysis/*.mp4
+
