@@ -312,6 +312,8 @@ def _build_script_video_steps(
             "negative_prompt": "low quality, blurry, deformed, ugly",
             "content_type": "scene",
             "size": f"{concept_w}x{concept_h}",
+            # P-INTEGRATION-1：角色卡透传，供概念图角色一致性消费
+            "characters": spec.script.get("characters") or [],
         },
         "input_asset_ids": [],
         "input_from_steps": [],
@@ -337,6 +339,10 @@ def _build_script_video_steps(
         "tts_texts": [t for t in tts_texts if t],
         "tts_mode": params.get("tts_mode", "voice_design"),
         "reference_image_files": list(spec.assets),
+        # P-INTEGRATION-1：CreativeOS 画面资产透传（16字段分镜+角色卡），
+        # 供 video stage 逐镜/角色一致性消费（prompt 已由 visual_hint 承载）
+        "storyboard": spec.script.get("storyboard") or [],
+        "characters": spec.script.get("characters") or [],
     }
     video_params = {k: v for k, v in video_params.items() if v is not None}
 
