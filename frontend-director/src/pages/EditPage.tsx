@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
-import { Typography, Card, Select, Button, Space, Input, InputNumber, Row, Col, message, Table, Tag, Empty, Progress, Slider, Tabs } from 'antd'
-import { ScissorOutlined, MergeCellsOutlined, ReloadOutlined, PlayCircleOutlined, PauseCircleOutlined } from '@ant-design/icons'
+import { Typography, Card, Select, Button, Space, Input, InputNumber, Row, Col, message, Table, Tag, Empty } from 'antd'
+import { ScissorOutlined, MergeCellsOutlined, ReloadOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { useDirectorStore } from '../stores/directorStore'
 import Timeline, { TimelineClip } from '../components/Timeline'
 
@@ -62,7 +62,7 @@ export default function EditPage() {
   // 时间线片段
   const timelineClips: TimelineClip[] = useMemo(() => {
     let frameOffset = 0
-    return selectedAssetIds.map((id, i) => {
+    return selectedAssetIds.map((id) => {
       const asset = assets.find(a => a.asset_id === id)
       const duration = asset?.metadata?.duration || 5
       const startFrame = frameOffset

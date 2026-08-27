@@ -111,6 +111,7 @@ export default function BatchesPage() {
     if (currentProjectId) {
       loadAssets({ project_id: currentProjectId })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [currentProjectId])
 
   // 轮询运行中的任务（WebSocket 降级方案，保留兼容）
@@ -122,6 +123,7 @@ export default function BatchesPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [batches])
 
   // WebSocket 实时进度订阅（详情页打开时）
@@ -168,6 +170,7 @@ export default function BatchesPage() {
       ws.close()
       wsRef.current = null
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [detailOpen, detailBatch?.batch_id, detailBatch?.status])
 
   // 查看 DAG 结构
@@ -685,7 +688,6 @@ function DagVisualization({ dag }: { dag: any }) {
   }
 
   const { layers, edges, nodes } = dag
-  const nodeMap = new Map(nodes.map((n: any) => [n.id, n]))
 
   // 布局参数
   const nodeWidth = 140

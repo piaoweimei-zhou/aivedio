@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  Typography, Button, Space, Card, Form, Select, Input, InputNumber,
-  message, Tag, Row, Col, Empty, Radio, Alert, Tooltip, List, Checkbox,
+  Typography, Button, Space, Card, Form, Input, InputNumber,
+  message, Tag, Row, Col, Empty, Radio, Alert, List, Checkbox,
 } from 'antd'
 import {
   PictureOutlined, ReloadOutlined, ThunderboltOutlined,

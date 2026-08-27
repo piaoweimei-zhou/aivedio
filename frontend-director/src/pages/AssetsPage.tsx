@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   Typography, Card, Row, Col, Select, Button, Space, Image, Empty,
-  Input, Tag, Tabs, Modal, InputNumber, message, Tooltip, Dropdown, Drawer, Descriptions, Timeline, Divider, Radio, Segmented, Spin
+  Input, Tag, Tabs, Modal, InputNumber, message, Dropdown, Drawer, Descriptions, Timeline, Radio, Segmented, Spin
 } from 'antd'
 import {
   PlusOutlined, ReloadOutlined, StarOutlined, ExpandOutlined,
@@ -101,9 +101,9 @@ const SIZE_OPTIONS = [
 
 export default function AssetsPage() {
   const {
-    assets, assetsLoading, loadAssets, createAsset, deleteAsset,
+    assets, loadAssets, createAsset, deleteAsset,
     selectedAssetIds, toggleAssetSelection, clearSelection,
-    stages, loadStages, executeStage,
+    loadStages, executeStage,
   } = useDirectorStore()
   const { currentProjectId } = useProject()
 
@@ -223,6 +223,7 @@ export default function AssetsPage() {
   useEffect(() => {
     loadAssets(currentProjectId ? { project_id: currentProjectId } : undefined)
     loadStages()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [currentProjectId])
 
   // 过滤资产
@@ -345,6 +346,7 @@ export default function AssetsPage() {
       setExtractionLoading(false)
       message.error(e.message || `${label}失败`)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [selectedAssetIds, executeStage, loadAssets, assets])
 
   // ── 资产治理：批量删除（含文件）──
@@ -863,6 +865,7 @@ export default function AssetsPage() {
     } catch (e: any) {
       message.error(e.message || 'Pose修正图上传失败')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [templatePoseId, templatePoseName, loadAssets])
 
   // 新建资产 - 打开弹窗时根据当前Tab预选类型
@@ -937,6 +940,7 @@ export default function AssetsPage() {
     } finally {
       setCreateLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [uploadFile, newAssetType, newAssetName, previewUrl, createAsset, loadAssets])
 
   // AI 生成资产
@@ -991,6 +995,7 @@ export default function AssetsPage() {
       setGenerateLoading(false)
       setGenerateElapsed(0)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [generatePrompt, newAssetType, newAssetName, executeStage, loadAssets])
 
   // 右键菜单操作
@@ -1431,7 +1436,6 @@ export default function AssetsPage() {
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                                     {children.map(child => {
                                       const isUpscale = child.metadata?.mode === 'upscale' || child.metadata?.upscale_factor
-                                      const childLabel = isUpscale ? `${child.metadata?.size || ''}` : child.name
                                       return (
                                         <div
                                           key={child.asset_id}

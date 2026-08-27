@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons'
 import {
   batchService, BatchTask, BatchStep, BatchWebSocket, WsEvent, providerApi, assetApi,
-  stageApi, scriptApi, styleApi,
+  stageApi, scriptApi,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 import { useDirectorStore } from '../stores/directorStore'
@@ -548,7 +548,7 @@ const [segmentDurations, setSegmentDurations] = useState<number[]>(DEFAULT_SEGME
   // 分镜图直接输入模式（跳过素材生成，直接用已有分镜图做视频）
   const [useStoryboard, setUseStoryboard] = useState(false)
   const [storyboardAssetId, setStoryboardAssetId] = useState<string>('')
-  const [storyboardAssets, setStoryboardAssets] = useState<any[]>([])
+  const [, setStoryboardAssets] = useState<any[]>([])
   const [jsonInputOpen, setJsonInputOpen] = useState(false)
   const [jsonText, setJsonText] = useState('')
 
@@ -584,6 +584,7 @@ const [segmentDurations, setSegmentDurations] = useState<number[]>(DEFAULT_SEGME
     if (c0.title && !packTitle) setPackTitle(c0.title)
     if (c0.subtitle && !packSubtitle) setPackSubtitle(c0.subtitle)
     if (!packTags) setPackTags((scriptCovers.map(c => c.title).filter(Boolean).slice(0, 3)).join(','))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [scriptCovers])
 
   // 加载视频类型选项
@@ -874,6 +875,7 @@ const [segmentDurations, setSegmentDurations] = useState<number[]>(DEFAULT_SEGME
         setStoryboardAssets(sb)
       })
       .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [useStoryboard, currentProjectId])
 
   // 按类型分组的资产

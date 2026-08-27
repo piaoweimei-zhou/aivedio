@@ -101,6 +101,7 @@ export default function PromptsPage() {
   useEffect(() => {
     loadPrompts()
     loadStats()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [currentProject?.project_id, filterStage, filterCategory, filterKeyword])
 
   // ==================== 创建 ====================

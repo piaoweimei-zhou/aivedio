@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
   Typography, Button, Space, Table, Modal, Form, Select, Input, message,
-  Tag, Popconfirm, Empty, Tooltip, Switch, Card, Descriptions,
+  Tag, Popconfirm, Empty, Tooltip, Switch, Descriptions,
 } from 'antd'
 import {
   PlusOutlined, ReloadOutlined, DeleteOutlined, EyeOutlined,
-  StarOutlined, StarFilled, ThunderboltOutlined, CopyOutlined,
+  StarOutlined, StarFilled, ThunderboltOutlined,
 } from '@ant-design/icons'
 import { presetService, Preset } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 
-const { Title, Text, Paragraph } = Typography
+const { Title, Text } = Typography
 
 export default function PresetsPage() {
   const [presets, setPresets] = useState<Preset[]>([])
@@ -48,6 +48,7 @@ export default function PresetsPage() {
 
   useEffect(() => {
     loadPresets()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [currentProject?.project_id])
 
   const handleCreate = () => {

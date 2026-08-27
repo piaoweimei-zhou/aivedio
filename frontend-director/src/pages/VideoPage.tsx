@@ -89,6 +89,7 @@ export default function VideoPage() {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [currentProjectId])
 
   const loadTasks = async () => {

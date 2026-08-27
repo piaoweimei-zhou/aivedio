@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Typography, Space, Button, Slider, Select, message } from 'antd'
+import { Typography, Button, Slider, message } from 'antd'
 import {
   PlayCircleOutlined,
   PauseCircleOutlined,
@@ -32,9 +32,7 @@ export default function Timeline({
   clips,
   fps = 24,
   onClipClick,
-  onClipMove,
   onClipSplit,
-  onClipDelete,
 }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [currentFrame, setCurrentFrame] = useState(0)
@@ -99,16 +97,6 @@ export default function Timeline({
       return
     }
     onClipSplit?.(selectedClipId, currentFrame)
-  }
-
-  // 删除片段
-  const handleDelete = () => {
-    if (!selectedClipId) {
-      message.warning('请先选择一个片段')
-      return
-    }
-    onClipDelete?.(selectedClipId)
-    setSelectedClipId(null)
   }
 
   const clipColors = ['#1677ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#13c2c2']

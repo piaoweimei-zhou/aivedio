@@ -37,7 +37,7 @@ export default function GraphicPage() {
   const [taskId, setTaskId] = useState<string>('')
   const [taskStatus, setTaskStatus] = useState<any>(null)
   const [graphics, setGraphics] = useState<any[]>([])
-  const [sizePreset, setSizePreset] = useState('1080x1350')
+  const [, setSizePreset] = useState('1080x1350')
 
   // 加载图文类型列表
   useEffect(() => {
@@ -50,6 +50,7 @@ export default function GraphicPage() {
       message.error(`加载图文类型失败: ${err.message}`)
     })
     loadGraphics()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [])
 
   // 轮询任务状态

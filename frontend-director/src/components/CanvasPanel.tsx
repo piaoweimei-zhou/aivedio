@@ -15,11 +15,10 @@ import {
   Handle,
   Position,
   NodeProps,
-  useReactFlow,
   ReactFlowProvider,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Image, Typography, Button, Modal, List, Tag, Input, Space, message, Alert } from 'antd'
+import { Image, Typography, Button, Modal, List, Tag, Input, Space, Alert } from 'antd'
 import {
   PictureOutlined,
   VideoCameraOutlined,
@@ -30,7 +29,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons'
 import { downloadImage } from '../utils/download'
-import { useCanvasStore, CanvasNode as CNode } from '../stores/canvasStore'
+import { useCanvasStore } from '../stores/canvasStore'
 import { useDirectorStore } from '../stores/directorStore'
 
 const { Text } = Typography
@@ -196,7 +195,6 @@ function CanvasInner() {
   const canvasStore = useCanvasStore()
   const { activeCanvas, addNode, updateNode, removeNode, addEdge: storeAddEdge, removeEdge, setViewport, saveError } = canvasStore
   const [pickerOpen, setPickerOpen] = useState(false)
-  const screenToFlowPosition = useReactFlow().screenToFlowPosition
 
   // 将 CanvasNode 转为 ReactFlow Node
   // P2 修复：优先从 metadata.urls 取，再取 metadata.url/image_url，最后取 asset 的 urls[]

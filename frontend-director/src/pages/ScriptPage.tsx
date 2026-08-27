@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react'
 import {
   Typography, Button, Space, Card, Form, Select, Input, InputNumber,
-  message, Tag, Row, Col, Spin, Empty, Tabs, Modal, Collapse, Tooltip,
+  message, Tag, Row, Col, Spin, Empty, Modal, Collapse,
 } from 'antd'
 import {
   ThunderboltOutlined, ReloadOutlined, EyeOutlined, CopyOutlined,
-  VideoCameraOutlined, FileTextOutlined, MessageOutlined,
+  FileTextOutlined, MessageOutlined,
 } from '@ant-design/icons'
 import {
   scriptApi, stageApi, assetApi, styleApi,
   VideoTypeOption, ScriptData, ScriptParams, StyleOption,
 } from '../services/directorApi'
-import { useProject } from '../contexts/ProjectContext'
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
@@ -24,7 +23,6 @@ const HOOK_STYLE_OPTIONS = [
 ]
 
 export default function ScriptPage() {
-  const { currentProject } = useProject()
   const [form] = Form.useForm()
   const [videoTypes, setVideoTypes] = useState<VideoTypeOption[]>([])
   const [styles, setStyles] = useState<StyleOption[]>([])
@@ -55,6 +53,7 @@ export default function ScriptPage() {
       message.error(`加载风格失败: ${err.message}`)
     })
     loadScripts()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [])
 
   // 轮询任务状态

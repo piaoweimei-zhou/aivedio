@@ -3,7 +3,6 @@ import { Modal, Select, Input, Button, Space, message, Divider, Tag } from 'antd
 import { ThunderboltOutlined, SearchOutlined } from '@ant-design/icons'
 import { promptService, PromptEntry } from '../services/directorApi'
 
-const { TextArea } = Input
 
 interface PromptPickerProps {
   open: boolean
@@ -73,6 +72,7 @@ export default function PromptPicker({
       setVariables({})
       setResolved('')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [open, stageId, projectId, keyword])
 
   const handleSelect = (promptId: string) => {

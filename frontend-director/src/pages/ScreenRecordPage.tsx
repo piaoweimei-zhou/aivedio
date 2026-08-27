@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
   Typography, Button, Space, Card, Form, Select, Input, InputNumber,
-  message, Tag, Row, Col, Spin, Empty, Radio, Alert, Tooltip,
+  message, Tag, Row, Col, Spin, Empty, Radio, Alert,
 } from 'antd'
 import {
-  VideoCameraOutlined, ReloadOutlined, EyeOutlined, UploadOutlined,
-  DesktopOutlined, ClockCircleOutlined, InfoCircleOutlined,
+  VideoCameraOutlined, ReloadOutlined, UploadOutlined,
+  DesktopOutlined, InfoCircleOutlined,
 } from '@ant-design/icons'
 import {
   screenRecordApi, stageApi,
@@ -23,7 +23,6 @@ export default function ScreenRecordPage() {
   const [taskId, setTaskId] = useState<string>('')
   const [taskStatus, setTaskStatus] = useState<any>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
 
   useEffect(() => {
     loadWindows()

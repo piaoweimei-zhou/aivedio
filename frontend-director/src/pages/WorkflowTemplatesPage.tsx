@@ -4,11 +4,11 @@ import {
   Input, message, Empty, Tooltip, Steps, Divider, Alert, Switch,
 } from 'antd'
 import {
-  PlusOutlined, ReloadOutlined, ThunderboltOutlined, PlayCircleOutlined,
-  DeleteOutlined, EditOutlined, EyeOutlined, ApartmentOutlined,
+  ReloadOutlined, ThunderboltOutlined, PlayCircleOutlined,
+  DeleteOutlined, EyeOutlined, ApartmentOutlined,
 } from '@ant-design/icons'
 import {
-  workflowTemplateService, WorkflowTemplate, WorkflowStepTemplate,
+  workflowTemplateService, WorkflowTemplate,
 } from '../services/directorApi'
 import { useProject } from '../contexts/ProjectContext'
 
@@ -100,7 +100,7 @@ export default function WorkflowTemplatesPage() {
         }
       }
 
-      const res = await workflowTemplateService.createBatch(
+      await workflowTemplateService.createBatch(
         createBatchTemplate.template_id,
         {
           name: values.name,

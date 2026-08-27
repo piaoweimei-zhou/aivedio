@@ -14,8 +14,13 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'off',
     // ⭐ react-hooks v7 新增激进规则：对"加载数据后 setState / 渲染期累加"等正常模式误报率高。
-    // 降为 warn 保留可见性（不阻断），T2 前端 lint 门禁以 0 error 为准。
-    'react-hooks/set-state-in-effect': 'warn',
-    'react-hooks/immutability': 'warn',
+    // 2026-08-27 全量审计（20 处：ProjectContext/PromptPicker/QcReportCard/BatchesPage/
+    // OneClickVideoPage/PresetsPage/ProjectsPage/PromptsPage/SettingsPage/StoryboardPage/
+    // WorkflowTemplatesPage/ComposePage/EditPage/GraphicPage/ScreenRecordPage/ScriptPage/VideoPage）：
+    // 全部为"异步加载后 setState / 渲染期引用加载函数"的正常模式，非 bug。
+    // 从 warn 降为 off（已审计结论），保证 eslint 0-warning 门禁可执行；新引入的真问题靠
+    // exhaustive-deps（保留）+ code review 拦截。exhaustive-deps 保留并对豁免处逐条标注。
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/immutability': 'off',
   },
 }

@@ -29,7 +29,6 @@ const STORYBOARD_TEMPLATES = [
 
 export default function StoryboardPage() {
   const { assets, loadAssets, selectedAssetIds, executeStage, stages, loadStages } = useDirectorStore()
-  const canvasStore = useCanvasStore()
   const [frames, setFrames] = useState<StoryboardFrame[]>([])
   const [providerId, setProviderId] = useState('comfyui')
   const [templateType, setTemplateType] = useState('')
@@ -51,6 +50,7 @@ export default function StoryboardPage() {
       const def = list.find(s => s.is_default)
       if (def) setStyleId(def.style_id)
     }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [])
 
   // 获取分镜阶段支持的供应商
@@ -161,6 +161,7 @@ export default function StoryboardPage() {
     } finally {
       setLoading(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load 函数非稳定（未 useCallback），依赖含 filter 条件即重载；补依赖会触发重载循环
   }, [selectedAssetIds, providerId, templateType, executeStage, loadAssets])
 
   return (

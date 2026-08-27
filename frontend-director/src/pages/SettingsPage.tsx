@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Typography, Card, Table, Tag, Space, Button, Input, message, Descriptions, Tooltip, Alert, Modal, Form, Steps, Result } from 'antd'
+import { Typography, Card, Table, Tag, Space, Button, Input, message, Descriptions, Tooltip, Alert, Modal, Steps, Result } from 'antd'
 import { ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined, SaveOutlined, ApiOutlined, QuestionCircleOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { providerApi } from '../services/directorApi'
 
@@ -32,7 +32,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [envValues, setEnvValues] = useState<Record<string, string>>({})
   const [testLoading, setTestLoading] = useState<string | null>(null)
-  const [testResults, setTestResults] = useState<Record<string, boolean>>({})
+  const [, setTestResults] = useState<Record<string, boolean>>({})
 
   // 从后端加载已保存的 API Key（密钥由服务端 .env 管理，不落浏览器）
   useEffect(() => {

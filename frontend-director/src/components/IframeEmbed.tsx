@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react'
-import { Spin, message } from 'antd'
+import { Spin } from 'antd'
 
 interface IframeEmbedProps {
   src: string
@@ -38,13 +38,6 @@ export default function IframeEmbed({ src, title, style, onMessage }: IframeEmbe
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
   }, [onMessage, allowedOrigin])
-
-  // 向 iframe 发送消息（使用精确目标源）
-  const postMessage = useCallback((data: any) => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(data, allowedOrigin)
-    }
-  }, [allowedOrigin])
 
   const handleLoad = useCallback(() => {
     setLoading(false)
