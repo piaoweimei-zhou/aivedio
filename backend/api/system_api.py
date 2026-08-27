@@ -3,6 +3,7 @@
 透明化：把分散的「生产任务 / 运行态 / 门禁基线 / Git 状态」聚合成一个只读视图，
 替代人工逐个接口 curl 排查。无副作用、无鉴权（仅内网运营视图）。
 """
+# flake8: noqa: E501  # 文件含内联 HTML/CSS/JS，长行为字符串内容不可拆分
 import logging
 import os
 import subprocess
@@ -10,6 +11,7 @@ import time
 from collections import Counter
 
 from fastapi import APIRouter, Query
+from fastapi.responses import HTMLResponse
 
 from services.batch_task_service import get_batch_task_service
 
@@ -107,3 +109,168 @@ async def system_status(
         "gates": GATE_BASELINE,
         "git": _git_state(),
     }
+
+
+_DASHBOARD_HTML = r"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Director 运营总览</title>
+<style>
+  :root {
+    --bg0:#0b1020; --bg1:#111834; --card:rgba(255,255,255,0.045);
+    --line:rgba(255,255,255,0.09); --txt:#e8ecff; --sub:#8b93b8;
+    --green:#34d399; --blue:#60a5fa; --amber:#fbbf24; --red:#f87171; --gray:#94a3b8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 600px at 20% -10%,#1a2350 0%,transparent 60%),
+               radial-gradient(900px 500px at 90% 10%,#13203f 0%,transparent 55%),var(--bg0);
+    color:var(--txt); min-height:100vh; padding:28px 32px;}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:22px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:12px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+  .sub{color:var(--sub);font-size:13px;margin-top:4px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+    backdrop-filter:blur(8px);transition:transform .15s}
+  .card:hover{transform:translateY(-2px)}
+  .card .label{color:var(--sub);font-size:12px;letter-spacing:.5px}
+  .card .val{font-size:26px;font-weight:700;margin-top:6px}
+  .card .hint{font-size:12px;color:var(--sub);margin-top:4px}
+  .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)} .info{color:var(--blue)}
+  .row2{display:grid;grid-template-columns:1.1fr 1.9fr;gap:14px;margin-top:14px}
+  @media(max-width:820px){.row2{grid-template-columns:1fr}}
+  .donut-wrap{display:flex;align-items:center;gap:22px;height:100%}
+  .legend{display:flex;flex-direction:column;gap:8px;font-size:13px}
+  .legend .li{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:10px;height:10px;border-radius:3px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{color:var(--sub);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+  td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04)}
+  .badge{padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+  .b-completed{background:rgba(52,211,153,.15);color:var(--green)}
+  .b-pending,.b-queued{background:rgba(96,165,250,.15);color:var(--blue)}
+  .b-running{background:rgba(251,191,36,.15);color:var(--amber)}
+  .b-failed{background:rgba(248,113,113,.15);color:var(--red)}
+  .b-cancelled{background:rgba(148,163,184,.15);color:var(--gray)}
+  .foot{color:var(--sub);font-size:12px;margin-top:18px;opacity:.7}
+  .err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);
+    padding:14px;border-radius:12px;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span>Director 运营总览</h1>
+  <div class="sub" id="time">加载中…</div>
+
+  <div class="grid">
+    <div class="card"><div class="label">生产任务</div><div class="val info" id="total">–</div>
+      <div class="hint" id="statusline">–</div></div>
+    <div class="card"><div class="label">ComfyUI</div><div class="val" id="comfy">–</div>
+      <div class="hint">127.0.0.1:8188 生成引擎</div></div>
+    <div class="card"><div class="label">Backend 覆盖率</div><div class="val warn" id="cov">–</div>
+      <div class="hint">CI ratchet 门禁 · 只升不降</div></div>
+    <div class="card"><div class="label">CreativeOS 覆盖率</div><div class="val ok" id="covc">–</div>
+      <div class="hint">内容端 ratchet 门禁</div></div>
+    <div class="card"><div class="label">前端 lint</div><div class="val ok" id="lint">–</div>
+      <div class="hint">--max-warnings 0 强制零噪音</div></div>
+    <div class="card"><div class="label">Git HEAD</div><div class="val" id="git">–</div>
+      <div class="hint" id="gitdirty">–</div></div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="label">任务状态分布</div>
+      <div class="donut-wrap">
+        <svg id="donut" width="150" height="150" viewBox="0 0 150 150"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="label">最近任务</div>
+      <table>
+        <thead><tr><th>任务</th><th>状态</th><th>平台</th><th>维度</th><th>进度</th><th>错误</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="foot" id="foot">数据来自 /api/system/status · 每 30s 自动刷新 · 只读视图</div>
+</div>
+<script>
+const C = { completed:'#34d399', pending:'#60a5fa', queued:'#60a5fa', running:'#fbbf24',
+            failed:'#f87171', cancelled:'#94a3b8' };
+async function load(){
+  try{
+    const r = await fetch('/api/system/status?refresh=1');
+    const d = await r.json();
+    document.getElementById('time').textContent = '更新于 ' + d.time + ' · PID ' + d.runtime.pid;
+    const t = d.tasks;
+    document.getElementById('total').textContent = t.total;
+    document.getElementById('statusline').textContent =
+      Object.entries(t.by_status).map(([k,v])=>k+':'+v).join('  ');
+    const cf = document.getElementById('comfy');
+    cf.textContent = d.runtime.comfyui_alive ? '运行中' : '离线';
+    cf.className = 'val ' + (d.runtime.comfyui_alive ? 'ok' : 'bad');
+    document.getElementById('cov').textContent = '≥'+d.gates.backend_coverage+'%';
+    document.getElementById('covc').textContent = '≥'+d.gates.creativeos_coverage+'%';
+    document.getElementById('lint').textContent = '0w / 0e';
+    const g = d.git;
+    document.getElementById('git').textContent = g.head ? '#'+g.head : 'n/a';
+    const gd = document.getElementById('gitdirty');
+    gd.textContent = g.dirty_files!=null ? (g.dirty_files+' 个脏文件') : 'git 不可用';
+    gd.className = 'hint ' + ((g.dirty_files||0)>0?'warn':'ok');
+    drawDonut(t.by_status, t.total);
+    renderRows(t.recent);
+  }catch(e){
+    document.getElementById('rows').innerHTML = '<tr><td colspan="6" class="err">加载失败: '+e.message+'</td></tr>';
+  }
+}
+function drawDonut(by, total){
+  const entries = Object.entries(by);
+  const svg = document.getElementById('donut');
+  svg.innerHTML=''; const legend=document.getElementById('legend'); legend.innerHTML='';
+  const R=52, cx=75, cy=75, circ=2*Math.PI*R;
+  let off=0;
+  if(!total){ svg.innerHTML=''; return; }
+  for(const [k,v] of entries){
+    const frac = v/total;
+    const col = C[k]||'#94a3b8';
+    const seg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    seg.setAttribute('cx',cx); seg.setAttribute('cy',cy); seg.setAttribute('r',R);
+    seg.setAttribute('fill','none'); seg.setAttribute('stroke',col); seg.setAttribute('stroke-width','15');
+    seg.setAttribute('stroke-dasharray',`${frac*circ} ${circ}`);
+    seg.setAttribute('stroke-dashoffset',-off*circ);
+    seg.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);
+    svg.appendChild(seg);
+    off += frac;
+    const li=document.createElement('div'); li.className='li';
+    li.innerHTML=`<span class="sw" style="background:${col}"></span>${k} <b style="margin-left:auto">${v}</b>`;
+    legend.appendChild(li);
+  }
+}
+function renderRows(rows){
+  const tb=document.getElementById('rows'); tb.innerHTML='';
+  for(const t of rows){
+    const tr=document.createElement('tr');
+    const st=(t.status||'pending').toLowerCase();
+    tr.innerHTML = `<td style="font-family:monospace;font-size:12px">${(t.task_id||'').slice(0,20)}</td>
+      <td><span class="badge b-${st}">${t.status}</span></td>
+      <td>${t.platform||'–'}</td><td>${t.dimension||'–'}</td>
+      <td>${Math.round((t.progress||0)*100)}%</td>
+      <td style="color:var(--red);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.error||''}</td>`;
+    tb.appendChild(tr);
+  }
+}
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>
+"""
+
+
+@router.get("/dashboard", response_class=HTMLResponse)
+async def system_dashboard() -> HTMLResponse:
+    """可视化运营总览（自包含 HTML，fetch /api/system/status，30s 自动刷新）。"""
+    return HTMLResponse(content=_DASHBOARD_HTML, status_code=200)
