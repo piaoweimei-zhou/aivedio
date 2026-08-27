@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/system", tags=["system"])
 
 # 门禁基线（与 .github/workflows/ci.yml 对齐，人工同步；防"覆盖了但没卡住"的假闭环）
 GATE_BASELINE = {
-    "backend_coverage": 38,      # backend pytest --cov-fail-under=38（全量 --cov=. 权威实测 39.4% 取整留缓冲）
+    "backend_coverage": 42,      # backend pytest --cov-fail-under=42（全量 --cov=. 权威实测 43% 取整留缓冲）
     "backend_lint": "0-error",   # backend/.flake8
     "frontend_lint": "0-warning",  # frontend npm run lint -- --max-warnings 0
     "creativeos_coverage": 90,   # creativeos --cov-fail-under=90（CI 实测 90.04%）

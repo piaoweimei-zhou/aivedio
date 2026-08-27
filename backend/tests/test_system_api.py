@@ -71,7 +71,7 @@ def test_status_task_aggregation(client):
 def test_status_gates(monkeypatch, client):
     r = client.get("/api/system/status")
     body = r.json()
-    assert body["gates"]["backend_coverage"] == 38
+    assert body["gates"]["backend_coverage"] == 42
     assert body["gates"]["creativeos_coverage"] == 90
     assert body["gates"]["frontend_lint"] == "0-warning"
     assert body["service"] == "director"
