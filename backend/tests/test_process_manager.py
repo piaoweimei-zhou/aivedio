@@ -26,13 +26,23 @@ class FakeAsyncIO:
 
     这样 pm 里的 `asyncio.sleep` 走这里（快速返回），而全局 asyncio 保持原样，
     pytest-asyncio 的事件循环管理与测试代码的 asyncio.sleep 不受影响。
+
+    max_sleeps：可选 sleep 调用上限。超过后抛 CancelledError，
+    让"无限 while / 无限自我重调度"的后台 task 在测试等待期内自行终止，
+    避免测试结束时残留大量 pending task 导致 event loop 关闭卡死（CI Linux 复现）。
     """
 
-    def __init__(self, real):
+    def __init__(self, real, max_sleeps=None):
         self._real = real
         self.sleep_secs = 0.0005
+        self.max_sleeps = max_sleeps
+        self._n = 0
 
     async def sleep(self, _secs):
+        if self.max_sleeps is not None:
+            self._n += 1
+            if self._n > self.max_sleeps:
+                raise asyncio.CancelledError()
         await self._real.sleep(self.sleep_secs)
 
     def ensure_future(self, coro, *a, **k):
@@ -316,22 +326,27 @@ async def test_idle_shutdown_fires(monkeypatch, mgr):
 
 @pytest.mark.asyncio
 async def test_idle_shutdown_skip_active(monkeypatch, mgr):
-    # 模拟"活跃生成中"：_active_generation=True 时空闲定时器跳过停止
+    # 模拟"活跃生成中"：_active_generation=True 时空闲定时器跳过停止。
+    # 注意 skip 会触发 _schedule_idle_shutdown 无限自我重调度，
+    # 必须给 FakeAsyncIO 设 sleep 上限让重调度链在等待期内自行终止（否则 Linux loop 关闭卡死）
     monkeypatch.setattr(pm, "IDLE_SHUTDOWN_TIMEOUT", 0.01)
+    monkeypatch.setattr(pm, "asyncio", FakeAsyncIO(asyncio, max_sleeps=100))
     stopped = {"v": False}
     mgr._process = FakePopen(pid=1)
     mgr._active_generation = True
     mgr._last_used = time.time()
     mgr.stop = lambda: stopped.update(v=True)
     mgr._schedule_idle_shutdown()
-    await _ORIG_SLEEP(0.2)
+    await _ORIG_SLEEP(0.3)
     assert stopped["v"] is False
 
 
 # ==================== 健康检查 ====================
 
 @pytest.mark.asyncio
-async def test_health_check_restart_on_3_fails(mgr):
+async def test_health_check_restart_on_3_fails(monkeypatch, mgr):
+    # 带 sleep 上限：while True 后台 task 在等待期内自行终止，避免残留
+    monkeypatch.setattr(pm, "asyncio", FakeAsyncIO(asyncio, max_sleeps=100))
     fails = {"stopped": False, "restarted": False}
 
     async def alive():
@@ -349,16 +364,14 @@ async def test_health_check_restart_on_3_fails(mgr):
     mgr.stop = fake_stop
     mgr.ensure_running = fake_ensure
     mgr._start_health_check()
-    await _ORIG_SLEEP(0.2)  # fake sleep 0.5ms，0.2s 内完成 3 次失败 + 重启
+    await _ORIG_SLEEP(0.3)  # 足够覆盖 3 次失败 + 重启 + task 因上限自行终止
     assert fails["stopped"] is True
     assert fails["restarted"] is True
-    # 显式取消后台无限循环，避免 pending task 干扰
-    mgr._health_check_task.cancel()
-    await _ORIG_SLEEP(0.05)
 
 
 @pytest.mark.asyncio
-async def test_health_check_ok_resets_fail(mgr):
+async def test_health_check_ok_resets_fail(monkeypatch, mgr):
+    monkeypatch.setattr(pm, "asyncio", FakeAsyncIO(asyncio, max_sleeps=100))
     seq = [False, False, True, True]
     fails = {"n": 0, "stopped": False}
 
@@ -371,10 +384,8 @@ async def test_health_check_ok_resets_fail(mgr):
     mgr.stop = lambda: fails.update(stopped=True)
     mgr.ensure_running = lambda: True
     mgr._start_health_check()
-    await _ORIG_SLEEP(0.2)
+    await _ORIG_SLEEP(0.3)
     assert fails["stopped"] is False
-    mgr._health_check_task.cancel()
-    await _ORIG_SLEEP(0.05)
 
 
 # ==================== VRAM 交替 / 回调 ====================
