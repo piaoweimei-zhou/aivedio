@@ -41,7 +41,7 @@ jobs:
           pip install pytest-cov
       - name: Run tests with coverage (ratchet baseline 42%)
         working-directory: backend
-        run: python -m pytest --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=42 --junitxml=test-results.xml
+        run: python -m pytest --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=44 --junitxml=test-results.xml
       - name: Generate nightly regression report (C 项可追踪)
         working-directory: backend
         if: always()

@@ -284,7 +284,7 @@ class ComfyUIProcessManager:
             seen = set()
             for line in result.stdout.splitlines():
                 parts = line.strip().split()
-                if len(parts) >= 5 and (parts[3] or "").endswith(f":{port}"):
+                if len(parts) >= 5 and (parts[1] or "").endswith(f":{port}"):
                     pid = parts[-1]
                     if pid not in seen:
                         seen.add(pid)
