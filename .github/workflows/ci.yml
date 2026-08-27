@@ -38,12 +38,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.lock
-          pip install pytest-cov
+          pip install pytest-cov pytest-timeout
       - name: Run tests with coverage (ratchet baseline 44%)
         working-directory: backend
         timeout-minutes: 8
-        # timeout 240s 强制终止（超时日志保留 -v 进度 + faulthandler dump，可定位 Linux hang 卡点）
-        run: timeout 240 python -m pytest -v --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=44 --junitxml=test-results.xml
+        # pytest-timeout：单测 120s 超时失败并打印测试名（定位 Linux 全量上下文 hang 的元凶）；
+        # timeout 240s 兜底终止
+        run: timeout 240 python -m pytest -v --timeout=120 --timeout-method=signal --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=44 --junitxml=test-results.xml
       - name: Generate nightly regression report (C 项可追踪)
         working-directory: backend
         if: always()
