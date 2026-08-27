@@ -27,6 +27,7 @@ jobs:
   backend-test:
     name: Backend pytest + coverage ratchet
     runs-on: ubuntu-latest
+    needs: backend-test-process-manager
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,14 +39,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.lock
-          pip install pytest-cov pytest-timeout
+          pip install pytest-cov
       - name: Run tests (exclude process_manager; it hangs in full-suite context on Linux)
         working-directory: backend
         timeout-minutes: 8
-        # process_manager 在全量上下文的 asyncio loop 关闭处会 hang（signal 超时无法中断，thread 可打印栈）。
-        # 先排除它单独跑（backend-test-process-manager job），主片专注其余 362 个测试。
-        # --cov-fail-under=0 是定位期临时值；排除 pm 后的真实覆盖率计入下方 report，确认后再恢复 gate。
-        run: timeout 240 python -m pytest -v --ignore=tests/test_process_manager.py --timeout=120 --timeout-method=thread --cov=. --cov-report=term-missing --cov-report=json:cov.json --cov-fail-under=0 --junitxml=test-results.xml
+        # 定位结论：pytest-timeout(thread/signal) 与 pytest-asyncio 冲突，本身导致卡死——已移除。
+        # process_manager 在"全量单进程"下 asyncio loop 关闭处 hang，故排除主片、单独 job 跑（独立进程天然隔离）。
+        # 覆盖率：主片 42% + pm 片合并后回到 44% ratchet 基线（合并步骤在下方）。
+        run: timeout 240 python -m pytest -v --ignore=tests/test_process_manager.py --cov=. --cov-report=json:cov.json --cov-fail-under=0 --junitxml=test-results.xml
+      - name: Download process_manager coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: pm-coverage
+          path: backend/pmcov
+      - name: Merge coverage + enforce ratchet 44%
+        working-directory: backend
+        # 合并主片 + pm 片的 .coverage，恢复 44% ratchet 基线；<44% 则 step 失败（机器门禁）
+        run: |
+          coverage combine
+          coverage report --fail-under=44 --format=json -o cov-merged.json
       - name: Generate nightly regression report (C 项可追踪)
         working-directory: backend
         if: always()
@@ -71,11 +83,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.lock
-          pip install pytest-cov pytest-timeout
+          pip install pytest-cov
       - name: Run process_manager tests (isolated process)
         working-directory: backend
         timeout-minutes: 4
-        run: timeout 120 python -m pytest -v tests/test_process_manager.py --timeout=60 --timeout-method=thread --cov=. --cov-report=json:cov.json --cov-fail-under=0 --junitxml=test-results-pm.xml
+        # 无 pytest-timeout：thread/signal 方法与 pytest-asyncio 冲突会导致卡死（实测确认）。
+        # 独立进程运行天然隔离 Linux 上 asyncio loop 关闭 hang。
+        run: timeout 120 python -m pytest -v tests/test_process_manager.py --cov=. --cov-fail-under=0 --junitxml=test-results-pm.xml
+      - name: Upload process_manager coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: pm-coverage
+          path: backend/.coverage
 
   g2-contract-smoke:
     name: G2 契约冒烟（steps 契约 + DAG 生成）
