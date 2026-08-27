@@ -71,9 +71,60 @@ def test_status_task_aggregation(client):
 def test_status_gates(monkeypatch, client):
     r = client.get("/api/system/status")
     body = r.json()
-    assert body["gates"]["backend_coverage"] == 40
+    assert body["gates"]["backend_coverage"] == 38
     assert body["gates"]["creativeos_coverage"] == 90
+    assert body["gates"]["frontend_lint"] == "0-warning"
     assert body["service"] == "director"
+
+
+def test_ops_key_enforced(monkeypatch, client):
+    """配置 DIRECTOR_OPS_KEY 后，无 key / 错误 key 401，正确 key 通过（header 或 query）。"""
+    monkeypatch.setenv("DIRECTOR_OPS_KEY", "secret-ops-key")
+    r = client.get("/api/system/status")
+    assert r.status_code == 401
+    r = client.get("/api/system/status", headers={"X-API-Key": "secret-ops-key"})
+    assert r.status_code == 200
+    r = client.get("/api/system/status?key=secret-ops-key")
+    assert r.status_code == 200
+    r = client.get("/api/system/status", headers={"X-API-Key": "wrong"})
+    assert r.status_code == 401
+    r = client.get("/api/system/dashboard?key=secret-ops-key")
+    assert r.status_code == 200
+    r = client.get("/api/system/dashboard")
+    assert r.status_code == 401
+
+
+def test_cost_aggregation(monkeypatch, client, tmp_path):
+    """成本台账聚合：读 ledger.jsonl → 汇总（含容错降级）。"""
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text(
+        '{"ts":"2026-08-27 10:00:00","total_cost_usd":1.5,"llm_cost_usd":0.5,'
+        '"video_cost_usd":1.0,"total_calls":7,"total_tokens":1000,'
+        '"video_provider":"local_h3","over_50_warning":false}\n'
+        '{"ts":"2026-08-27 11:00:00","total_cost_usd":2.5,"llm_cost_usd":0.5,'
+        '"video_cost_usd":2.0,"total_calls":8,"total_tokens":2000,'
+        '"video_provider":"cloud_seedream_video","over_50_warning":true}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(system_api, "COST_LEDGER_PATH", str(ledger))
+    system_api._cost_cache.update(ts=0.0, data=None)  # 清缓存
+    r = client.get("/api/system/status")
+    c = r.json()["cost"]
+    assert c["records"] == 2
+    assert c["total_cost_usd"] == 4.0
+    assert c["llm_cost_usd"] == 1.0
+    assert c["video_cost_usd"] == 3.0
+    assert c["over_50_warning"] is True
+    assert c["by_provider"]["local_h3"] == 1.0
+
+
+def test_cost_missing_ledger(monkeypatch, client):
+    """ledger 不存在 → 空聚合 + error 提示（不抛、不阻塞 status）。"""
+    monkeypatch.setattr(system_api, "COST_LEDGER_PATH", r"D:\nonexistent\ledger.jsonl")
+    system_api._cost_cache.update(ts=0.0, data=None)
+    r = client.get("/api/system/status")
+    assert r.status_code == 200
+    assert r.json()["cost"]["records"] == 0
 
 
 def test_comfy_probe_cached(monkeypatch, client):

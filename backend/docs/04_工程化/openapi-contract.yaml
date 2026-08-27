@@ -1,0 +1,652 @@
+openapi: 3.1.0
+info:
+  title: Director 生产契约 API (TrafficOS ↔ Director)
+  version: 1.0.0
+  description: '流量侧与导演侧的唯一契约事实源。由 backend/api/contract_api.py 的真实模型自动导出（生成器: backend/tools/export_contract_openapi.py）。任何实现若与本文档不一致即为契约违约，CI
+    test_openapi_contract.py 强制校验。'
+servers:
+- url: http://127.0.0.1:8000
+  description: 本地导演侧
+security:
+- X-API-Key: []
+components:
+  schemas:
+    AssetInfo:
+      properties:
+        asset_id:
+          type: string
+          title: Asset Id
+        type:
+          type: string
+          title: Type
+          default: video
+        url:
+          type: string
+          title: Url
+          default: ''
+        ttl_sec:
+          type: integer
+          title: Ttl Sec
+          default: 86400
+        size_bytes:
+          type: integer
+          title: Size Bytes
+          default: 0
+      type: object
+      required:
+      - asset_id
+      title: AssetInfo
+    CancelResponse:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        status:
+          type: string
+          title: Status
+        cancelled:
+          type: boolean
+          title: Cancelled
+          default: false
+        cancel_rejected:
+          type: boolean
+          title: Cancel Rejected
+          default: false
+        message:
+          type: string
+          title: Message
+          default: ''
+      type: object
+      required:
+      - task_id
+      - status
+      title: CancelResponse
+    Capabilities:
+      properties:
+        version:
+          type: string
+          title: Version
+          default: 1.0.0
+        supported_stage_types:
+          items:
+            type: string
+          type: array
+          title: Supported Stage Types
+          default:
+          - video_script_mixin
+          - storyboard_batch
+          - video_act
+          - compose
+          - export
+        params_defaults:
+          additionalProperties: true
+          type: object
+          title: Params Defaults
+          default:
+            resolution: 480p
+            fps: 24
+            duration_s: 5
+        providers:
+          items:
+            type: string
+          type: array
+          title: Providers
+          default:
+          - comfyui
+        api:
+          additionalProperties:
+            type: string
+          type: object
+          title: Api
+          default:
+            version: 1.0.0
+            min_trafficos: 0.1.0
+      type: object
+      title: Capabilities
+    ClaimResponse:
+      properties:
+        asset_id:
+          type: string
+          title: Asset Id
+        claimed:
+          type: boolean
+          title: Claimed
+          default: true
+      type: object
+      required:
+      - asset_id
+      title: ClaimResponse
+    ContentSpec:
+      properties:
+        content_id:
+          type: string
+          title: Content Id
+          description: 幂等键
+        dimension:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dimension
+          description: pure_content/knowledge/soft_ad
+        monetizer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Monetizer
+          description: adshare/netdisk/xianyu/saas/resource/course/tool
+        account_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Id
+        script:
+          additionalProperties: true
+          type: object
+          title: Script
+          description: 生产输入，type 须在 capabilities 声明的范围内
+        assets:
+          items:
+            type: string
+          type: array
+          title: Assets
+          description: 参考素材公网 URL
+        packaging:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Packaging
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+        callback_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Callback Url
+        traffic_meta:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Traffic Meta
+        auto_start:
+          type: boolean
+          title: Auto Start
+          default: false
+      type: object
+      required:
+      - content_id
+      - script
+      title: ContentSpec
+    ErrorPayload:
+      properties:
+        error_code:
+          type: string
+          title: Error Code
+          default: UNKNOWN
+        message:
+          type: string
+          title: Message
+          default: ''
+        failed_step_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Failed Step Id
+      type: object
+      title: ErrorPayload
+    ProduceResponse:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        content_id:
+          type: string
+          title: Content Id
+        status:
+          type: string
+          title: Status
+      type: object
+      required:
+      - task_id
+      - content_id
+      - status
+      title: ProduceResponse
+    StartResponse:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        started:
+          type: boolean
+          title: Started
+          default: false
+        message:
+          type: string
+          title: Message
+          default: ''
+        duplicate:
+          type: boolean
+          title: Duplicate
+          default: false
+      type: object
+      required:
+      - task_id
+      title: StartResponse
+    TaskDetail:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        content_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content Id
+        status:
+          type: string
+          title: Status
+        progress:
+          type: number
+          title: Progress
+          default: 0.0
+        current_step:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Step
+        steps:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Steps
+        comfyui:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Comfyui
+        assets:
+          items:
+            $ref: '#/components/schemas/AssetInfo'
+          type: array
+          title: Assets
+        error:
+          anyOf:
+          - $ref: '#/components/schemas/ErrorPayload'
+          - type: 'null'
+        traffic_meta:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Traffic Meta
+      type: object
+      required:
+      - task_id
+      - status
+      title: TaskDetail
+    TaskSummary:
+      properties:
+        task_id:
+          type: string
+          title: Task Id
+        content_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content Id
+        status:
+          type: string
+          title: Status
+        progress:
+          type: number
+          title: Progress
+          default: 0.0
+        current_step:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Current Step
+        dimension:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dimension
+        monetizer:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Monetizer
+        account_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Account Id
+        platform:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Platform
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      type: object
+      required:
+      - task_id
+      - status
+      title: TaskSummary
+    TasksResponse:
+      properties:
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+          type: array
+          title: Tasks
+        total:
+          type: integer
+          title: Total
+          default: 0
+      type: object
+      title: TasksResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    X-API-Key:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: 导演侧 API key（与契约层 require_api_key 一致）
+paths:
+  /contract/produce:
+    post:
+      tags:
+      - 内容生产契约
+      summary: Produce
+      description: 提交内容规格，创建生产任务（幂等，按 content_id 去重）。
+      operationId: produce_contract_produce_post
+      parameters:
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentSpec'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProduceResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/produce/{task_id}:
+    get:
+      tags:
+      - 内容生产契约
+      summary: Get Produce
+      description: 查询任务进度/状态/产物/错误。
+      operationId: get_produce_contract_produce__task_id__get
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/tasks:
+    get:
+      tags:
+      - 内容生产契约
+      summary: List Tasks
+      description: '成片/任务管理视图：列出生产任务（支持按状态/平台/账号过滤）。
+
+
+        运营视角：哪个账号、哪条内容、当前状态/进度、产物错误。'
+      operationId: list_tasks_contract_tasks_get
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Status
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Platform
+      - name: account_id
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ''
+          title: Account Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 50
+          title: Limit
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TasksResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/produce/{task_id}/cancel:
+    post:
+      tags:
+      - 内容生产契约
+      summary: Cancel Produce
+      description: '取消任务（幂等）。
+
+
+        对齐 director 真实能力：仅 running 状态可取消。
+
+        queued（已创建未启动）返回 cancel_rejected=True —— 任务未运行，
+
+        无需取消；终态（done/failed/cancelled）同样拒绝。'
+      operationId: cancel_produce_contract_produce__task_id__cancel_post
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/produce/{task_id}/start:
+    post:
+      tags:
+      - 内容生产契约
+      summary: Start Produce
+      description: '手动启动已创建未运行的任务（auto_start=False 时可用）。
+
+
+        仅 pending/queued 状态可启动；running 与终态返回 started=False。'
+      operationId: start_produce_contract_produce__task_id__start_post
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/produce/{task_id}/assets/{asset_id}/claim:
+    post:
+      tags:
+      - 内容生产契约
+      summary: Claim Asset
+      description: 标记产物已由 TrafficOS 转存（延长保活/防提前清理）。
+      operationId: claim_asset_contract_produce__task_id__assets__asset_id__claim_post
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Asset Id
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /contract/capabilities:
+    get:
+      tags:
+      - 内容生产契约
+      summary: Capabilities
+      description: 能力声明：TrafficOS 先拉此接口再构造 Content Spec。
+      operationId: capabilities_contract_capabilities_get
+      parameters:
+      - name: X-API-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Api-Key
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
