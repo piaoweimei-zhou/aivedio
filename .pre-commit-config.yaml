@@ -26,3 +26,9 @@ repos:
         language: system
         files: ^frontend-director/src/.*\.(ts|tsx)$
         pass_filenames: false
+
+      - id: commit-msg-conventional
+        name: commit message (conventional, B 项机器强制)
+        entry: backend/.venv-test/Scripts/python.exe backend/tools/commit_msg_check.py
+        language: system
+        stages: [commit-msg]
