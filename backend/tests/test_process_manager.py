@@ -53,16 +53,24 @@ class FakeAsyncIO:
 
 
 @pytest.fixture
-def mgr(monkeypatch):
+async def mgr(monkeypatch):
     monkeypatch.setattr(pm, "COMFYUI_PYTHON", "py")
     monkeypatch.setattr(pm, "COMFYUI_SCRIPT", "main.py")
     monkeypatch.setattr(pm, "COMFYUI_BASE_URL", "http://127.0.0.1:8188")
     monkeypatch.setattr(pm, "asyncio", FakeAsyncIO(asyncio))
-    return pm.ComfyUIProcessManager(
+    m = pm.ComfyUIProcessManager(
         comfyui_dir=r"D:\comfy_test",
         base_url="http://127.0.0.1:8188",
         check_alive_fn=None,
     )
+    yield m
+    # teardown：取消后台无限 task（health_check / idle_shutdown），否则 event loop 关闭时卡死（CI Linux 复现）
+    _tasks = [getattr(m, "_health_check_task", None), getattr(m, "_idle_shutdown_task", None)]
+    _alive = [t for t in _tasks if t is not None and not t.done()]
+    for _t in _alive:
+        _t.cancel()
+    if _alive:
+        await asyncio.sleep(0.01)  # 让 CancelledError 在后台 task 的 sleep 处被处理
 
 
 class FakePopen:
