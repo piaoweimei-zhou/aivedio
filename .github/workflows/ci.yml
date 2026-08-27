@@ -96,7 +96,7 @@ jobs:
       - name: Install dependencies
         working-directory: frontend-director
         run: npm ci
-      - name: Lint (T2 gate: 0 error + 0 warning)
+      - name: "Lint (T2 gate: 0 error + 0 warning)"
         working-directory: frontend-director
         run: npm run lint -- --max-warnings 0
       - name: Build
