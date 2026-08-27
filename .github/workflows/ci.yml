@@ -39,7 +39,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.lock
           pip install pytest-cov
-      - name: Run tests (process_manager 暂缓: Linux 上 asyncio loop 关闭 hang)
+      - name: "Run tests (process_manager 暂缓, Linux 上 asyncio loop 关闭 hang)"
         working-directory: backend
         timeout-minutes: 8
         # 已知问题（已定位根因）：process_manager 测试触发 _start_health_check 无限后台 task，
