@@ -16,6 +16,7 @@ import argparse
 import json
 import logging
 import math
+import os
 import sys
 import time
 import urllib.request
@@ -244,6 +245,70 @@ def report_topics(base_url: str, recs: list, source: str = "hot") -> int:
     return ok
 
 
+def _bvid_of(rec: dict) -> str:
+    """从记录中取 bvid（优先字段，其次从 URL 提取 B 站 bvid）。"""
+    bvid = rec.get("bvid")
+    if bvid:
+        return bvid
+    import re
+    m = re.search(r"BV[0-9A-Za-z]{10}", rec.get("url", ""))
+    return m.group(0) if m else rec.get("url", "")
+
+
+def write_snapshot(recs: list, snapshot_dir: str) -> str:
+    """把本次采集沉淀为按日归档的全量快照（数据资产，供趋势/命中率分析）。
+
+    落盘 `{snapshot_dir}/{YYYY-MM-DD}.json`，同一天多次采集会按 bvid 去重合并。
+    返回快照文件路径。
+    """
+    import datetime
+
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    os.makedirs(snapshot_dir, exist_ok=True)
+    path = os.path.join(snapshot_dir, f"{today}.json")
+
+    existed = {}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                existed = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            existed = {}
+
+    items = existed.get("items", [])
+    seen = {it.get("bvid") for it in items if it.get("bvid")}
+    added = 0
+    for rec in recs:
+        if rec.get("error") or not rec.get("title"):
+            continue
+        bvid = _bvid_of(rec)
+        if not bvid or bvid in seen:
+            continue
+        items.append({
+            "bvid": bvid,
+            "platform": rec.get("platform", ""),
+            "title": rec.get("title", ""),
+            "plays": rec.get("plays", 0),
+            "likes": rec.get("likes", 0),
+            "comments": rec.get("comments", 0),
+            "shares": rec.get("shares", 0),
+            "collects": rec.get("collects", 0),
+            "heat": rec.get("heat", 0.0),
+            "collected_at": rec.get("collected_at", int(time.time())),
+            "url": rec.get("url", ""),
+        })
+        seen.add(bvid)
+        added += 1
+
+    existed["date"] = today
+    existed["updated_at"] = int(time.time())
+    existed["items"] = items
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(existed, f, ensure_ascii=False, indent=2)
+    logger.info("选题快照已沉淀: %s（新增 %d 条，累计 %d 条）", path, added, len(items))
+    return path
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     ap = argparse.ArgumentParser(description="TrafficOS 热点采集器")
@@ -255,6 +320,8 @@ def main() -> int:
                     help="自动拉取 B 站当日热门条数（如 15；追热点核心信号源）")
     ap.add_argument("--topics", action="store_true",
                     help="把采集到的真实热点写入 TrafficOS 选题库（POST /topics）")
+    ap.add_argument("--snapshot", default="",
+                    help="沉淀按日快照目录（如 data/selection；写入 {date}.json 全量真实数据）")
     ap.add_argument("--out", default="", help="排行 JSON 输出路径")
     ap.add_argument("--report", action="store_true", help="上报 TrafficOS")
     ap.add_argument("--trafficos", default="http://127.0.0.1:8001", help="TrafficOS 地址")
@@ -313,6 +380,9 @@ def main() -> int:
     if args.topics:
         ok_t = report_topics(args.trafficos, recs)
         logger.info("选题入库: %d/%d 成功", ok_t, sum(1 for r in recs if not r.get("error")))
+
+    if args.snapshot:
+        write_snapshot(recs, args.snapshot)
 
     print("\n===== 热度排行 =====")
     for r in recs:

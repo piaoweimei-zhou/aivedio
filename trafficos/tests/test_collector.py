@@ -158,3 +158,30 @@ def test_report_topics(monkeypatch):
     ok = report_topics("http://127.0.0.1:8001", recs)
     assert ok == 1
     assert calls[0].endswith("/api/traffic/topics")
+
+
+def test_write_snapshot(tmp_path, monkeypatch):
+    import json
+
+    import app.collectors.collector as c
+
+    recs = [
+        {"url": "https://www.bilibili.com/video/BV1snapAAA11", "platform": "bilibili",
+         "title": "热点甲", "plays": 100, "likes": 5, "comments": 2, "shares": 1,
+         "collects": 3, "heat": 80.0, "collected_at": 1111111111},
+        {"url": "https://www.bilibili.com/video/BV1snapAAA11", "platform": "bilibili",
+         "title": "热点甲(重复)", "plays": 200},
+        {"url": "", "error": "x"},
+    ]
+    path = c.write_snapshot(recs, str(tmp_path))
+    assert path.endswith(".json")
+    data = json.loads(open(path, encoding="utf-8").read())
+    assert len(data["items"]) == 1  # 同 bvid 去重
+    assert data["items"][0]["bvid"] == "BV1snapAAA11"
+
+
+def test_bvid_of():
+    import app.collectors.collector as c
+
+    assert c._bvid_of({"bvid": "BV1abc"}) == "BV1abc"
+    assert c._bvid_of({"url": "https://www.bilibili.com/video/BV1xyz1234ab"}) == "BV1xyz1234ab"
