@@ -159,13 +159,17 @@ class ComfyUIProcessManager:
             self._comfyui_log_f = None
 
         try:
+            # CREATE_NO_WINDOW 仅 Windows 存在；Linux/macOS 传入会抛 AttributeError
+            _popen_kwargs: dict = {}
+            if sys.platform == "win32":
+                _popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
             self._process = subprocess.Popen(
                 cmd,
                 cwd=self._comfyui_dir,
                 env=env,
                 stdout=_stdout,
                 stderr=_stderr,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                **_popen_kwargs,
             )
         except FileNotFoundError as e:
             logger.error(f"[ComfyUI] 启动失败（找不到 Python）: {e}")
