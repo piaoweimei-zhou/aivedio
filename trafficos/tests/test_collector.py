@@ -1,0 +1,86 @@
+# -*- coding: utf-8 -*-
+"""采集器单元测试：热度打分、平台识别、容错、上报计数（mock 网络）。"""
+import time
+
+from app.collectors.collector import _heat, _platform_of, parse_one, report_tool_events
+
+
+def test_platform_of():
+    assert _platform_of("https://www.bilibili.com/video/BV1xx411c7mD") == "bilibili"
+    assert _platform_of("https://v.douyin.com/abc/") == "unknown"
+    assert _platform_of("http://example.com/x") == "unknown"
+
+
+def test_heat_high_plays_dominates():
+    # 高播放量应显著拉高热度
+    rec = {"plays": 1_000_000, "likes": 1000, "comments": 100, "shares": 50,
+           "collects": 200, "create_time": time.time()}
+    h = _heat(rec)
+    assert h > 70  # 1M 播放 + 新视频 → 高热度
+
+
+def test_heat_engagement_bonus():
+    base = {"plays": 100_000, "likes": 1000, "comments": 100, "shares": 50,
+            "collects": 200, "create_time": time.time()}
+    low = dict(base)
+    high = dict(base, likes=20_000, comments=3000, shares=2000, collects=5000)
+    assert _heat(high) > _heat(low)
+
+
+def test_heat_recency_penalty():
+    now = time.time()
+    fresh = {"plays": 100_000, "likes": 1000, "comments": 100, "shares": 50,
+             "collects": 200, "create_time": now}
+    old = dict(fresh, create_time=now - 60 * 86400)  # 60 天前
+    assert _heat(fresh) > _heat(old)
+
+
+def test_heat_zero_plays():
+    rec = {"plays": 0, "likes": 0, "comments": 0, "shares": 0,
+           "collects": 0, "create_time": time.time()}
+    # 无播放不崩溃，热度仅剩时效分量
+    assert 0 <= _heat(rec) <= 100
+
+
+def test_parse_one_unsupported():
+    r = parse_one("https://example.com/foo")
+    assert r["error"] == "unsupported_platform"
+
+
+def test_parse_one_parser_error(monkeypatch):
+    class _Fake:
+        def parse(self, url):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr("app.collectors.collector.BilibiliParser", lambda: _Fake())
+    r = parse_one("https://www.bilibili.com/video/BV1xx411c7mD")
+    assert r["error"].startswith("RuntimeError: boom")
+
+
+def test_report_tool_events_success(monkeypatch):
+    called = []
+
+    class _Resp:
+        status = 200
+
+    class _FakeUrlopen:
+        def __init__(self, req, timeout=0):
+            called.append(req)
+            self._r = _Resp()
+
+        def __enter__(self):
+            return self._r
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr("urllib.request.urlopen", _FakeUrlopen)
+    recs = [
+        {"url": "https://www.bilibili.com/video/BV1xx411c7mD", "title": "A",
+         "platform": "bilibili", "plays": 100, "heat": 50.0},
+        {"url": "https://www.bilibili.com/video/BV1GJ411x7h7", "error": "x"},
+    ]
+    ok = report_tool_events("http://127.0.0.1:8001", recs)
+    assert ok == 1
+    assert len(called) == 1
+    assert "/api/traffic/signals/tool-event" in called[0].full_url

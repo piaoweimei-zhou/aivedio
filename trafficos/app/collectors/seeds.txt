@@ -1,0 +1,7 @@
+# 热点采集种子清单（每行一个平台视频 URL，# 开头为注释）
+# 用法: python -m app.collectors.collector --file app/collectors/seeds.txt --out out.json --report
+# 合规: 仅聚合分析/内部选题，不搬运内容；采集克制防限流。
+
+# ===== B 站样本（公开 API 匿名可解析，含真实播放量）=====
+https://www.bilibili.com/video/BV1xx411c7mD
+https://www.bilibili.com/video/BV1GJ411x7h7
