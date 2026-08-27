@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.hotspots import (HotspotItem, items_to_topics, parse_baidu,
-                          parse_toutiao, sync)
+from app.hotspots import (HotspotItem, items_to_topics, parse_baidu, parse_douyin,
+                          parse_toutiao, parse_weibo, sync)
 from app.storage import get_collection
 
 
@@ -44,6 +44,40 @@ def test_parse_malformed():
     assert parse_baidu({"data": {"cards": []}}) == []
     assert parse_toutiao(None) == []
     assert parse_toutiao({"data": "not-a-list"}) == []
+    assert parse_weibo(None) == []
+    assert parse_weibo({"data": {"realtime": []}}) == []
+    assert parse_douyin(None) == []
+    assert parse_douyin({"data": {"word_list": []}}) == []
+
+
+def test_parse_weibo_normal():
+    payload = {"data": {"realtime": [
+        {"word": "微博热点甲", "num": "2194997", "word_scheme": "https://s.weibo.com/w?甲",
+         "label_name": "新", "realpos": 1},
+        {"word": ""},                                   # 空标题跳过
+        {"word": "微博热点乙", "num": 1234},
+    ]}}
+    items = parse_weibo(payload)
+    assert len(items) == 2
+    assert items[0].title == "微博热点甲"
+    assert items[0].heat == 2194997
+    assert items[0].source == "weibo"
+    assert items[0].url.startswith("https://")
+    assert items[0].extra.get("label") == "新"
+
+
+def test_parse_douyin_normal():
+    payload = {"data": {"word_list": [
+        {"word": "抖音热点甲", "hot_value": "12081354", "position": 1, "label": "1"},
+        {"word": ""},                                    # 空标题跳过
+        {"word": "抖音热点乙", "hot_value": 500},
+    ]}}
+    items = parse_douyin(payload)
+    assert len(items) == 2
+    assert items[0].title == "抖音热点甲"
+    assert items[0].heat == 12081354
+    assert items[0].source == "douyin"
+    assert items[0].extra.get("position") == 1
 
 
 def test_items_to_topics_maps_source_and_weights():

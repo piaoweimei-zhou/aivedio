@@ -34,17 +34,27 @@ class HotspotItem:
 
 
 # 内置源：name -> (接口路径, 解析函数)
-# 均为大陆可达的公开接口（2026-08 实测：百度热搜 / 头条热榜可用；微博403/知乎401已排除）
+# 均为大陆可达的公开接口（2026-08 实测：百度热搜 / 头条热榜 / 微博热搜 / 抖音热榜 可用）
 _SOURCES: Dict[str, str] = {
     "baidu": "https://top.baidu.com/api/board?platform=wise&tab=realtime",
     "toutiao": "https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc",
+    "weibo": "https://weibo.com/ajax/side/hotSearch",
+    "douyin": ("https://www.douyin.com/aweme/v1/web/hot/search/list/"
+               "?device_platform=webapp&aid=6383"),
 }
 
 
 def _http_get_json(url: str) -> Optional[Dict[str, Any]]:
     """拉取 JSON，失败返回 None（降级）"""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": _UA})
+        headers = {"User-Agent": _UA}
+        # 微博/抖音需 Referer/Origin 才放行（2026-08 实测）
+        if "weibo.com" in url:
+            headers["Referer"] = "https://weibo.com/"
+        elif "douyin.com" in url:
+            headers["Referer"] = "https://www.douyin.com/"
+            headers["Origin"] = "https://www.douyin.com"
+        req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
             return json.loads(resp.read().decode("utf-8", errors="ignore"))
     except Exception as exc:  # noqa: BLE001 外部网络问题不阻断
@@ -97,9 +107,55 @@ def parse_toutiao(payload: Optional[Dict[str, Any]]) -> List[HotspotItem]:
     return items
 
 
+def parse_weibo(payload: Optional[Dict[str, Any]]) -> List[HotspotItem]:
+    """微博热搜：data.realtime[] → {word, num, word_scheme}（2026-08 实测免登录可用）"""
+    if not payload:
+        return []
+    items: List[HotspotItem] = []
+    try:
+        for row in payload.get("data", {}).get("realtime", []) or []:
+            word = (row.get("word") or "").strip()
+            if not word:
+                continue
+            items.append(HotspotItem(
+                title=word,
+                heat=float(row.get("num") or 0),
+                url=row.get("word_scheme") or "",
+                source="weibo",
+                extra={"label": row.get("label_name"), "rank": row.get("realpos")},
+            ))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[hotspots] 微博解析异常: %s", exc)
+    return items
+
+
+def parse_douyin(payload: Optional[Dict[str, Any]]) -> List[HotspotItem]:
+    """抖音热榜：data.word_list[] → {word, hot_value, position}（2026-08 实测免登录可用）"""
+    if not payload:
+        return []
+    items: List[HotspotItem] = []
+    try:
+        for row in payload.get("data", {}).get("word_list", []) or []:
+            word = (row.get("word") or "").strip()
+            if not word:
+                continue
+            items.append(HotspotItem(
+                title=word,
+                heat=float(row.get("hot_value") or 0),
+                url="",
+                source="douyin",
+                extra={"position": row.get("position"), "label": row.get("label")},
+            ))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[hotspots] 抖音解析异常: %s", exc)
+    return items
+
+
 _PARSERS = {
     "baidu": parse_baidu,
     "toutiao": parse_toutiao,
+    "weibo": parse_weibo,
+    "douyin": parse_douyin,
 }
 
 
