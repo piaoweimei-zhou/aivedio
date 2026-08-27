@@ -2,8 +2,9 @@
 """采集器单元测试：热度打分、平台识别、容错、上报计数（mock 网络）。"""
 import time
 
-from app.collectors.collector import (_PARSERS, _heat, _platform_of, fetch_bilibili_ranking,
-                                      parse_one, report_tool_events)
+from app.collectors.collector import (_PARSERS, _heat, _platform_of, fetch_bilibili_popular,
+                                      fetch_bilibili_ranking, parse_one, report_topics,
+                                      report_tool_events)
 
 
 def test_platform_of():
@@ -117,3 +118,43 @@ def test_fetch_bilibili_ranking_error(monkeypatch):
 
     monkeypatch.setattr("requests.get", lambda *a, **k: _FakeResp())
     assert fetch_bilibili_ranking(limit=2, rid=0) == []
+
+
+def test_fetch_bilibili_popular(monkeypatch):
+    class _FakeResp:
+        def json(self):
+            return {"code": 0, "data": {"list": [
+                {"bvid": "BV1pop1", "title": "当日热门A", "stat": {"view": 500, "like": 30}},
+                {"bvid": "BV1pop2", "title": "当日热门B", "stat": {"view": 600, "like": 40}},
+            ]}}
+
+    monkeypatch.setattr("requests.get", lambda *a, **k: _FakeResp())
+    out = fetch_bilibili_popular(limit=2)
+    assert len(out) == 2
+    assert out[1]["bvid"] == "BV1pop2"
+
+
+def test_report_topics(monkeypatch):
+    calls = []
+
+    class _Resp:
+        status = 200
+
+    class _FakeUrlopen:
+        def __init__(self, req, timeout=0):
+            calls.append(req.full_url)
+
+        def __enter__(self):
+            return _Resp()
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr("urllib.request.urlopen", _FakeUrlopen)
+    recs = [
+        {"title": "热点A", "plays": 100, "heat": 80.0},
+        {"title": "", "error": "x"},
+    ]
+    ok = report_topics("http://127.0.0.1:8001", recs)
+    assert ok == 1
+    assert calls[0].endswith("/api/traffic/topics")

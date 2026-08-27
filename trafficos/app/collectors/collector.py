@@ -81,6 +81,53 @@ def fetch_bilibili_ranking(limit: int = 20, rid: int = 0) -> list:
     return out
 
 
+def fetch_bilibili_popular(limit: int = 20) -> list:
+    """拉取 B 站当日热门真实数据作为种子（抢 1-3 天爆火窗口的核心信号源）。
+
+    返回形如 [{bvid, title, plays, likes}] 的列表。
+    """
+    import requests
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Referer": "https://www.bilibili.com/",
+        "Origin": "https://www.bilibili.com",
+    }
+    out: list = []
+    page = 1
+    while len(out) < limit:
+        try:
+            resp = requests.get(
+                f"https://api.bilibili.com/x/web-interface/popular?ps=20&pn={page}",
+                headers=headers, timeout=15,
+            )
+            data = resp.json()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("B 站当日热门拉取失败: %s", e)
+            break
+        if data.get("code") != 0:
+            logger.warning("B 站当日热门返回 code=%s msg=%s", data.get("code"), data.get("message"))
+            break
+        items = (data.get("data") or {}).get("list", [])
+        if not items:
+            break
+        for item in items:
+            out.append({
+                "bvid": item.get("bvid", ""),
+                "title": item.get("title", ""),
+                "plays": (item.get("stat") or {}).get("view", 0),
+                "likes": (item.get("stat") or {}).get("like", 0),
+            })
+            if len(out) >= limit:
+                break
+        page += 1
+    logger.info("B 站当日热门拉取 %d 条", len(out))
+    return out
+
+
 def _heat(rec: dict) -> float:
     """热度打分（可解释、可复算）：播放量 + 互动率 + 时效。"""
     plays = rec.get("plays", 0) or 0
@@ -168,6 +215,35 @@ def report_tool_events(base_url: str, recs: list, tool_name: str = "hotspot-coll
     return ok
 
 
+def report_topics(base_url: str, recs: list, source: str = "hot") -> int:
+    """把真实热点标题写入 TrafficOS 选题库（POST /topics，自动打标+打分）。
+
+    返回成功条数。source 取值与 trafficos Topic.source 对齐（hot=真实热点采集）。
+    """
+    ok = 0
+    for rec in recs:
+        if rec.get("error") or not rec.get("title"):
+            continue
+        payload = {
+            "title": rec["title"],
+            "source": source,
+            "note": f"auto_tool采集 play={rec.get('plays', 0)} heat={rec.get('heat', 0)}",
+        }
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/api/traffic/topics",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if 200 <= resp.status < 300:
+                    ok += 1
+        except (urllib.error.URLError, OSError) as e:
+            logger.warning("选题入库失败 %s: %s", rec.get("title", "")[:20], e)
+    return ok
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     ap = argparse.ArgumentParser(description="TrafficOS 热点采集器")
@@ -175,6 +251,10 @@ def main() -> int:
     ap.add_argument("--file", default="", help="每行一个 URL 的种子文件")
     ap.add_argument("--ranking", type=int, default=0,
                     help="自动拉取 B 站真实排行条数（如 20；与 --urls/--file 二选一）")
+    ap.add_argument("--popular", type=int, default=0,
+                    help="自动拉取 B 站当日热门条数（如 15；追热点核心信号源）")
+    ap.add_argument("--topics", action="store_true",
+                    help="把采集到的真实热点写入 TrafficOS 选题库（POST /topics）")
     ap.add_argument("--out", default="", help="排行 JSON 输出路径")
     ap.add_argument("--report", action="store_true", help="上报 TrafficOS")
     ap.add_argument("--trafficos", default="http://127.0.0.1:8001", help="TrafficOS 地址")
@@ -188,6 +268,13 @@ def main() -> int:
             return 2
         urls = [f"https://www.bilibili.com/video/{t['bvid']}" for t in top]
         logger.info("已从 B 站真实排行取 %d 条种子", len(urls))
+    if args.popular:
+        pop = fetch_bilibili_popular(limit=args.popular)
+        if not pop:
+            logger.error("B 站当日热门拉取为空，中止")
+            return 2
+        urls += [f"https://www.bilibili.com/video/{t['bvid']}" for t in pop]
+        logger.info("已从 B 站当日热门取 %d 条种子", len(pop))
     if args.urls:
         urls += [u.strip() for u in args.urls.split(",") if u.strip()]
     if args.file:
@@ -222,6 +309,10 @@ def main() -> int:
     if args.report:
         ok = report_tool_events(args.trafficos, recs)
         logger.info("上报 TrafficOS: %d/%d 成功", ok, sum(1 for r in recs if not r.get("error")))
+
+    if args.topics:
+        ok_t = report_topics(args.trafficos, recs)
+        logger.info("选题入库: %d/%d 成功", ok_t, sum(1 for r in recs if not r.get("error")))
 
     print("\n===== 热度排行 =====")
     for r in recs:
