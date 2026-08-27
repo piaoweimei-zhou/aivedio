@@ -16,6 +16,28 @@ from contextvars import ContextVar
 from services.paths import LOGS_DIR
 
 
+class SafeTimedRotatingFileHandler(TimedRotatingFileHandler):
+    """Windows 兼容的时间轮转 handler。
+
+    TimedRotatingFileHandler 在 Windows 上轮转时若目标文件被其他进程占用
+    （多 uvicorn 实例共存等），rename 抛 PermissionError，导致每次 emit 都刷
+    "Logging error"。此处捕获 PermissionError 降级为"继续追加写当前文件"，
+    避免日志系统刷屏，待占用解除后自动恢复轮转。
+    """
+
+    def doRollover(self):
+        try:
+            super().doRollover()
+        except PermissionError:
+            # 目标被占用（Windows 常见）：关闭旧流后重新打开当前文件继续追加
+            if self.stream:
+                try:
+                    self.stream.close()
+                except Exception:
+                    pass
+            self.stream = self._open()
+
+
 # 日志级别定义
 class LogLevel:
     DEBUG = logging.DEBUG
@@ -111,7 +133,7 @@ class StructuredLogger:
         log_dir = Path(LOGS_DIR)
         log_dir.mkdir(exist_ok=True)
 
-        file_handler = TimedRotatingFileHandler(
+        file_handler = SafeTimedRotatingFileHandler(
             log_dir / "app.log",
             when="D",  # 按天轮转
             interval=1,  # 每天
@@ -122,7 +144,7 @@ class StructuredLogger:
         self.logger.addHandler(file_handler)
 
         # 错误日志单独记录
-        error_handler = TimedRotatingFileHandler(
+        error_handler = SafeTimedRotatingFileHandler(
             log_dir / "error.log", when="D", interval=1, backupCount=30, encoding="utf-8"
         )
         error_handler.setLevel(logging.ERROR)
@@ -230,7 +252,7 @@ def _configure_root_logger():
     log_dir = Path(LOGS_DIR)
     log_dir.mkdir(exist_ok=True)
 
-    file_handler = TimedRotatingFileHandler(
+    file_handler = SafeTimedRotatingFileHandler(
         log_dir / "root.log", when="D", interval=1, backupCount=30, encoding="utf-8"
     )
     file_handler.setFormatter(StructuredFormatter(ensure_ascii=False))
