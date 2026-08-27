@@ -32,3 +32,9 @@ repos:
         entry: backend/.venv-test/Scripts/python.exe backend/tools/commit_msg_check.py
         language: system
         stages: [commit-msg]
+
+      - id: ci-yaml-valid
+        name: CI YAML 可解析 (G4 类, yaml.safe_load)
+        entry: backend/.venv-test/Scripts/python.exe backend/tools/check_ci_yaml.py
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
