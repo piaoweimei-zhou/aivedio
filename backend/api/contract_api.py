@@ -234,8 +234,13 @@ def _build_steps_from_spec(
         )
     if spec.script.get("acts") and stage_type in ("video_script_mixin", "video_act"):
         return _build_script_video_steps(spec, spec.script["acts"])
+    # acts 为空时：video 类 stage 必须映射到已注册的 "video"（stage_service 无 video_act），
+    # 否则 DAG 报"未知阶段 video_act"（回归 08-26 batch_2466f4c28c）
+    resolved_stage = (
+        "video" if stage_type in ("video_script_mixin", "video_act") else stage_type
+    )
     step: Dict[str, Any] = {
-        "stage_id": stage_type,
+        "stage_id": resolved_stage,
         "name": f"contract-{spec.content_id}",
         "provider_id": "",
         "params": {

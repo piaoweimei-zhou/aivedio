@@ -192,7 +192,20 @@ class SubtitleStage(StagePlugin):
     ) -> str:
         """生成 ASS 字幕内容（竖版大字、关键词高亮描边）"""
         font_name = params.get("font_name", "Microsoft YaHei")
-        font_size = int(params.get("font_size", 0) or max(48, int(width * 0.07)))
+        # font_size：支持绝对像素 或 比例值 (0,1]（后者按画布宽换算），
+        # 防御历史 spec 传 "0.13" 这类比例字符串导致的 int() 崩溃（回归 08-19 batch_d6af1d30cf）
+        font_size_raw = params.get("font_size", 0)
+        if font_size_raw:
+            try:
+                font_size = int(font_size_raw)
+            except (TypeError, ValueError):
+                try:
+                    fs = float(font_size_raw)
+                    font_size = max(48, int(width * fs)) if 0 < fs <= 1 else int(fs)
+                except (TypeError, ValueError):
+                    font_size = max(48, int(width * 0.07))
+        else:
+            font_size = max(48, int(width * 0.07))
         font_color = str(params.get("font_color", _DEFAULT_FONT_COLOR)).lstrip("#").upper()
         highlight_color = (
             str(params.get("highlight_color", _DEFAULT_HIGHLIGHT_COLOR)).lstrip("#").upper()

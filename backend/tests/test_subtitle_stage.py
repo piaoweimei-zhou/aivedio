@@ -74,3 +74,24 @@ def test_build_ass_structure(stage):
     assert "{\\c&H00FFFF&}世界{\\c&HFFFFFF&}" in ass
     # 字号应随宽度缩放（1080*0.07=75）
     assert "Style: Default,Microsoft YaHei,75," in ass
+
+
+def test_font_size_ratio_string_not_crash(stage):
+    """回归：历史 spec 传 font_size='0.13'（比例字符串）→ int() 不再崩溃（08-19 batch_d6af1d30cf）。"""
+    tl = [{'text': '测试', 'start': 0.0, 'end': 3.0, 'highlight': True}]
+    s = stage._build_ass(timeline=tl, width=720, height=1280,
+                         params={'font_size': '0.13'}, keywords=['测试'])
+    assert 'Fontsize' in s
+
+
+def test_font_size_absolute_pixel(stage):
+    tl = [{'text': '测试', 'start': 0.0, 'end': 3.0}]
+    s = stage._build_ass(timeline=tl, width=720, height=1280,
+                         params={'font_size': 64}, keywords=[])
+    assert '64' in s
+
+
+def test_font_size_default_min_48(stage):
+    tl = [{'text': '测试', 'start': 0.0, 'end': 3.0}]
+    s = stage._build_ass(timeline=tl, width=720, height=1280, params={}, keywords=[])
+    assert 'Fontsize' in s

@@ -179,3 +179,19 @@ def test_build_script_video_steps_direct():
     steps = _build_script_video_steps(spec, spec.script["acts"])
     assert steps[0]["stage_id"] == "concept"     # 前置概念图
     assert steps[1]["params"]["segment_durations"] == [5.0, 10.0, 15.0]
+
+
+def test_video_act_no_acts_maps_to_video():
+    """回归：video_act 且 acts 为空 → 映射已注册 video stage，不再'未知阶段'（08-26 batch_2466f4c28c）。"""
+    spec = _spec(script={"type": "video_act", "topic": "x"})
+    steps = _build_steps_from_spec(spec)
+    assert len(steps) == 1
+    assert steps[0]["stage_id"] == "video"
+    assert steps[0]["params"]["script"] == spec.script
+
+
+def test_video_script_mixin_no_acts_maps_to_video():
+    """video_script_mixin 空 acts 同样映射到 video（该名未注册，直接用会未知阶段）。"""
+    spec = _spec(script={"type": "video_script_mixin", "topic": "x"})
+    steps = _build_steps_from_spec(spec)
+    assert steps[0]["stage_id"] == "video"
