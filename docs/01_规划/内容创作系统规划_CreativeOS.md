@@ -1,6 +1,9 @@
-# 内容创作系统规划（CreativeOS）v1.1
+# 内容创作系统规划（CreativeOS）v1.4
 
 > 日期：2026-08-26 ｜ 定位：三系统架构中的"创意引擎"
+> v1.2 更新：M0–M4 全部完成、全链路真实闭环、M4.1 修复批次（云端优先/视觉表现力/平台适配）、质量对比经验沉淀
+> v1.3 更新：**CineForge 7 项资产全部落地（P0/P1/P2）**——时长配额、台词估算、叙事蓝图、五维评估、A/B 实验、质量门禁、跨集连贯性；版本号对齐 §12.5
+> v1.5 更新：**CineForge 四轮穷尽式挖掘总账（19 项）全部落地**（2026-08-27 完成 P3-P8 批次），CreativeOS 内容竞争力补齐闭环，正式为挖掘画句号
 > 一句话：**解决"管道里流的水"——让每条内容都有钩子、有结构、有表现力，替代静态模板，由 LLM 生成式创作 + 质量评估回灌。**
 
 ---
@@ -180,6 +183,63 @@ CreativeOS 的一切输出收敛为 Content Spec，director 只认它生产。**
 - 剧本/分镜模板先冻结为 schema（`assets/templates/*.yaml`），由 L2/L3 按 schema 加载组装
 - 保留版权与出处标注（CineForge 作者 Work-Fisher）
 
+### 二次深度吸收（v1.2，2026-08-26 复核源码后新增）
+
+> 复核结论：CineForge 不止是提示词模板，其**源码层已实现一整套"结构校验 + 质量闭环 + 生产规格"机制**，以下是 CreativeOS 规划中此前未吸收、但可直接迁移的服务化资产：
+
+| CreativeOS 层 | CineForge 资产（源码） | 迁移价值 |
+|---|---|---|
+| **L2 结构约束** | `narrativeBlueprintService.ts` 叙事蓝图：规则表（前史呼应/动机视觉化/视觉递进，各标注必须出现的场景）+ 情感节拍（假希望/中点反转/镜像时刻/代价极限/收束仪式，required+anchorScene）+ 节奏预算（每场时长配额，总和=总时长） | **补 L2 最大缺口**：结构完整性机制化校验，直接对抗"循环冗余/套路化"（已知缺陷①③）；节奏预算天然支撑"任意时长配额" |
+| **L2 时长配额** | `durationSpec.ts` 时长规格表：30s/1min/2min/3min/5min…每档给**字数范围+场景数+结构模板**（如 30秒=250-350字/1-2场景/设置→反转→钩子） | **"时长自由组合"（5s~3min）的核心依据**：每段目标时长→字数/场景配额→L2 按配额生成 |
+| **L4 台词时长** | `speechDurationEstimator.ts`：台词字数÷语速(3.5字/秒，重情绪3.0) + 动作行×1.8s + 情绪停顿(重2.0/中1.0/轻0.5s) → 偏差% | 生成台词即预估算时长，**防止 TTS 台词溢出视频时长**（人声装不下） |
+| **L5 评估维度** | `评价.txt` 五维评估：精确性/完整性/情感张力/**视听可执行性**/主题深度 + **多版本横向对比**（情感峰值对比表） | L5 加"视听可执行性"（场景数/特效成本/道具→director 好不好做）；多版本并排对比取代单点打分 |
+| **L5 实验选优** | `abExperimentService.ts`：同一基础 prompt + 2 变体并行生成 → 按 compareMetric 判定胜者 | 钩子/角度/提示词 **A/B 实验选优**，替代"人工猜哪个好"；结果回灌模板库 |
+| **质量门禁闭环** | `batchSeriesService`+`screenplayService`：生成→自检→autoFix→质量评分→**评分≥85+自检全 pass→跳过人工审批**；跨集 checkCoherence（LLM 对比上集钩子+本集事件，≥60 判定连贯） | director 门禁升级方向：不达标自动重生成、达标自动放行；矩阵化系列内容的连贯性保障 |
+
+**建议吸收路径**：
+1. **L2 结构模板**：将叙事蓝图（rules/beats/pacing）抽象为 `assets/templates/blueprint.yaml`，L2 生成前先加载蓝图约束
+2. **时长配额表**：把 durationSpec 映射为 CreativeOS 的 `SEGMENT_QUOTA`（5s=15-25字、10s=30-50字、20s=60-100字、60s≈500-750字…），L2 按段配额生成台词
+3. **L5 五维 + A/B**：quality.py 扩展为"结构校验（蓝图规则）+ 时长偏差（估算器）+ 视听可执行性 + LLM 内容分"；可选的 A/B 实验接口
+4. **门禁闭环**：接 director——评分≥阈值自动放行，不达标回炉重生成（半自动→全自动）
+
+> 版权与出处：以上机制源自 CineForge（作者 Work-Fisher）源码与《短剧.md》《自动化改造.md》《评价.txt》等实践文档，迁移时保留标注。
+
+### 3.6 四轮挖掘总账（19 项，v1.4 穷尽）
+
+> 2026-08-26 对 CineForge 做 **4 轮穷尽式深查**（初探 → 源码复核 → 方法论 → 工程/运营），累计挖出 19 项可迁移资产。标注状态：✅已落地 / 🟡待做（与当前目标契合）/ ⏸冻结（待命资产）。
+
+| # | 层 | 资产 | 来源 | 状态 |
+|---|---|---|---|---|
+| 1 | 内容创意 | 时长配额表 `SEGMENT_QUOTA`（5s=14-20字…60s=180-215字） | durationSpec.ts | ✅ `8329552` |
+| 2 | 内容创意 | 台词时长估算（字数/3.8+情绪停顿） | speechDurationEstimator.ts | ✅ `8329552` |
+| 3 | 内容创意 | 叙事蓝图（功能/情绪节拍/信息增量防重复） | narrativeBlueprintService.ts | ✅ `ec5c6d0` |
+| 4 | 内容创意 | L5 五维评估（+视听可执行性+结构去重） | 评价.txt 五维 | ✅ `ec5c6d0` |
+| 5 | 内容创意 | A/B 实验选优 | abExperimentService.ts | ✅ `ec5c6d0` |
+| 6 | 内容创意 | 质量门禁闭环（不达标回炉） | batchSeriesService | ✅ `0c08773` |
+| 7 | 内容创意 | 跨集连贯性检查（0-100 <60 断裂） | checkCoherence | ✅ `0c08773` |
+| 8 | 生产路由/账本 | **成本预估面板**（调用次数→Token→$2.5/M→$50红标） | 自动化改造.md §13.1 | ✅ `b238ed7` |
+| 9 | 生产路由/账本 | **Provider 混合路由表**（MediaProviderConfig+default+enabled） | videoCompositionService.ts | ✅ `b238ed7` |
+| 10 | 记忆/一致性 | EpisodeMemory 剧集记忆（keyEvents/剧情线状态/道具）注入下集 | batchSeriesService | ✅ `e049690` |
+| 11 | 记忆/一致性 | VisualFeatures 参考图特征（色彩/光影/风格/构图/质感→prompt） | visualFeatureService.ts | ✅ `e049690` |
+| 12 | 方法论 | **分镜方法论 V3**（逐镜16字段/起幅落幅焊接点/T1-T19镜头模板库） | 提示词/分镜模板V3 | ✅ `6bbac7d` |
+| 13 | 方法论 | 剧本 8 步渐进生成（每步自检+批准） | screenplayStepParser + 短剧.md | ✅ `58139a6` |
+| 14 | 方法论 | 题材 SKILL 方法论库（触发词+公式蒸馏+跨模型适配） | 提示词/剧本SKILL | ✅ `30d5a80` |
+| 15 | 方法论 | 分镜批量预览（缩略图省无效视频成本） | storyboardPreviewService | ✅ `30d5a80` |
+| 16 | 方法论 | prompt 资产库（图像生成器/反推/全资产大师/MJ模板） | 提示词/ 目录 | ✅ `30d5a80` |
+| 17 | 工程/运营 | **LLM 解析健壮性经验**（思考前缀→两阶段法/单点脆弱/双路径架空） | 自查.md | ✅ `6bbac7d` |
+| 18 | 工程/运营 | 知识图谱提示词工程（prompt 实体+维度排列组合抽卡+测试集） | 思路.md | ✅ `e4ab0aa` |
+| 19 | 工程/运营 | 平台合规/质量经验（半身照过审/图像决定视频/不油腻） | 思路.md | ✅ `e4ab0aa` |
+
+**已确认无价值（封存）**：`skills-main/`（anthropics/skills 官方克隆，非原创）；`build/dist/final/release/node_modules`（构建产物）；`2.0界面*.md`（Electron 前端还原文档，本系统不做该前端）。
+
+**落地优先级建议**：
+1. 🥇 **#12 分镜方法论** → 升级 L3 分镜 prompt（直接提升成片视觉质量，半天）
+2. 🥈 **#8+#9 合并为混合策略配置面**（成本模型 + 路由表，服务"线上+本地"）
+3. 🥉 **#17 解析健壮性** → 顺手加固 `call_llm_json`（防踩 CineForge 同坑）
+4. ✅ 19 项全部落地（2026-08-27）：P0-P2（#1-7）→ P3（#12/17）→ P4（#8/9）→ P5（#13）→ P6（#10/11）→ P7（#14/15/16）→ P8（#18/19）
+
+> 版权与出处：19 项均源自 CineForge（作者 Work-Fisher）源码与实践文档，吸收方法论结构，保留标注；分镜模板 V3 含版权声明，仅借鉴框架不复制原文。
+
 ---
 
 ## 4. LLM 混合接入（云端为主 + 本地兜底）
@@ -206,6 +266,28 @@ LLMProvider 接口（app/llm/base.py）
 - 模板库命中优先（高分模板直接复用，不调 LLM）
 - prompt_fingerprint 缓存（相同输入不重复调用）
 - 本地模型做批量/离线生成，云端做质量敏感生成
+
+### 4.4 实测与修复（v1.2，M4.1）
+> **关键教训：服务进程必须显式加载 .env，否则 auto 策略恒降级本地。**
+> 根因：`app/main.py` 未调用 `load_dotenv` → 服务进程读不到 `.env` → `CloudProvider.available()` 恒为 False → **永远走 local 兜底**，云端配置形同虚设。修复：`main.py` 顶部 `load_dotenv(_BASE / ".env")` + `load_dotenv()` 兜底。
+
+**实测可用配置（2026-08-26）**：
+| Provider | 配置 | 实测结论 |
+|---|---|---|
+| 云端豆包 | `CREATIVEOS_CLOUD_MODEL=doubao-1-5-pro-32k-250115`（ARK API） | ✅ **唯一实测可用云端模型**；`doubao-seed-2-0-pro`/`1-6` 系列 404 死路 |
+| 本地 Ollama | `qwen2.5:7b` | ⚠️ 可跑，但多段生成质量差（台词重复、画面空），仅作兜底 |
+| DeepSeek | `deepseek-v4-flash` | ❌ 402 欠费死路 |
+
+**云端 vs 本地质量对比（同 topic"去水印工具"4 段）**：
+| 维度 | local qwen2.5:7b（修复前） | cloud doubao（修复后） |
+|---|---|---|
+| 台词 | 模板化、段2/3 重复（"关键步骤来了"×2） | 真实故事线：烦→坑→惊喜→呼吁，每段不重复 |
+| 画面 visual | **全部为空 ''** | 每段有具体画面（皱眉看手机/摊手/展示工具/邀请手势） |
+| 分镜 content | **全部为空 ''**（只有镜头语言标签，画面泛化） | 具体内容（用户皱眉看手机/摊手/展示手机工具/向镜头做邀请手势） |
+| 钩子 | 总踩坑？三秒给你答案 | 想取视频水印，又怕收费？（痛点切入） |
+| 内容分 | — | 7.52 |
+
+> **结论**：CreativeOS 质量上限由 LLM 决定，**必须确保云端优先 + 显式加载配置 + 降级时明确告警**，否则"空画面成片"（观众视角直接劝退）会静默产生。此经验已固化为 §8 风险应对 + 门禁关注点。
 
 ---
 
@@ -253,20 +335,29 @@ creativeos/
 
 ## 7. 优先级与路线图
 
-| 阶段 | 内容 | 交付 | 估时 |
+> **状态更新（v1.2）**：M0–M4 已于 2026-08-26 全部完成并验收，三系统真实闭环打通（TrafficOS→CreativeOS→director→成片）。下表标记为 ✅ 已完成。
+
+| 阶段 | 内容 | 交付 | 状态 |
 |---|---|---|---|
-| M0 | 骨架：目录 + Content Spec schema(Pydantic) + LLM 抽象层(auto降级) | `app/` 骨架可启动 | 0.5 天 |
-| M1 | **L2 文案层 + L1 角度生成**（最大杠杆） | topic → 完整 script + 3 版标题 | 1 天 |
-| M2 | L3 分镜/提示词（组件库 + 英文 prompt 组装 + 角色卡） | script → 分镜 spec | 1-1.5 天 |
-| M3 | L4 声音/节奏设计 | spec 含 voice 字段 | 0.5 天 |
-| M4 | L5 评估 + 回灌 + TrafficOS adapter 对接 | 全闭环 + 端到端对比成片 | 1-1.5 天 |
+| M0 | 骨架：目录 + Content Spec schema(Pydantic) + LLM 抽象层(auto降级) | `app/` 骨架可启动 | ✅ 完成 |
+| M1 | **L2 文案层 + L1 角度生成**（最大杠杆） | topic → 完整 script + 3 版标题 | ✅ 完成 |
+| M2 | L3 分镜/提示词（组件库 + 英文 prompt 组装 + 角色卡） | script → 分镜 spec | ✅ 完成 |
+| M3 | L4 声音/节奏设计 | spec 含 voice 字段 | ✅ 完成 |
+| M4 | L5 评估 + 回灌 + TrafficOS adapter 对接 | 全闭环 + 端到端对比成片 | ✅ 完成 |
+| M4.1 | 修复批次：云端优先 / 视觉表现力 / 平台标题限长 | 详见 §12.2 | ✅ 完成 |
+| **P0–P2** | **CineForge 7 项资产吸收落地** | 详见 §12.5 | ✅ 完成 |
 
-**建议顺序**：M0 → M1 → M2 → M3 → M4（合计约 4-5 天，可并行压）
+**已交付验收基准**：`scripts/m4_acceptance.py`（可重复跑 generate→templates→feedback）；pytest **63 passed** + flake8 **0 error**（含 scripts）。
 
-### 7.1 验收标准（一条 M1 端到端）
+### 7.1 验收标准（一条 M1 端到端）——已达成
 1 topic → CreativeOS 生成 Content Spec（角度+钩子+分镜+提示词+标题）
 → director 生产成片 → 与旧模板成片**并排对比**，主观质量显著提升
 → TrafficOS 发布 → 效果数据回灌 CreativeOS → 模板权重更新（可审计）
+
+**真实闭环样本（v1.2）**：
+- TrafficOS 选题"去水印工具" → CreativeOS LLM 生成（钩子"想取视频水印，又怕收费？"）→ director `/contract/produce` → 5 步流水线（concept→video→subtitle→hook_overlay→export）跑通
+- 成片交付 2 条：`global_export_006_d093e0.mp4`（单段 11.4MB）、`global_export_007_5103f0.mp4`（LLM 全链路 4.9MB）
+- Content Spec 样本：`creativeos/data/specs/cs_去水印工具_1787741713221.json`（五层结构 + LLM 溯源 cloud/doubao）
 
 ---
 
@@ -297,7 +388,56 @@ creativeos/
 ---
 
 ## 11. 工程化约束（对齐现有治理）
-- 入 `trafficos/.flake8` 同标准：flake8 0-error、pre-commit 门禁
-- 单测：每层 ≥3 条（schema 校验 / LLM mock / 模板命中）
-- 目录命名与 data 规范对齐 director/trafficos
-- 经验沉淀：P0闭环经验文档风格，按里程碑记录
+
+**状态更新（v1.2）**：以下约束已全部落地并纳入 CI：
+- 入 `trafficos/.flake8` 同标准：flake8 0-error、pre-commit 门禁 ✅
+- 单测：每层 ≥3 条（schema 校验 / LLM mock / 模板命中）✅（pytest 63 passed）
+- 目录命名与 data 规范对齐 director/trafficos ✅
+- 经验沉淀：P0闭环经验文档风格，按里程碑记录 ✅（见 §12）
+
+---
+
+## 12. 实施记录与经验沉淀（v1.2）
+
+### 12.1 M4 收尾交付
+- **L5 LLM 质量评估**（`app/quality.py`）：规则×0.4 + LLM×0.6 加权 + 逐条 suggestions
+- **模板回灌**（`app/template_lib.py`）：content_score≥8.0 入库（权重 0.5）、feedback ±0.1 调权
+- **TrafficOS adapter**（`trafficos/app/creative_adapter.py`）：失败兜底回原模板
+- 提交：creativeos `f26879d`（M4）｜ director `07221b8`（adapter）
+
+### 12.2 M4.1 修复批次（12 缺陷诊断中的 CreativeOS 项）
+| # | 缺陷 | 根因 | 修复 |
+|---|---|---|---|
+| #4 | auto 恒降级 local | main.py 未 load_dotenv，服务进程读不到 .env | 显式 load_dotenv → 实测走 cloud/doubao ✅ |
+| #5 | 视觉表现力弱（visual 空） | fallback 路径 visual='' → prompt 无内容 → 成片泛化 | `copywriting.py` 按情绪生成画面（_VISUAL_BY_EMOTION 6 模板）+ `storyboard.py` content 空时回退剧本 visual ✅ |
+| #11 | 多平台封面标题溢出 | 标题无平台限长 | `orchestrator.py` 按平台限长（抖音/快手 14 字、小红书 18、B站 26）+ director 封面换行按画面比例自适应 ✅ |
+| #6 | 内容体系早期（多段连贯性） | 本地模型多段质量差 | 云端已启用 + 模板回灌复利，标记为持续演进项 📌 |
+
+### 12.3 已确认的关键链路事实
+- **全链路 5 步**：concept（概念图 I2V 输入）→ video（H3 分段）→ subtitle → hook_overlay → export，`/contract/produce`（X-API-Key: `dev-contract-key-not-for-prod`）驱动
+- **4 段 20s 完整结构**（共情→冲突→解决→惊喜）：验证 L1 角度 + L2 情绪曲线体系能力（成片 `global_export_008`，22.4MB）
+- **脚本时长自由组合**：contract 层 `acts[N]` → 逐段视频，任意段数 × 任意时长（5s~3min），时长 100% 来自契约输入
+
+### 12.4 遗留与后续（不阻塞）
+1. **多段剧情连贯性提升**：云端下继续打磨 L1 角度差异化与 L5 结构去重检查（CineForge 已知缺陷①的对抗）
+2. **模板库冷启动**：高分样本积累中，随真实发布数据回灌升温
+3. **quality 视觉分**：目前以规则/LLM 文本评估为主，可对接 director qc_service 的 CV2 真实画面探针
+4. **成本曲线**：云端用量随内容量上升，需持续跟踪 §9 度量（调用成本/降级率）
+
+### 12.5 CineForge 7 项资产落地记录（v1.3）
+
+> 2026-08-26 深度复核 CineForge 源码后，将 §3.5"二次深度吸收"的 7 项资产全部服务化落地，分 P0/P1/P2 三批。
+
+| 优先级 | 资产 | 落地实现 | 提交 | 实测 |
+|---|---|---|---|---|
+| P0-1 | 时长配额表 | `app/duration.py` `SEGMENT_QUOTA`（5s=14-20字…60s=180-215字，插值）+ `word_quota()`；LLM prompt 注入每段字数要求 | `8329552` | 4 段台词 11-14 字全在配额内 |
+| P0-2 | 台词时长估算 | `estimate_narration_sec`（字数÷3.8+情绪停顿）+ `check_duration_fit` 偏差校验 + `truncate_to_quota` 自动截断；orchestrator 生成后拟合校验入 quality 建议 | `8329552` | 拟合校验接入 |
+| P1-1 | 叙事蓝图 | `app/blueprint.py` 段数→功能+情绪蓝图 + 段间信息增量校验；LLM prompt 注入蓝图；重复段自动 LLM 二次精修 `_dedupe_script` | `ec5c6d0` | 4 段严格按功能递进、无重复 |
+| P1-2 | L5 五维评估 | `quality.py` 加视觉可执行性（visual 具体性评分）+ 结构去重维度；规则建议（重复/visual 空）并入 suggestions | `ec5c6d0` | 无硬问题建议、内容分 7.68 |
+| P1-3 | A/B 实验 | `app/abtest.py` + `POST /api/creative/ab-test`：两角度变体并行生成→L5 打分选胜 | `ec5c6d0` | 痛点 7.92 vs 故事 7.92 |
+| P2-1 | 质量门禁闭环 | `generate` 重构 `_generate_once` + `quality_gate`（内容分<6.5 自动回炉，max_retries=1，重试记录进 quality 建议） | `0c08773` | 4 门禁测试 |
+| P2-2 | 跨集连贯性 | `app/coherence.py` + `POST /api/creative/coherence`：LLM 校验主题/人设/钩子衔接，0-100 <60 断裂，失败规则兜底 | `0c08773` | 4 测试（规则/LLM/兜底） |
+
+**质量基线**：pytest **92 passed**（+24 新测试）/ flake8 **0 error** / CreativeOS :8002 已重启生效
+
+**新增 API 面**：`/api/creative/generate`（quality_gate 参数）、`/api/creative/ab-test`、`/api/creative/coherence`
