@@ -1,17 +1,32 @@
 # -*- coding: utf-8 -*-
-"""平台解析器（迁自 bupvideo watermark_remover/parsers，当前只启用 B 站链路）
+"""平台解析器（迁自 bupvideo watermark_remover/parsers）
 
-B 站 view API 匿名可解析、含真实播放量，作为主线第一阶段 A/B 两线的数据源；
-抖音/快手/小红书解析依赖 Playwright 等浏览器环境，后续有需要再迁入。
+- bilibili：requests 匿名 view API，含真实播放量（A/B 两线主数据源）
+- kuaishou / xiaohongshu：requests 主通道 + Playwright 兜底（可选，无 playwright 时走 requests）
+- douyin：Playwright 拦截 detail XHR（必需 playwright；无则返回明确错误）
+
+合规：仅聚合分析/内部选题，不搬运内容。
 """
 from .bilibili import BilibiliParser
+from .douyin import DouyinParser
+from .kuaishou import KuaishouParser
+from .xiaohongshu import XiaohongshuParser
 
 PARSER_REGISTRY = {
+    "douyin": DouyinParser,
+    "kuaishou": KuaishouParser,
+    "xiaohongshu": XiaohongshuParser,
     "bilibili": BilibiliParser,
 }
 
 PLATFORM_DISPLAY_NAMES = {
+    "douyin": "抖音",
+    "kuaishou": "快手",
+    "xiaohongshu": "小红书",
     "bilibili": "B站",
 }
 
-__all__ = ["BilibiliParser", "PARSER_REGISTRY", "PLATFORM_DISPLAY_NAMES"]
+__all__ = [
+    "BilibiliParser", "DouyinParser", "KuaishouParser", "XiaohongshuParser",
+    "PARSER_REGISTRY", "PLATFORM_DISPLAY_NAMES",
+]

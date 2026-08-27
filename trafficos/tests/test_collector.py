@@ -2,12 +2,14 @@
 """采集器单元测试：热度打分、平台识别、容错、上报计数（mock 网络）。"""
 import time
 
-from app.collectors.collector import _heat, _platform_of, parse_one, report_tool_events
+from app.collectors.collector import _PARSERS, _heat, _platform_of, parse_one, report_tool_events
 
 
 def test_platform_of():
     assert _platform_of("https://www.bilibili.com/video/BV1xx411c7mD") == "bilibili"
-    assert _platform_of("https://v.douyin.com/abc/") == "unknown"
+    assert _platform_of("https://v.douyin.com/abc/") == "douyin"
+    assert _platform_of("https://www.kuaishou.com/short-video/xyz") == "kuaishou"
+    assert _platform_of("https://www.xiaohongshu.com/explore/xyz") == "xiaohongshu"
     assert _platform_of("http://example.com/x") == "unknown"
 
 
@@ -52,9 +54,15 @@ def test_parse_one_parser_error(monkeypatch):
         def parse(self, url):
             raise RuntimeError("boom")
 
-    monkeypatch.setattr("app.collectors.collector.BilibiliParser", lambda: _Fake())
+    monkeypatch.setitem(_PARSERS, "bilibili", _Fake)
     r = parse_one("https://www.bilibili.com/video/BV1xx411c7mD")
     assert r["error"].startswith("RuntimeError: boom")
+
+
+def test_parse_one_unsupported_douyin_without_playwright(monkeypatch):
+    # 抖音在无 playwright 环境不应崩溃（douyin.py 顶层 try/except 可选导入）
+    r = parse_one("https://v.douyin.com/abc/")
+    assert "error" in r  # 返回 error 而非抛异常
 
 
 def test_report_tool_events_success(monkeypatch):

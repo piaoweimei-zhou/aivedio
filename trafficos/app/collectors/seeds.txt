@@ -2,6 +2,15 @@
 # 用法: python -m app.collectors.collector --file app/collectors/seeds.txt --out out.json --report
 # 合规: 仅聚合分析/内部选题，不搬运内容；采集克制防限流。
 
-# ===== B 站样本（公开 API 匿名可解析，含真实播放量）=====
+# ===== B 站（公开 view API 匿名可解析，含真实播放量）=====
 https://www.bilibili.com/video/BV1xx411c7mD
 https://www.bilibili.com/video/BV1GJ411x7h7
+
+# ===== 抖音（需 playwright + chromium；Playwright 拦截 detail XHR，含互动无播放量）=====
+# https://v.douyin.com/xxxxxxx/
+
+# ===== 快手（requests 主通道；无 playwright 也可解析）=====
+# https://www.kuaishou.com/short-video/xxxxxxxx
+
+# ===== 小红书（requests 主通道；无 playwright 也可解析）=====
+# https://www.xiaohongshu.com/explore/xxxxxxxx

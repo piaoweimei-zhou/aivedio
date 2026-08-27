@@ -22,12 +22,26 @@ import urllib.request
 import urllib.error
 
 from .parsers.bilibili import BilibiliParser
+from .parsers.douyin import DouyinParser
+from .parsers.kuaishou import KuaishouParser
+from .parsers.xiaohongshu import XiaohongshuParser
 
 logger = logging.getLogger("collectors")
 
+_PARSERS = {
+    "bilibili": BilibiliParser,
+    "douyin": DouyinParser,
+    "kuaishou": KuaishouParser,
+    "xiaohongshu": XiaohongshuParser,
+}
+
 
 def _platform_of(url: str) -> str:
-    return "bilibili" if "bilibili" in url.lower() else "unknown"
+    u = url.lower()
+    for name in ("bilibili", "douyin", "kuaishou", "xiaohongshu"):
+        if name in u:
+            return name
+    return "unknown"
 
 
 def _heat(rec: dict) -> float:
@@ -54,7 +68,7 @@ def parse_one(url: str) -> dict:
     if plat == "unknown":
         return {"url": url, "error": "unsupported_platform"}
     try:
-        r = BilibiliParser().parse(url)
+        r = _PARSERS[plat]().parse(url)
     except Exception as e:  # noqa: BLE001 - 逐条容错
         return {"url": url, "platform": plat, "error": f"{type(e).__name__}: {e}"}
     if r.error:

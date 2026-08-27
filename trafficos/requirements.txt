@@ -3,6 +3,8 @@ uvicorn>=0.29
 pydantic>=2.6
 Pillow>=10.0
 requests>=2.31
+# 抖音解析器需要（Playwright 拦截 XHR）；快手/小红书为可选兜底。装浏览器: playwright install chromium
+playwright>=1.44
 
 # dev
 pytest>=8.0
