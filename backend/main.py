@@ -194,6 +194,7 @@ from api.workflow_template_api import router as workflow_template_router  # noqa
 from api.preset_api import router as preset_router  # noqa: E402
 from api.prompt_api import router as prompt_router  # noqa: E402
 from api.contract_api import router as contract_router  # noqa: E402
+from api.system_api import router as system_router  # noqa: E402
 
 _routers = [
     director_asset_router,
@@ -207,6 +208,7 @@ _routers = [
     preset_router,
     prompt_router,
     contract_router,
+    system_router,
 ]
 for r in _routers:
     app.include_router(r)

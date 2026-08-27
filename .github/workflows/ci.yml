@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # 每晚定时回归（UTC 20:00 = 北京 04:00，与 CreativeOS 12:00 错开，避免依赖源高峰）
+  schedule:
+    - cron: '0 20 * * *'
 
 jobs:
   backend-lint:
@@ -36,9 +39,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.lock
           pip install pytest-cov
-      - name: Run tests with coverage (ratchet baseline 37%)
+      - name: Run tests with coverage (ratchet baseline 40%)
         working-directory: backend
-        run: python -m pytest --cov=. --cov-report=term-missing --cov-fail-under=37
+        run: python -m pytest --cov=. --cov-report=term-missing --cov-fail-under=40
 
   g2-contract-smoke:
     name: G2 契约冒烟（steps 契约 + DAG 生成）
