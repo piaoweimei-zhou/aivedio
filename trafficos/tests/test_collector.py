@@ -2,7 +2,8 @@
 """采集器单元测试：热度打分、平台识别、容错、上报计数（mock 网络）。"""
 import time
 
-from app.collectors.collector import _PARSERS, _heat, _platform_of, parse_one, report_tool_events
+from app.collectors.collector import (_PARSERS, _heat, _platform_of, fetch_bilibili_ranking,
+                                      parse_one, report_tool_events)
 
 
 def test_platform_of():
@@ -92,3 +93,27 @@ def test_report_tool_events_success(monkeypatch):
     assert ok == 1
     assert len(called) == 1
     assert "/api/traffic/signals/tool-event" in called[0].full_url
+
+
+def test_fetch_bilibili_ranking(monkeypatch):
+    class _FakeResp:
+        def json(self):
+            return {"code": 0, "data": {"list": [
+                {"bvid": "BV1aaa", "title": "A", "stat": {"view": 100, "like": 10}},
+                {"bvid": "BV1bbb", "title": "B", "stat": {"view": 200, "like": 20}},
+            ]}}
+
+    monkeypatch.setattr("requests.get", lambda *a, **k: _FakeResp())
+    out = fetch_bilibili_ranking(limit=2, rid=0)
+    assert len(out) == 2
+    assert out[0]["bvid"] == "BV1aaa"
+    assert out[0]["plays"] == 100
+
+
+def test_fetch_bilibili_ranking_error(monkeypatch):
+    class _FakeResp:
+        def json(self):
+            return {"code": -352, "message": "-352"}
+
+    monkeypatch.setattr("requests.get", lambda *a, **k: _FakeResp())
+    assert fetch_bilibili_ranking(limit=2, rid=0) == []

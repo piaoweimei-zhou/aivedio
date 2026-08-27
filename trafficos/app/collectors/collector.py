@@ -44,6 +44,43 @@ def _platform_of(url: str) -> str:
     return "unknown"
 
 
+def fetch_bilibili_ranking(limit: int = 20, rid: int = 0) -> list:
+    """拉取 B 站真实排行作为种子（rid=0 全站；分区接口当前被风控）。
+
+    返回形如 [{bvid, title, plays, likes}] 的排行列表。
+    """
+    import requests
+
+    url = f"https://api.bilibili.com/x/web-interface/ranking/v2?rid={rid}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+        "Referer": "https://www.bilibili.com/",
+        "Origin": "https://www.bilibili.com",
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        data = resp.json()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("B 站排行拉取失败: %s", e)
+        return []
+    if data.get("code") != 0:
+        logger.warning("B 站排行接口返回 code=%s msg=%s", data.get("code"), data.get("message"))
+        return []
+    out = []
+    for item in (data.get("data") or {}).get("list", [])[:limit]:
+        out.append({
+            "bvid": item.get("bvid", ""),
+            "title": item.get("title", ""),
+            "plays": (item.get("stat") or {}).get("view", 0),
+            "likes": (item.get("stat") or {}).get("like", 0),
+        })
+    logger.info("B 站排行拉取 %d 条 (rid=%d)", len(out), rid)
+    return out
+
+
 def _heat(rec: dict) -> float:
     """热度打分（可解释、可复算）：播放量 + 互动率 + 时效。"""
     plays = rec.get("plays", 0) or 0
@@ -136,12 +173,21 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="TrafficOS 热点采集器")
     ap.add_argument("--urls", default="", help="逗号分隔的 URL 列表")
     ap.add_argument("--file", default="", help="每行一个 URL 的种子文件")
+    ap.add_argument("--ranking", type=int, default=0,
+                    help="自动拉取 B 站真实排行条数（如 20；与 --urls/--file 二选一）")
     ap.add_argument("--out", default="", help="排行 JSON 输出路径")
     ap.add_argument("--report", action="store_true", help="上报 TrafficOS")
     ap.add_argument("--trafficos", default="http://127.0.0.1:8001", help="TrafficOS 地址")
     args = ap.parse_args()
 
     urls: list = []
+    if args.ranking:
+        top = fetch_bilibili_ranking(limit=args.ranking, rid=0)
+        if not top:
+            logger.error("B 站排行拉取为空，中止")
+            return 2
+        urls = [f"https://www.bilibili.com/video/{t['bvid']}" for t in top]
+        logger.info("已从 B 站真实排行取 %d 条种子", len(urls))
     if args.urls:
         urls += [u.strip() for u in args.urls.split(",") if u.strip()]
     if args.file:
